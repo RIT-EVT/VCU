@@ -71,7 +71,7 @@ building functionality.
 below. When finished, all the changes should be committed and pushed to the setup branch, and a PR
 should be created to merge into main.
 
-# BIKE_NAME-BOARD_NAME
+# REV3-VCU
 
 ## Introduction
 
