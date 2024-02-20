@@ -1,5 +1,5 @@
-#ifndef VCU
-#define VCU
+#ifndef VCU_HPP
+#define VCU_HPP
 
 namespace VCU {
 
@@ -11,5 +11,6 @@ public:
 private:
 };
 
-}
-#endif //VCU
+} //namespace VCU
+
+#endif //VCU_HPP

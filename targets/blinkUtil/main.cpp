@@ -12,7 +12,7 @@
 #include <EVT/utils/time.hpp>
 
 namespace IO = EVT::core::IO;
-namespace DEV = BOARD_NAME::DEV;
+namespace DEV = VCU::DEV;
 namespace time = EVT::core::time;
 
 int main() {
