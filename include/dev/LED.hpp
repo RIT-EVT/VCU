@@ -3,7 +3,7 @@
 
 #include <EVT/io/GPIO.hpp>
 
-namespace BOARD_NAME::DEV {
+namespace VCU::DEV {
 
 class LED {
 public:

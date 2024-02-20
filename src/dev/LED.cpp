@@ -1,6 +1,6 @@
-#include <BOARD_NAME/dev/LED.hpp>
+#include <dev/LED.hpp>
 
-namespace BOARD_NAME::DEV {
+namespace VCU::DEV {
 
 LED::LED(EVT::core::IO::GPIO& gpio, LED::ActiveState activeState)
     : gpio(gpio) {
