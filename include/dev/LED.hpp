@@ -44,4 +44,4 @@ private:
 
 }//namespace VCU::DEV
 
-#endif //VCU_LED
+#endif//VCU_LED

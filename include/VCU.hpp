@@ -11,6 +11,6 @@ public:
 private:
 };
 
-} //namespace VCU
+}//namespace VCU
 
-#endif //VCU_HPP
+#endif//VCU_HPP
