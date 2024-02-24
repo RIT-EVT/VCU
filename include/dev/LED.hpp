@@ -1,9 +1,9 @@
-#ifndef _BOARD_NAME_LED_
-#define _BOARD_NAME_LED_
+#ifndef VCU_LED
+#define VCU_LED
 
 #include <EVT/io/GPIO.hpp>
 
-namespace BOARD_NAME::DEV {
+namespace VCU::DEV {
 
 class LED {
 public:
@@ -42,6 +42,6 @@ private:
     ActiveState activeState;
 };
 
-}//namespace BOARD_NAME::DEV
+}//namespace VCU::DEV
 
-#endif
+#endif//VCU_LED

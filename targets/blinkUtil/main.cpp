@@ -7,12 +7,12 @@
  * GPIO.
  */
 
-#include <dev/LED.hpp>
 #include <EVT/manager.hpp>
 #include <EVT/utils/time.hpp>
+#include <dev/LED.hpp>
 
 namespace IO = EVT::core::IO;
-namespace DEV = BOARD_NAME::DEV;
+namespace DEV = VCU::DEV;
 namespace time = EVT::core::time;
 
 int main() {
