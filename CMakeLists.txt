@@ -63,6 +63,7 @@ add_library(${PROJECT_NAME} STATIC)
 target_sources(${PROJECT_NAME} PRIVATE
         src/dev/LED.cpp
         src/VCU.cpp
+        src/Hardmon.cpp
         )
 
 ###############################################################################

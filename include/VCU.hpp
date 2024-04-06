@@ -20,6 +20,7 @@ public:
     */
 
         /** LED Pins */
+
     static constexpr IO::Pin LED_THREE_PIN = IO::Pin::PA_0;
     static constexpr IO::Pin LED_TWO_PIN = IO::Pin::PA_1;
     static constexpr IO::Pin LED_ONE_PIN = IO::Pin::PA_2;
@@ -91,6 +92,13 @@ public:
     /** LVSS Enable Pin */
     static constexpr IO::Pin LVSS_ENABLE_PIN = IO::Pin::PC_13;
 
+
+    /**
+     * Accessory CAN Node IDs
+     */
+
+    static constexpr uint8_t IMU_NODE_ID = 9;
+
     /**
      * Constructor for VCU object
      */
@@ -120,17 +128,23 @@ public:
     void process();
 
 private:
+    struct imuValues {
+        uint16_t xVecs[4];
+        uint16_t yVecs[4];
+        uint16_t zVecs[4];
+    };
+
+    imuValues imu;
 
     /**
      * The node ID used to identify the device on the CAN network.
      */
-    static constexpr uint8_t NODE_ID = 0; //TODO set node ID
+    static constexpr uint8_t NODE_ID = 255; //TODO set node ID
 
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 12; //TODO set size of object dictionary
-    //(all the mandatory macros are in total 12 entries)
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 51; //TODO set size of object dictionary
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -143,6 +157,47 @@ private:
         IDENTITY_OBJECT_1018,
         SDO_CONFIGURATION_1200,
 
+        /** IMU RPDO Mappings */
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(0, 0, IMU_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(1, 1, IMU_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(2, 2, IMU_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
+
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x00, 0x04),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x02, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x03, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x04, PDO_MAPPING_UNSIGNED16),
+
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x01, 0x04),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x01, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x02, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x03, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x04, PDO_MAPPING_UNSIGNED16),
+
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x02, 0x04),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x01, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x02, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x03, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x04, PDO_MAPPING_UNSIGNED16),
+
+        /** IMU Links */
+        DATA_LINK_START_KEY_21XX(0x00, 0x04),
+        DATA_LINK_21XX(0x00, 0x01, CO_TUNSIGNED16, &imu.xVecs[0]),
+        DATA_LINK_21XX(0x00, 0x02, CO_TUNSIGNED16, &imu.xVecs[1]),
+        DATA_LINK_21XX(0x00, 0x03, CO_TUNSIGNED16, &imu.xVecs[2]),
+        DATA_LINK_21XX(0x00, 0x04, CO_TUNSIGNED16, &imu.xVecs[3]),
+
+        DATA_LINK_START_KEY_21XX(0x01, 0x04),
+        DATA_LINK_21XX(0x01, 0x01, CO_TUNSIGNED16, &imu.yVecs[0]),
+        DATA_LINK_21XX(0x01, 0x02, CO_TUNSIGNED16, &imu.yVecs[1]),
+        DATA_LINK_21XX(0x01, 0x03, CO_TUNSIGNED16, &imu.yVecs[2]),
+        DATA_LINK_21XX(0x01, 0x04, CO_TUNSIGNED16, &imu.yVecs[3]),
+
+        DATA_LINK_START_KEY_21XX(0x02, 0x04),
+        DATA_LINK_21XX(0x02, 0x01, CO_TUNSIGNED16, &imu.zVecs[0]),
+        DATA_LINK_21XX(0x02, 0x02, CO_TUNSIGNED16, &imu.zVecs[1]),
+        DATA_LINK_21XX(0x02, 0x03, CO_TUNSIGNED16, &imu.zVecs[2]),
+        DATA_LINK_21XX(0x02, 0x04, CO_TUNSIGNED16, &imu.zVecs[3]),
         // End of dictionary marker
         CO_OBJ_DICT_ENDMARK,
     };

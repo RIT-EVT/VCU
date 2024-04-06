@@ -1,6 +1,7 @@
 #include <VCU.hpp>
 
 namespace VCU {
+
 CO_OBJ_T* VCU::getObjectDictionary() {
     return &objectDictionary[0];
 }
