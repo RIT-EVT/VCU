@@ -4,6 +4,7 @@
 #include <EVT/io/CANDevice.hpp>
 #include <EVT/io/CANOpenMacros.hpp>
 #include <EVT/io/pin.hpp>
+#include <EVT/io/GPIO.hpp>
 #include <models/Hardmon_Model.hpp>
 
 namespace IO = EVT::core::IO;
@@ -16,6 +17,34 @@ namespace VCU {
 
 class Hardmon : public CANDevice {
 public:
+    /**
+     * Struct that contains all the GPIO inputs that an instance of this class requires.
+     */
+    struct reqGPIO {
+
+        IO::GPIO& ignitionCheckGPIO;
+        IO::GPIO& ignition3V3GPIO;
+        IO::GPIO& lvssStatus3V3GPIO;
+        IO::GPIO& mcStatusGPIO;
+
+        IO::GPIO& ucStateZeroGPIO;
+        IO::GPIO& ucStateOneGPIO;
+        IO::GPIO& ucStateTwoGPIO;
+        IO::GPIO& ucStateThreeGPIO;
+
+        IO::GPIO& eStopCheckGPIO;
+        IO::GPIO& watchdogGPIO;
+        IO::GPIO& eStop3V3GPIO;
+
+        //GPIO Pins (model outputs)
+        IO::GPIO& lvssEnableOverrideGPIO;
+        IO::GPIO& mcToggleNegativeGPIO;
+        IO::GPIO& mcTogglePositiveGPIO;
+        IO::GPIO& mcToggleOverrideGPIO;
+        IO::GPIO& ucResetGPIO;
+        IO::GPIO& lvssEnableHardmonGPIO;
+        IO::GPIO& hmFaultGPIO;
+    };
 
     /**
      * Hardmon Pinout
@@ -25,7 +54,7 @@ public:
 
     /** UART TX pin */
     static constexpr IO::Pin UART_TX_PIN = IO::Pin::PA_0;
-    /** UART RX pin*/
+    /** UART RX pin */
     static constexpr IO::Pin UART_RX_PIN = IO::Pin::PA_1;
 
     /** LVSS Enable Pin */
@@ -57,11 +86,12 @@ public:
     static constexpr IO::Pin CAN_A_RX_PIN = IO::Pin::PA_11;
     /** Accessory CAN TX Pin */
     static constexpr IO::Pin CAN_A_TX_PIN = IO::Pin::PA_12;
+
     /** Motor Controller Network CAN RX Pin */
     static constexpr IO::Pin CAN_MC_RX_PIN = IO::Pin::PB_12;
-
     /** Motor Controller Network CAN TX Pin */
     static constexpr IO::Pin CAN_MC_TX_PIN = IO::Pin::PB_13;
+
     /** Watchdog Pin */
     static constexpr IO::Pin WATCHDOG_PIN = IO::Pin::PB_4;
     /** Hardmon Fault Pin */
@@ -87,7 +117,7 @@ public:
     /**
      * Constructor for Hardmon object
      */
-    Hardmon();
+    Hardmon(reqGPIO gpios);
 
     /**
      * Get a pointer to the start of the object dictionary
@@ -122,27 +152,30 @@ private:
     //Model input data
 
      bool forwardEnable; ///< handlebar forward enable
-     bool ignition12V0;  ///< whether the ignition is on or off on 12v line
+     bool ignitionCheck;  ///< whether the ignition is on or off on 12v line
      bool ignition3v3;   ///< whether the ignition is on or off on 3.3v line
      bool lvssStatus;    ///< whether the lvss is on or not
-     bool MCStatus;      ///< whether the Motor Controller is on or off
+     bool mcStatus;      ///< whether the Motor Controller is on or off
      bool ucState[4];    ///< what state the microcontroller is in
-     bool eStop12V0;     ///< whether the estop is on or off on 12v line
+     bool eStopCheck;     ///< whether the estop is on or off on 12v line
      uint8_t discharge;  ///< current state of the discharge state machine
      bool watchdog;      ///< alternating on and off signal from the MCUC to the Hardmon
      bool eStop3v3;      ///< whether the estop is on or off on 3.3v line
-     bool LVSSEnableuC;  ///< whether or not the MCUC is telling the LVSS to be enabled
+     bool lvssEnableUC;  ///< whether or not the MCUC is telling the LVSS to be enabled
 
      //Model output data
 
-     bool MCSwitchEnable;      ///< whether or not the MCUC Motor Controller Enable is disabled
-     bool LVSSSwitchEnable;    ///< whether or not the MCUC LVSS Enable is disabled
+     bool mcSwitchEnable;      ///< whether or not the MCUC Motor Controller Enable is disabled
+     bool lvssSwitchEnable;    ///< whether or not the MCUC LVSS Enable is disabled
      bool InverterDischarge;   ///< whether or not the Motor Controller is commanded to discharge (sent over CAN)
-     bool MCToggleNeg;         ///< Together with MCTogglePos commands the Motor Controller being on or not
-     bool MCTogglePos;         ///< Together with MCToggleNeg commands the Motor Controller being on or not
-     bool reset;               ///< Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)
-     bool LVSSEnableHardMon;   ///< Whether or not the Hardmon is commanding the LVSS to be enabled
-     bool HMFault;             ///< Whether or not the Hardmon is commanding the MCUC to go into a fault state
+     bool mcToggleNeg;         ///< Together with MCTogglePos commands the Motor Controller being on or not
+     bool mcTogglePos;         ///< Together with MCToggleNeg commands the Motor Controller being on or not
+     bool ucReset;               ///< Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)
+     bool lvssEnableHardMon;   ///< Whether or not the Hardmon is commanding the LVSS to be enabled
+     bool hmFault;             ///< Whether or not the Hardmon is commanding the MCUC to go into a fault state
+
+     ///The gpios
+     reqGPIO gpios;
 
     /**
      * The node ID used to identify the device on the CAN network.
