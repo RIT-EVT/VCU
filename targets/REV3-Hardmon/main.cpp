@@ -80,7 +80,6 @@ int main() {
         IO::getGPIO<VCU::Hardmon::HM_FAULT_PIN>(IO::GPIO::Direction::OUTPUT),
    };
 
-
    VCU::Hardmon hardmon(hmGPIOS);
 
    ///////////////////////////////////////////////////////////////////////////
@@ -94,7 +93,7 @@ int main() {
    EVT::core::types::FixedQueue<CANOPEN_QUEUE_SIZE, IO::CANMessage> canOpenQueue;
 
    // Initialize CAN, add an IRQ which will add messages to the queue above
-   IO::CAN& can = IO::getCAN<VCU::Hardmon::CAN_A_TX_PIN, VCU::Hardmon::CAN_A_RX_PIN>();
+   IO::CAN& can = IO::getCAN<VCU::Hardmon::ACCESSORY_CAN_TX_PIN, VCU::Hardmon::ACCESSORY_CAN_RX_PIN>();
    can.addIRQHandler(canInterrupt, reinterpret_cast<void*>(&canOpenQueue));
 
    // Reserved memory for CANopen stack usage
@@ -137,7 +136,6 @@ int main() {
    // Main loop
    ///////////////////////////////////////////////////////////////////////////
 
-   uint8_t lastValue = 0;
    while (1) {
        IO::processCANopenNode(&canNode);
        hardmon.process();

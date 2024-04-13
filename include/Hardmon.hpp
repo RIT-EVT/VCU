@@ -18,10 +18,10 @@ namespace VCU {
 class Hardmon : public CANDevice {
 public:
     /**
-     * Struct that contains all the GPIO inputs that an instance of this class requires.
+     * Struct that contains all the GPIOs that an instance of this class requires.
      */
     struct reqGPIO {
-
+        //model input pins
         IO::GPIO& ignitionCheckGPIO;
         IO::GPIO& ignition3V3GPIO;
         IO::GPIO& lvssStatus3V3GPIO;
@@ -36,7 +36,7 @@ public:
         IO::GPIO& watchdogGPIO;
         IO::GPIO& eStop3V3GPIO;
 
-        //GPIO Pins (model outputs)
+        //model outputs pins
         IO::GPIO& lvssEnableOverrideGPIO;
         IO::GPIO& mcToggleNegativeGPIO;
         IO::GPIO& mcTogglePositiveGPIO;
@@ -83,14 +83,14 @@ public:
 
 
     /** Accessory CAN RX Pin */
-    static constexpr IO::Pin CAN_A_RX_PIN = IO::Pin::PA_11;
+    static constexpr IO::Pin ACCESSORY_CAN_RX_PIN = IO::Pin::PA_11;
     /** Accessory CAN TX Pin */
-    static constexpr IO::Pin CAN_A_TX_PIN = IO::Pin::PA_12;
+    static constexpr IO::Pin ACCESSORY_CAN_TX_PIN = IO::Pin::PA_12;
 
-    /** Motor Controller Network CAN RX Pin */
-    static constexpr IO::Pin CAN_MC_RX_PIN = IO::Pin::PB_12;
-    /** Motor Controller Network CAN TX Pin */
-    static constexpr IO::Pin CAN_MC_TX_PIN = IO::Pin::PB_13;
+    /** Powertrain Network CAN RX Pin */
+    static constexpr IO::Pin POWERTRAIN_CAN_RX_PIN = IO::Pin::PB_12;
+    /** Powertrain Network CAN TX Pin */
+    static constexpr IO::Pin POWERTRAIN_CAN_TX_PIN = IO::Pin::PB_13;
 
     /** Watchdog Pin */
     static constexpr IO::Pin WATCHDOG_PIN = IO::Pin::PB_4;
@@ -170,7 +170,7 @@ private:
      bool InverterDischarge;   ///< whether or not the Motor Controller is commanded to discharge (sent over CAN)
      bool mcToggleNeg;         ///< Together with MCTogglePos commands the Motor Controller being on or not
      bool mcTogglePos;         ///< Together with MCToggleNeg commands the Motor Controller being on or not
-     bool ucReset;               ///< Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)
+     bool ucReset;             ///< Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)
      bool lvssEnableHardMon;   ///< Whether or not the Hardmon is commanding the LVSS to be enabled
      bool hmFault;             ///< Whether or not the Hardmon is commanding the MCUC to go into a fault state
 
