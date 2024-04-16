@@ -40,8 +40,7 @@ namespace time = EVT::core::time;
  * @param message[in] The passed in CAN message that was read.
  */
 void accessoryCANOpenInterrupt(IO::CANMessage& message, void* priv) {
-    EVT::core::types::FixedQueue<CANOPEN_QUEUE_SIZE, IO::CANMessage>* queue =
-        (EVT::core::types::FixedQueue<CANOPEN_QUEUE_SIZE, IO::CANMessage>*) priv;
+    auto* queue = (EVT::core::types::FixedQueue<CANOPEN_QUEUE_SIZE, IO::CANMessage>*) priv;
     if (queue != nullptr)
         queue->append(message);
 }
@@ -52,8 +51,9 @@ void accessoryCANOpenInterrupt(IO::CANMessage& message, void* priv) {
  * @param priv[in] the private data this mesasge requires. Should be the mcuc instance we want to update.
  */
 void powertrainCANInterrupt(IO::CANMessage& message, void* priv) {
-    VCU::MCUC mcuc = *(VCU::MCUC*) priv;
-    mcuc.handlePowertrainCanMessage(message);
+    auto* queue = (EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>*) priv;
+    if (queue != nullptr)
+        queue->append(message);
 }
 
 int main() {
@@ -144,17 +144,18 @@ int main() {
     */
 
     ///////////////////////////////////////////////////////////
-    // Setup the POWERTRAIN CAN configurations
+    // Setup the POWERTRAIN CAN configurations- this is RAW can
+    // so it is simpler than te CANopen setup.
     //////////////////////////////////////////////////////////
 
     IO::CAN& powertrainCAN = IO::getCAN<VCU::MCUC::POWERTRAIN_CAN_TX_PIN, VCU::MCUC::POWERTRAIN_CAN_RX_PIN>();
-    powertrainCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(&mcuc));
+    powertrainCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(mcuc.getPowertrainQueue()));
 
     ///////////////////////////////////////////////////////////////////////////
     // Main loop
     ///////////////////////////////////////////////////////////////////////////
 
-    uint8_t lastValue = 0;
+
     while (1) {
         //IO::processCANopenNode(&canNode); //TODO CANopen uncomment when we add in Accessory can
         mcuc.process();

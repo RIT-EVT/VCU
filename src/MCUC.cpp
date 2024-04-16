@@ -19,26 +19,33 @@ uint8_t MCUC::getNodeID() {
 }
 
 void MCUC::handlePowertrainCanMessage(IO::CANMessage& message) {
-    uint8_t* message_payload = message.getPayload();
     switch(message.getId()) {
-    case MC_INTERNAL_STATES_ID:
-        mcState = (message_payload[0]);
-        mcDischarge = (message_payload[4] >> 5);
+    case DEV::PowertrainCAN::MC_INTERNAL_STATES_ID:
+        mcState = powertrainCAN.parseMCState(message);
+        mcDischarge = powertrainCAN.parseMCDischarge(message);
         break;
-    case HIB_MESSAGE_ID:
-        //TODO: HIB INCORRECT assumption of HIB message format, fix when HIB is finished
-        throttle = (message_payload[0]);
-        throttle << 8;
-        throttle += (message_payload[1]);
-        forwardEnable = (message_payload[2] & 0b10000000 ) != 0;
-        startPressed  = (message_payload[2] & 0b01000000 ) != 0;
+    case DEV::PowertrainCAN::HIB_MESSAGE_ID:
+        throttle = powertrainCAN.parseHIBThrottle(message);
+        forwardEnable = powertrainCAN.parseHIBForwardEnable(message);
+        startPressed  = powertrainCAN.parseHIBStartPressed(message);
     default:
-        //we don't care about this message lol
+        //do nothing, we don't care about this message
         break;
     }
 }
 
+EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* MCUC::getPowertrainQueue() {
+    return &powertrainCAN.queue;
+}
+
 void MCUC::process() {
+    //handle all the powertrain CAN messages
+    IO::CANMessage message;
+    while(!powertrainCAN.queue.isEmpty()) {
+        powertrainCAN.queue.pop(&message);
+        handlePowertrainCanMessage(message);
+    }
+
     //brakeOn updated over CAN
     eStop = gpios.eStopGPIO.readPin() == IO::GPIO::State::HIGH;
     //forwardEnable, startPressed, mcStateMachine, discharge updated over CAN

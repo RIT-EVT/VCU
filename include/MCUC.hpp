@@ -1,11 +1,12 @@
 #ifndef VCU_HPP
 #define VCU_HPP
 
-#include <EVT/io/types/CANMessage.hpp>
+#include <dev/PowertrainCAN.hpp>
 #include <EVT/io/CANDevice.hpp>
 #include <EVT/io/CANOpenMacros.hpp>
 #include <EVT/io/GPIO.hpp>
 #include <EVT/io/pin.hpp>
+#include <EVT/io/types/CANMessage.hpp>
 
 namespace IO = EVT::core::IO;
 
@@ -159,15 +160,20 @@ public:
      */
     void handlePowertrainCanMessage(IO::CANMessage& message);
 
+    /**
+     * Returns a pointer to the queue for Powertrain CANopen messages
+     * @return
+     */
+    EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* getPowertrainQueue();
+
     void process();
 
 private:
 
-    enum PowertrainCanMessageIDs {
-        MC_INTERNAL_STATES_ID = (uint32_t)0x0AA,
-        HIB_MESSAGE_ID = (uint32_t) 0x012, //TODO: HIB this is NOT the correct id, must be updated when the HIB is finished
-
-    };
+    /**
+     * Local instance of PowertrainCan
+     */
+     DEV::PowertrainCAN powertrainCAN;
 
     /**
      * The model that is determining our control flow

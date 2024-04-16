@@ -1,6 +1,8 @@
 #ifndef VCU_HARDMON_HPP
 #define VCU_HARDMON_HPP
 
+#include <dev/PowertrainCAN.hpp>
+#include <EVT/io/types/CANMessage.hpp>
 #include <EVT/io/CANDevice.hpp>
 #include <EVT/io/CANOpenMacros.hpp>
 #include <EVT/io/pin.hpp>
@@ -134,14 +136,32 @@ public:
     uint8_t getNumElements() override;
 
     /**
+     * Handles the passed in Powertrain CAN message.
+     *
+     * @param message message to handle
+     */
+    void handlePowertrainCanMessage(IO::CANMessage& message);
+
+    /**
     * Get the device's node ID
     *
     * @return The node ID of the can device.
      */
     uint8_t getNodeID() override;
 
+    /**
+     * Returns a pointer to the queue for Powertrain CANopen messages
+     * @return
+     */
+    EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* getPowertrainQueue();
+
     void process();
 private:
+
+    /**
+     * Local instance of PowertrainCan (handles PowertrainCAN messages
+     */
+    DEV::PowertrainCAN powertrainCAN;
 
     /**
      * The model that is determining our control flow
@@ -151,23 +171,23 @@ private:
 
     //Model input data
 
-     bool forwardEnable; ///< handlebar forward enable
-     bool ignitionCheck;  ///< whether the ignition is on or off on 12v line
-     bool ignition3v3;   ///< whether the ignition is on or off on 3.3v line
-     bool lvssStatus;    ///< whether the lvss is on or not
-     bool mcStatus;      ///< whether the Motor Controller is on or off
-     bool ucState[4];    ///< what state the microcontroller is in
-     bool eStopCheck;     ///< whether the estop is on or off on 12v line
-     uint8_t discharge;  ///< current state of the discharge state machine
-     bool watchdog;      ///< alternating on and off signal from the MCUC to the Hardmon
-     bool eStop3v3;      ///< whether the estop is on or off on 3.3v line
-     bool lvssEnableUC;  ///< whether or not the MCUC is telling the LVSS to be enabled
+     bool forwardEnable;       ///< handlebar forward enable
+     bool ignitionCheck;       ///< whether the ignition is on or off on 12v line
+     bool ignition3v3;         ///< whether the ignition is on or off on 3.3v line
+     bool lvssStatus;          ///< whether the lvss is on or not
+     bool mcStatus;            ///< whether the Motor Controller is on or off
+     bool ucState[4];          ///< what state the microcontroller is in
+     bool eStopCheck;          ///< whether the estop is on or off on 12v line
+     uint8_t discharge;        ///< current state of the discharge state machine
+     bool watchdog;            ///< alternating on and off signal from the MCUC to the Hardmon
+     bool eStop3v3;            ///< whether the estop is on or off on 3.3v line
+     bool lvssEnableUC;        ///< whether or not the MCUC is telling the LVSS to be enabled
 
      //Model output data
 
      bool mcSwitchEnable;      ///< whether or not the MCUC Motor Controller Enable is disabled
      bool lvssSwitchEnable;    ///< whether or not the MCUC LVSS Enable is disabled
-     bool InverterDischarge;   ///< whether or not the Motor Controller is commanded to discharge (sent over CAN)
+     bool inverterDischarge;   ///< whether or not the Motor Controller is commanded to discharge (sent over CAN)
      bool mcToggleNeg;         ///< Together with MCTogglePos commands the Motor Controller being on or not
      bool mcTogglePos;         ///< Together with MCToggleNeg commands the Motor Controller being on or not
      bool ucReset;             ///< Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)

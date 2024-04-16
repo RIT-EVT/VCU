@@ -18,8 +18,31 @@ uint8_t Hardmon::getNodeID() {
     return NODE_ID;
 }
 
+void Hardmon::handlePowertrainCanMessage(IO::CANMessage& message) {
+    uint8_t* message_payload = message.getPayload();
+    switch(message.getId()) {
+    case DEV::PowertrainCAN::HIB_MESSAGE_ID:
+        forwardEnable = (message_payload[2] & 0b10000000 ) != 0;
+    default:
+        //we don't care about this message lol
+        break;
+    }
+}
+
+EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* Hardmon::getPowertrainQueue() {
+    return &powertrainCAN.queue;
+}
+
 void Hardmon::process() {
+    //handle all the powertrain CAN messages
+    IO::CANMessage message;
+    while(!powertrainCAN.queue.isEmpty()) {
+        powertrainCAN.queue.pop(&message);
+        handlePowertrainCanMessage(message);
+    }
+
     //update inputs
+    //forwardEnable will be updated over CAN
     ignitionCheck = gpios.ignitionCheckGPIO.readPin() == IO::GPIO::State::HIGH;
     ignition3v3 = gpios.ignition3V3GPIO.readPin() == IO::GPIO::State::HIGH;
     lvssStatus = gpios.lvssStatus3V3GPIO.readPin() == IO::GPIO::State::HIGH;
@@ -29,7 +52,7 @@ void Hardmon::process() {
     ucState[2] = gpios.ucStateTwoGPIO.readPin() == IO::GPIO::State::HIGH;
     ucState[3] = gpios.ucStateThreeGPIO.readPin() == IO::GPIO::State::HIGH;
     eStopCheck = gpios.eStopCheckGPIO.readPin() == IO::GPIO::State::HIGH;
-    //discharge has been updated via canOpen
+    //discharge will be updated over CAN
     watchdog = gpios.watchdogGPIO.readPin() == IO::GPIO::State::HIGH;
     eStop3v3 = gpios.eStop3V3GPIO.readPin() == IO::GPIO::State::HIGH;
     //TODO lvssEnableUC is read from the ucState
@@ -59,7 +82,7 @@ void Hardmon::process() {
     //save outputs
     mcSwitchEnable = modelOutputs.nMC_Switch_EN;
     lvssSwitchEnable = modelOutputs.nLVSS_Switch_EN;
-    InverterDischarge = modelOutputs.Inverter_DIS_CAN;
+    inverterDischarge = modelOutputs.Inverter_DIS_CAN;
     mcToggleNeg = modelOutputs.MC_TOG_N_HM;
     mcTogglePos = modelOutputs.MC_TOG_P_HM;
     ucReset = modelOutputs.nReset;
