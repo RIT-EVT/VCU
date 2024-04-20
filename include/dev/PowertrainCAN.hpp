@@ -2,10 +2,12 @@
 #define VCU_POWERTRAINCAN_HPP
 
 #include <cstdint>
-#include <EVT/io/types/CANMessage.hpp>
 #include <EVT/utils/types/FixedQueue.hpp>
+#include <EVT/io/types/CANMessage.hpp>
+#include <EVT/io/CAN.hpp>
 
 #define POWERTRAIN_QUEUE_SIZE 64
+#define MC_COMMAND_MESSAGE_ID 0x0C0
 
 namespace IO = EVT::core::IO;
 
@@ -30,7 +32,7 @@ public:
     /**
      * Constructor for a PowertrainCan instance.
      */
-    PowertrainCAN();
+    PowertrainCAN(IO::CAN& can);
 
     uint8_t parseMCState(IO::CANMessage& message);
 
@@ -42,8 +44,30 @@ public:
 
     bool parseHIBStartPressed(IO::CANMessage& message);
 
-private:
+    void setMCInverterEnable(bool inverterEnable);
 
+    void setMCInverterDischarge(bool inverterDischarge);
+
+    void setMCTorque(uint16_t torqueRequest);
+
+    void sendMCMessage();
+private:
+    struct MCCommandPayload {
+        int16_t torque;
+        int16_t speed;
+        uint8_t direction;
+        uint8_t inverterEnable:1;
+        uint8_t inverterDischarge:1;
+        uint8_t speedModeEnable:1;
+        uint8_t padding:5;
+        int16_t CommandedTorqueLimit;
+    };
+
+    MCCommandPayload mcCommandPayload = {
+        0,0,1,0,0,0,0,0
+    };
+    IO::CAN& can;
+    IO::CANMessage message;
 };
 
 } //namespace VCU::DEV
