@@ -18,8 +18,7 @@
 //
 #ifndef RTW_HEADER_Hardmon_Model_h_
 #define RTW_HEADER_Hardmon_Model_h_
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstdint>
 
 // Macros for accessing real-time model data structure
 #ifndef rtmGetErrorStatus
