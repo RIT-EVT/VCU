@@ -23,7 +23,7 @@ int main() {
     // Notice that the pin used is called "LED". Each platform has a dedicated
     // LED pin, for the f3xx that is PB_13.
     IO::GPIO& ledGPIO = IO::getGPIO<IO::Pin::LED>();
-    DEV::LED led(ledGPIO, DEV::LED::ActiveState::HIGH);
+    VCU::DEV::LED led(ledGPIO, DEV::LED::ActiveState::HIGH);
 
     while (1) {
         led.toggle();
