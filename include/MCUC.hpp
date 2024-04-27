@@ -7,6 +7,7 @@
 #include <EVT/io/GPIO.hpp>
 #include <EVT/io/pin.hpp>
 #include <EVT/io/types/CANMessage.hpp>
+#include <models/MCuC_Model.hpp>
 
 namespace IO = EVT::core::IO;
 
@@ -42,6 +43,11 @@ public:
         IO::GPIO& mcToggleNegativeGPIO;
         IO::GPIO& mcTogglePositiveGPIO;
         IO::GPIO& mcSelfTestGPIO;
+        IO::GPIO& estopSelfTestGPIO;
+        IO::GPIO& ignitionSelfTestGPIO;
+
+        //Set based off of ucState.
+        IO::GPIO& canSelfTestGPIO;
      };
     /**
      * VCU Pinout
@@ -130,7 +136,7 @@ public:
     /**
      * Constructor for VCU object
      */
-     MCUC(reqGPIO gpios);
+     MCUC(reqGPIO gpios, IO::CAN& ptCAN);
 
     /**
      * Get a pointer to the start of the object dictionary
@@ -162,7 +168,8 @@ public:
 
     /**
      * Returns a pointer to the queue for Powertrain CANopen messages
-     * @return
+     *
+     * @return pointer to the fixed queue.
      */
     EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* getPowertrainQueue();
 
@@ -179,32 +186,41 @@ private:
      * The model that is determining our control flow
      * Automatically constructed here (not to be passed in)
      */
-    //MCUC_Model model;
+    MCuC_Model model;
+
+    //TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
 
     //Model input data
-    bool brakeOn;           ///< CAN (HIB): Whether or not the brake is on.
-    bool eStop;             ///< GPIO: Whether or not the emergency stop is enabled.
-    bool forwardEnable;     ///< CAN (HIB): Whether or not the bike is commanded to go forward.
-    bool startPressed;      ///< CAN (HIB): Whether or not the bike is starting.
-    uint8_t mcState;        ///< CAN (MC): What state the motor controller state machine is in. [0,14] range
-    uint8_t mcDischarge;    ///< CAN (MC): What state the motor controller discharger is in. [0,4] range
-    bool ignitionOn;        ///< GPIO: Whether or not the ignition is on.
-    bool hmFault;           ///< GPIO: Whether or not the hardware monitor is telling the MCUC to go into a fault state.
-    uint16_t throttle;      ///< CAN (HIB): Signal state of the throttle.
-    bool lvssOn;            ///< GPIO: Whether or not the LVSS is on.
-    bool mcOn;              ///< GPIO: Whether or not the motor controller is on.
+    bool brakeOn;                      ///< CAN (HIB): Whether or not the brake is on.
+    bool eStop;                        ///< GPIO: Whether or not the emergency stop is enabled.
+    bool forwardEnable;                ///< CAN (HIB): Whether or not the bike is commanded to go forward.
+    bool startPressed;                 ///< CAN (HIB): Whether or not the bike is starting.
+    uint8_t mcState;                   ///< CAN (MC): What state the motor controller state machine is in. [0,14] range
+    uint8_t mcDischarge;               ///< CAN (MC): What state the motor controller discharger is in. [0,4] range
+    bool ignitionOn;                   ///< GPIO: Whether or not the ignition is on.
+    bool hmFault;                      ///< GPIO: Whether or not the hardware monitor is telling the MCUC to go into a fault state.
+    int16_t throttle;                  ///< CAN (HIB): Signal state of the throttle.
+    bool lvssOn;                       ///< GPIO: Whether or not the LVSS is on.
+    bool mcOn;                         ///< GPIO: Whether or not the motor controller is on.
+    bool powertrainCANSelfTestIn;      ///< CAN (Hardmon): If the powertrain CAN network is working.
+    bool accessoryCANSelfTestIn;       ///< CAN (Hardmon): If the accessory CAN network is working.
+
 
     //Model output data
-    bool ucFault;           ///< GPIO: Whether or not the MCUC is in a fault state
-    bool inverterEnable;    ///< CAN (MC): Whether or not the inverter on the motor controller should be enabled.
-    bool lvssEnable;        ///< GPIO: Whether or not the lvss should be on.
-    bool watchdog;          ///< GPIO: watchdog signal between the Hardmon and MCUC.
-    bool ucState[4];        ///< GPIO: Current State of the MCUC;
-    bool inverterDischarge; ///< CAN (MC): Whether or not the inverter on the motor controller should be discharging.
-    bool mcToggleNegative;  ///< GPIO: Together with mcTogglePositive controls whether the motor controller should be on or not.
-    bool mcTogglePositive;  ///< GPIO: Together with mcToggleNegative controls whether the motor controller should be on or not.
-    uint16_t torqueRequest; ///< CAN (MC): How much torque the MCUC is requesting the motor controller to output.
-    bool mcSelfTest;        ///< GPIO: Whether or not the motor controller should be self-testing.
+    bool lvssEnable;                   ///< GPIO: Whether or not the lvss should be on.
+    bool inverterEnable;               ///< CAN (MC): Whether or not the inverter on the motor controller should be enabled.
+    bool ucFault;                      ///< GPIO: Whether or not the MCUC is in a fault state
+    bool watchdog;                     ///< GPIO: watchdog signal between the Hardmon and MCUC.
+    bool ucState[4];                   ///< GPIO: Current State of the MCUC;
+    bool inverterDischarge;            ///< CAN (MC): Whether or not the inverter on the motor controller should be discharging.
+    bool mcTogglePositive;             ///< GPIO: Together with mcToggleNegative controls whether the motor controller should be on or not.
+    bool mcToggleNegative;             ///< GPIO: Together with mcTogglePositive controls whether the motor controller should be on or not.
+    int16_t torqueRequest;             ///< CAN (MC): How much torque the MCUC is requesting the motor controller to output
+    bool mcSelfTestOut;                ///< GPIO: Whether or not the motor controller should be self-testing.
+    bool estopSelfTestOut;             ///< GPIO: Whether or not the estop should be self-testing.
+    bool ignitionSelfTestOut;          ///< GPIO: Whether or not ignition should be self-testing.
+    bool accessoryCanSelfTestOut;      ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over accessoryCAN
+    bool powertrainCanSelfTestOut;     ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over powertrainCAN
 
     ///the gpios
     reqGPIO gpios;

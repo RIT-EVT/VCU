@@ -5,6 +5,7 @@
 #include <EVT/io/types/CANMessage.hpp>
 #include <EVT/io/CANDevice.hpp>
 #include <EVT/io/CANOpenMacros.hpp>
+#include <EVT/io/CAN.hpp>
 #include <EVT/io/pin.hpp>
 #include <EVT/io/GPIO.hpp>
 #include <models/Hardmon_Model.hpp>
@@ -119,7 +120,7 @@ public:
     /**
      * Constructor for Hardmon object
      */
-    Hardmon(reqGPIO gpios);
+    Hardmon(reqGPIO gpios, IO::CAN& ptCAN);
 
     /**
      * Get a pointer to the start of the object dictionary
@@ -169,30 +170,32 @@ private:
      */
     Hardmon_Model model;
 
+    //TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
+
     //Model input data
 
-     bool forwardEnable;       ///< handlebar forward enable
-     bool ignitionCheck;       ///< whether the ignition is on or off on 12v line
-     bool ignition3v3;         ///< whether the ignition is on or off on 3.3v line
-     bool lvssStatus;          ///< whether the lvss is on or not
-     bool mcStatus;            ///< whether the Motor Controller is on or off
-     bool ucState[4];          ///< what state the microcontroller is in
-     bool eStopCheck;          ///< whether the estop is on or off on 12v line
-     uint8_t discharge;        ///< current state of the discharge state machine
-     bool watchdog;            ///< alternating on and off signal from the MCUC to the Hardmon
-     bool eStop3v3;            ///< whether the estop is on or off on 3.3v line
-     bool lvssEnableUC;        ///< whether or not the MCUC is telling the LVSS to be enabled
+     bool forwardEnable;       ///< CAN (HIB): handlebar forward enable
+     bool ignitionCheck;       ///< GPIO: whether the ignition is on or off on 12v line
+     bool ignition3v3;         ///< GPIO: whether the ignition is on or off on 3.3v line
+     bool lvssStatus;          ///< GPIO: whether the lvss is on or not
+     bool mcStatus;            ///< GPIO: whether the Motor Controller is on or off
+     bool ucState[4];          ///< CAN (MC): what state the microcontroller is in
+     bool eStopCheck;          ///< GPIO: whether the estop is on or off on 12v line
+     uint8_t discharge;        ///< CAN (MC): current state of the Motor Controller's discharge state machine
+     bool watchdog;            ///< GPIO: alternating on and off signal from the MCUC to the Hardmon
+     bool eStop3v3;            ///< GPIO: whether the estop is on or off on 3.3v line
+     bool lvssEnableUC;        ///< GPIO: whether or not the MCUC is telling the LVSS to be enabled
 
      //Model output data
 
-     bool mcSwitchEnable;      ///< whether or not the MCUC Motor Controller Enable is disabled
-     bool lvssSwitchEnable;    ///< whether or not the MCUC LVSS Enable is disabled
-     bool inverterDischarge;   ///< whether or not the Motor Controller is commanded to discharge (sent over CAN)
-     bool mcToggleNeg;         ///< Together with MCTogglePos commands the Motor Controller being on or not
-     bool mcTogglePos;         ///< Together with MCToggleNeg commands the Motor Controller being on or not
-     bool ucReset;             ///< Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)
-     bool lvssEnableHardMon;   ///< Whether or not the Hardmon is commanding the LVSS to be enabled
-     bool hmFault;             ///< Whether or not the Hardmon is commanding the MCUC to go into a fault state
+     bool mcSwitchEnable;      ///< GPIO: whether or not the Hardmon is taking over mcEnable control from the MCUC
+     bool lvssSwitchEnable;    ///< GPIO: whether or not the Hardmon is taking over lvssEnable control from the MCUC
+     bool inverterDischarge;   ///< CAN (MC): whether or not the Motor Controller is commanded to discharge
+     bool mcToggleNeg;         ///< GPIO: Together with MCTogglePos commands the Motor Controller being on or not
+     bool mcTogglePos;         ///< GPIO: Together with MCToggleNeg commands the Motor Controller being on or not
+     bool ucReset;             ///< GPIO: Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)
+     bool lvssEnableHardMon;   ///< GPIO: Whether or not the Hardmon is commanding the LVSS to be enabled
+     bool hmFault;             ///< GPIO: Whether or not the Hardmon is commanding the MCUC to go into a fault state
 
      ///The gpios
      reqGPIO gpios;

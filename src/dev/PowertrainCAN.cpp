@@ -4,7 +4,6 @@ namespace VCU::DEV {
 
 PowertrainCAN::PowertrainCAN(IO::CAN& can) : can(can) {
     queue = EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>();
-    message = IO::CANMessage(MC_COMMAND_MESSAGE_ID, 8, (uint8_t*)(&mcCommandPayload), false);
 }
 
 uint8_t PowertrainCAN::parseMCState(IO::CANMessage& message) {
@@ -16,11 +15,11 @@ uint8_t PowertrainCAN::parseMCDischarge(IO::CANMessage& message) {
 }
 
 
-uint16_t PowertrainCAN::parseHIBThrottle(IO::CANMessage& message) {
+int16_t PowertrainCAN::parseHIBThrottle(IO::CANMessage& message) {
     //TODO: HIB example implementation, update when HIB is completed
     uint8_t* message_payload = message.getPayload();
     uint16_t throttle = (message_payload[0]);
-    throttle << 8;
+    throttle <<= 8;
     throttle += (message_payload[1]);
     return throttle;
 }
@@ -45,12 +44,26 @@ void PowertrainCAN::setMCInverterDischarge(bool inverterDischarge) {
     mcCommandPayload.inverterDischarge = inverterDischarge;
 }
 
-void PowertrainCAN::setMCTorque(uint16_t torqueRequest) {
+void PowertrainCAN::setMCTorque(int16_t torqueRequest) {
     mcCommandPayload.torque = torqueRequest;
 }
 
 void PowertrainCAN::sendMCMessage() {
+    //gotta be a uint8_t array, so we memcpy into it.
+    uint8_t payload[8];
+    std::memcpy(payload, &mcCommandPayload, 8u);
+    //make the message
+    IO::CANMessage message = IO::CANMessage(MC_COMMAND_MESSAGE_ID, 8u, payload, false);
+    //send the message
     can.transmit(message);
+}
+
+void PowertrainCAN::sendUCSelfTestMessage() {
+    can.transmit(UCSelfTestMessage);
+}
+
+void PowertrainCAN::sendHardmonSelfTestResponse() {
+    can.transmit(UCSelfTestMessage);
 }
 
 }

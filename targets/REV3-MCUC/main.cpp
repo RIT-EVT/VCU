@@ -19,6 +19,7 @@
 #include <co_tmr.h>
 
 #include <MCUC.hpp>
+#include <dev/PowertrainCAN.hpp>
 
 namespace IO = EVT::core::IO;
 namespace DEV = EVT::core::DEV;
@@ -65,29 +66,6 @@ int main() {
 
     // UART for testing
     IO::UART& uart = IO::getUART<IO::Pin::UART_TX, IO::Pin::UART_RX>(9600);
-
-    VCU::MCUC::reqGPIO gpios = {
-        IO::getGPIO<VCU::MCUC::ESTOP_PIN>(IO::GPIO::Direction::INPUT),
-        IO::getGPIO<VCU::MCUC::IGNITION_PIN>(IO::GPIO::Direction::INPUT),
-        IO::getGPIO<VCU::MCUC::HM_FAULT_PIN>(IO::GPIO::Direction::INPUT),
-        IO::getGPIO<VCU::MCUC::LVSS_STATUS_PIN>(IO::GPIO::Direction::INPUT),
-        IO::getGPIO<VCU::MCUC::MC_STATUS_PIN>(IO::GPIO::Direction::INPUT),
-
-        IO::getGPIO<VCU::MCUC::UC_FAULT_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::LVSS_ENABLE_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::WATCHDOG_PIN>(IO::GPIO::Direction::OUTPUT),
-
-        IO::getGPIO<VCU::MCUC::UC_STATE_ZERO_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::UC_STATE_ONE_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::UC_STATE_TWO_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::UC_STATE_THREE_PIN>(IO::GPIO::Direction::OUTPUT),
-
-        IO::getGPIO<VCU::MCUC::MC_TOGGLE_NEGATIVE_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::MC_TOGGLE_POSITIVE_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::MC_SELF_TEST_PIN>(IO::GPIO::Direction::OUTPUT),
-    };
-
-    VCU::MCUC mcuc(gpios);
 
     //TODO: CANopen uncomment when we add in Accessory CAN configuration
     /*
@@ -148,8 +126,34 @@ int main() {
     // so it is simpler than te CANopen setup.
     //////////////////////////////////////////////////////////
 
-    IO::CAN& powertrainCAN = IO::getCAN<VCU::MCUC::POWERTRAIN_CAN_TX_PIN, VCU::MCUC::POWERTRAIN_CAN_RX_PIN>();
-    powertrainCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(mcuc.getPowertrainQueue()));
+    IO::CAN& ptCAN = IO::getCAN<VCU::MCUC::POWERTRAIN_CAN_TX_PIN, VCU::MCUC::POWERTRAIN_CAN_RX_PIN>();
+
+    VCU::MCUC::reqGPIO gpios = {
+        IO::getGPIO<VCU::MCUC::ESTOP_PIN>(IO::GPIO::Direction::INPUT),
+        IO::getGPIO<VCU::MCUC::IGNITION_PIN>(IO::GPIO::Direction::INPUT),
+        IO::getGPIO<VCU::MCUC::HM_FAULT_PIN>(IO::GPIO::Direction::INPUT),
+        IO::getGPIO<VCU::MCUC::LVSS_STATUS_PIN>(IO::GPIO::Direction::INPUT),
+        IO::getGPIO<VCU::MCUC::MC_STATUS_PIN>(IO::GPIO::Direction::INPUT),
+
+        IO::getGPIO<VCU::MCUC::UC_FAULT_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::MCUC::LVSS_ENABLE_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::MCUC::WATCHDOG_PIN>(IO::GPIO::Direction::OUTPUT),
+
+        IO::getGPIO<VCU::MCUC::UC_STATE_ZERO_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::MCUC::UC_STATE_ONE_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::MCUC::UC_STATE_TWO_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::MCUC::UC_STATE_THREE_PIN>(IO::GPIO::Direction::OUTPUT),
+
+        IO::getGPIO<VCU::MCUC::MC_TOGGLE_NEGATIVE_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::MCUC::MC_TOGGLE_POSITIVE_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::MCUC::MC_SELF_TEST_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::MCUC::ESTOP_SELF_TEST_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::MCUC::IGNITION_SELF_TEST_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::MCUC::CAN_SELF_TEST_PIN>(IO::GPIO::Direction::OUTPUT)
+    };
+
+    VCU::MCUC mcuc(gpios,ptCAN);
+    ptCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(mcuc.getPowertrainQueue()));
 
     ///////////////////////////////////////////////////////////////////////////
     // Main loop
