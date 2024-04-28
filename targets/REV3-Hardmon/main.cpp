@@ -4,7 +4,6 @@
 * and checks if the MCUC is functioning correctly.
 */
 
-
 #include <EVT/io/CAN.hpp>
 #include <EVT/io/UART.hpp>
 #include <EVT/io/types/CANMessage.hpp>
@@ -40,9 +39,9 @@ namespace time = EVT::core::time;
 * @param message[in] The passed in CAN message that was read.
 */
 void canInterrupt(IO::CANMessage& message, void* priv) {
-   auto* queue = (EVT::core::types::FixedQueue<CANOPEN_QUEUE_SIZE, IO::CANMessage>*) priv;
-   if (queue != nullptr)
-       queue->append(message);
+    auto* queue = (EVT::core::types::FixedQueue<CANOPEN_QUEUE_SIZE, IO::CANMessage>*) priv;
+    if (queue != nullptr)
+        queue->append(message);
 }
 
 /**
@@ -51,23 +50,23 @@ void canInterrupt(IO::CANMessage& message, void* priv) {
  * @param priv[in] the private data this mesasge requires. Should be the mcuc instance we want to update.
  */
 void powertrainCANInterrupt(IO::CANMessage& message, void* priv) {
-   auto* queue = (EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>*) priv;
-   if (queue != nullptr)
-       queue->append(message);
+    auto* queue = (EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>*) priv;
+    if (queue != nullptr)
+        queue->append(message);
 }
 
 int main() {
-   // Initialize system
-   EVT::core::platform::init();
+    // Initialize system
+    EVT::core::platform::init();
 
-   // Initialize the timer
-   DEV::Timer& timer = DEV::getTimer<DEV::MCUTimer::Timer2>(100);
+    // Initialize the timer
+    DEV::Timer& timer = DEV::getTimer<DEV::MCUTimer::Timer2>(100);
 
-   // UART for testing
-   IO::UART& uart = IO::getUART<IO::Pin::UART_TX, IO::Pin::UART_RX>(9600);
+    // UART for testing
+    IO::UART& uart = IO::getUART<IO::Pin::UART_TX, IO::Pin::UART_RX>(9600);
 
-   //TODO: uncomment when we figure out Accessory CAN
-   /*
+    //TODO: uncomment when we figure out Accessory CAN
+    /*
    ///////////////////////////////////////////////////////////////////////////
    // Setup CAN configuration, this handles making drivers, applying settings.
    // And generally creating the CANopen stack node which is the interface
@@ -120,47 +119,47 @@ int main() {
 
     */
 
-   ////////////////////////
-   //Initialize Powertrain CAN
-   ////////////////////////////
+    ////////////////////////
+    //Initialize Powertrain CAN
+    ////////////////////////////
 
-   VCU::Hardmon::reqGPIO hmGPIOS = {
-       IO::getGPIO<VCU::Hardmon::IGNITION_CHECK_PIN>(IO::GPIO::Direction::INPUT),
-       IO::getGPIO<VCU::Hardmon::IGNITION_3V3_PIN>(IO::GPIO::Direction::INPUT),
-       IO::getGPIO<VCU::Hardmon::LVSS_STATUS_3V3_Pin>(IO::GPIO::Direction::INPUT),
-       IO::getGPIO<VCU::Hardmon::MOTOR_CONTROLLER_STATUS_PIN>(IO::GPIO::Direction::INPUT),
+    VCU::Hardmon::reqGPIO hmGPIOS = {
+        IO::getGPIO<VCU::Hardmon::IGNITION_CHECK_PIN>(IO::GPIO::Direction::INPUT),
+        IO::getGPIO<VCU::Hardmon::IGNITION_3V3_PIN>(IO::GPIO::Direction::INPUT),
+        IO::getGPIO<VCU::Hardmon::LVSS_STATUS_3V3_Pin>(IO::GPIO::Direction::INPUT),
+        IO::getGPIO<VCU::Hardmon::MOTOR_CONTROLLER_STATUS_PIN>(IO::GPIO::Direction::INPUT),
 
-       IO::getGPIO<VCU::Hardmon::UC_STATE_ONE_PIN>(IO::GPIO::Direction::INPUT),
-       IO::getGPIO<VCU::Hardmon::UC_STATE_ONE_PIN>(IO::GPIO::Direction::INPUT),
-       IO::getGPIO<VCU::Hardmon::UC_STATE_TWO_PIN>(IO::GPIO::Direction::INPUT),
-       IO::getGPIO<VCU::Hardmon::UC_STATE_THREE_PIN>(IO::GPIO::Direction::INPUT),
+        IO::getGPIO<VCU::Hardmon::UC_STATE_ONE_PIN>(IO::GPIO::Direction::INPUT),
+        IO::getGPIO<VCU::Hardmon::UC_STATE_ONE_PIN>(IO::GPIO::Direction::INPUT),
+        IO::getGPIO<VCU::Hardmon::UC_STATE_TWO_PIN>(IO::GPIO::Direction::INPUT),
+        IO::getGPIO<VCU::Hardmon::UC_STATE_THREE_PIN>(IO::GPIO::Direction::INPUT),
 
-       IO::getGPIO<VCU::Hardmon::ESTOP_CHECK_PIN>(IO::GPIO::Direction::INPUT),
-       IO::getGPIO<VCU::Hardmon::WATCHDOG_PIN>(IO::GPIO::Direction::INPUT),
-       IO::getGPIO<VCU::Hardmon::ESTOP_3V3_PIN>(IO::GPIO::Direction::INPUT),
+        IO::getGPIO<VCU::Hardmon::ESTOP_CHECK_PIN>(IO::GPIO::Direction::INPUT),
+        IO::getGPIO<VCU::Hardmon::WATCHDOG_PIN>(IO::GPIO::Direction::INPUT),
+        IO::getGPIO<VCU::Hardmon::ESTOP_3V3_PIN>(IO::GPIO::Direction::INPUT),
 
-       IO::getGPIO<VCU::Hardmon::LVSS_EN_OVERRIDE_PIN>(),
-       IO::getGPIO<VCU::Hardmon::MOTOR_CONTROLLER_TOGGLE_NEG_PIN>(IO::GPIO::Direction::OUTPUT),
-       IO::getGPIO<VCU::Hardmon::MOTOR_CONTROLLER_TOGGLE_POS_PIN>(IO::GPIO::Direction::OUTPUT),
-       IO::getGPIO<VCU::Hardmon::MOTOR_CONTROLLER_TOGGLE_OVERRIDE_PIN>(IO::GPIO::Direction::OUTPUT),
-       IO::getGPIO<VCU::Hardmon::UC_RESET_PIN>(IO::GPIO::Direction::OUTPUT),
-       IO::getGPIO<VCU::Hardmon::LVSS_EN_PIN>(IO::GPIO::Direction::OUTPUT),
-       IO::getGPIO<VCU::Hardmon::HM_FAULT_PIN>(IO::GPIO::Direction::OUTPUT),
-   };
+        IO::getGPIO<VCU::Hardmon::LVSS_EN_OVERRIDE_PIN>(),
+        IO::getGPIO<VCU::Hardmon::MOTOR_CONTROLLER_TOGGLE_NEG_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::Hardmon::MOTOR_CONTROLLER_TOGGLE_POS_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::Hardmon::MOTOR_CONTROLLER_TOGGLE_OVERRIDE_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::Hardmon::UC_RESET_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::Hardmon::LVSS_EN_PIN>(IO::GPIO::Direction::OUTPUT),
+        IO::getGPIO<VCU::Hardmon::HM_FAULT_PIN>(IO::GPIO::Direction::OUTPUT),
+    };
 
-   IO::CAN& ptCAN = IO::getCAN<VCU::Hardmon::POWERTRAIN_CAN_TX_PIN, VCU::Hardmon::POWERTRAIN_CAN_RX_PIN>();
+    IO::CAN& ptCAN = IO::getCAN<VCU::Hardmon::POWERTRAIN_CAN_TX_PIN, VCU::Hardmon::POWERTRAIN_CAN_RX_PIN>();
 
-   VCU::Hardmon hardmon(hmGPIOS, ptCAN);
-   ptCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(hardmon.getPowertrainQueue()));
+    VCU::Hardmon hardmon(hmGPIOS, ptCAN);
+    ptCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(hardmon.getPowertrainQueue()));
 
-   ///////////////////////////////////////////////////////////////////////////
-   // Main loop
-   ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    // Main loop
+    ///////////////////////////////////////////////////////////////////////////
 
-   while (1) {
-       //IO::processCANopenNode(&canNode);
-       hardmon.process();
-       // Wait for new data to come in
-       time::wait(10);
-   }
+    while (1) {
+        //IO::processCANopenNode(&canNode);
+        hardmon.process();
+        // Wait for new data to come in
+        time::wait(10);
+    }
 }

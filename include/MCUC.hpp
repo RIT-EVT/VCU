@@ -1,12 +1,12 @@
 #ifndef VCU_HPP
 #define VCU_HPP
 
-#include <dev/PowertrainCAN.hpp>
 #include <EVT/io/CANDevice.hpp>
 #include <EVT/io/CANOpenMacros.hpp>
 #include <EVT/io/GPIO.hpp>
 #include <EVT/io/pin.hpp>
 #include <EVT/io/types/CANMessage.hpp>
+#include <dev/PowertrainCAN.hpp>
 #include <models/MCuC_Model.hpp>
 
 namespace IO = EVT::core::IO;
@@ -18,12 +18,11 @@ namespace VCU {
  */
 class MCUC : public CANDevice {
 public:
-
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
      */
-     struct reqGPIO {
-         //model input GPIOs
+    struct reqGPIO {
+        //model input GPIOs
         IO::GPIO& eStopGPIO;
         IO::GPIO& ignitionGPIO;
         IO::GPIO& hmFaultGPIO;
@@ -48,12 +47,12 @@ public:
 
         //Set based off of ucState.
         IO::GPIO& canSelfTestGPIO;
-     };
+    };
     /**
      * VCU Pinout
     */
 
-        /** LED Pins */
+    /** LED Pins */
 
     static constexpr IO::Pin LED_THREE_PIN = IO::Pin::PA_0;
     static constexpr IO::Pin LED_TWO_PIN = IO::Pin::PA_1;
@@ -61,7 +60,7 @@ public:
     /** Self Test Led Pin */
     static constexpr IO::Pin SELF_TEST_LED_PIN = IO::Pin::PC_5;
 
-        /** CAN Pins */
+    /** CAN Pins */
 
     /** Accessory CAN RX pin */
     static constexpr IO::Pin ACCESSORY_CAN_RX_PIN = IO::Pin::PA_11;
@@ -72,7 +71,7 @@ public:
     /** Powertrain CAN TX Pin*/
     static constexpr IO::Pin POWERTRAIN_CAN_TX_PIN = IO::Pin::PB_13;
 
-        /** Hardware Monitor Pins */
+    /** Hardware Monitor Pins */
 
     /** Watchdog pin */
     static constexpr IO::Pin WATCHDOG_PIN = IO::Pin::PA_15;
@@ -86,7 +85,7 @@ public:
     /** Microcontroller Fault Pin */
     static constexpr IO::Pin UC_FAULT_PIN = IO::Pin::PC_9;
 
-        /** Self Test Pins */
+    /** Self Test Pins */
 
     /** CAN Self Test Pin */
     static constexpr IO::Pin CAN_SELF_TEST_PIN = IO::Pin::PB_8;
@@ -97,7 +96,7 @@ public:
     /** Motor Controller Self Test Pin */
     static constexpr IO::Pin MC_SELF_TEST_PIN = IO::Pin::PC_4;
 
-        /** Motor Controller Pins */
+    /** Motor Controller Pins */
 
     /** Motor Controller Toggle Pins */
     static constexpr IO::Pin MC_TOGGLE_POSITIVE_PIN = IO::Pin::PC_1;
@@ -108,14 +107,14 @@ public:
     /** Motor Controller Status Pin */
     static constexpr IO::Pin MC_STATUS_PIN = IO::Pin::PB_9;
 
-        /** UART Pins */
+    /** UART Pins */
 
     /** UART TX Pin */
     static constexpr IO::Pin UART_TX = IO::Pin::PC_6;
     /** UART RX Pin */
     static constexpr IO::Pin UART_RX = IO::Pin::PC_7;
 
-        /** Component Communication Pins */
+    /** Component Communication Pins */
 
     /** ESTOP Pin */
     static constexpr IO::Pin ESTOP_PIN = IO::Pin::PC_10;
@@ -126,7 +125,6 @@ public:
     /** LVSS Enable Pin */
     static constexpr IO::Pin LVSS_ENABLE_PIN = IO::Pin::PC_13;
 
-
     /**
      * Accessory CAN Node IDs
      */
@@ -136,7 +134,7 @@ public:
     /**
      * Constructor for VCU object
      */
-     MCUC(reqGPIO gpios, IO::CAN& ptCAN);
+    MCUC(reqGPIO gpios, IO::CAN& ptCAN);
 
     /**
      * Get a pointer to the start of the object dictionary
@@ -176,11 +174,10 @@ public:
     void process();
 
 private:
-
     /**
      * Local instance of PowertrainCan
      */
-     DEV::PowertrainCAN powertrainCAN;
+    DEV::PowertrainCAN powertrainCAN;
 
     /**
      * The model that is determining our control flow
@@ -191,36 +188,35 @@ private:
     //TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
 
     //Model input data
-    bool brakeOn;                      ///< CAN (HIB): Whether or not the brake is on.
-    bool eStop;                        ///< GPIO: Whether or not the emergency stop is enabled.
-    bool forwardEnable;                ///< CAN (HIB): Whether or not the bike is commanded to go forward.
-    bool startPressed;                 ///< CAN (HIB): Whether or not the bike is starting.
-    uint8_t mcState;                   ///< CAN (MC): What state the motor controller state machine is in. [0,14] range
-    uint8_t mcDischarge;               ///< CAN (MC): What state the motor controller discharger is in. [0,4] range
-    bool ignitionOn;                   ///< GPIO: Whether or not the ignition is on.
-    bool hmFault;                      ///< GPIO: Whether or not the hardware monitor is telling the MCUC to go into a fault state.
-    int16_t throttle;                  ///< CAN (HIB): Signal state of the throttle.
-    bool lvssOn;                       ///< GPIO: Whether or not the LVSS is on.
-    bool mcOn;                         ///< GPIO: Whether or not the motor controller is on.
-    bool powertrainCANSelfTestIn;      ///< CAN (Hardmon): If the powertrain CAN network is working.
-    bool accessoryCANSelfTestIn;       ///< CAN (Hardmon): If the accessory CAN network is working.
-
+    bool brakeOn;                ///< CAN (HIB): Whether or not the brake is on.
+    bool eStop;                  ///< GPIO: Whether or not the emergency stop is enabled.
+    bool forwardEnable;          ///< CAN (HIB): Whether or not the bike is commanded to go forward.
+    bool startPressed;           ///< CAN (HIB): Whether or not the bike is starting.
+    uint8_t mcState;             ///< CAN (MC): What state the motor controller state machine is in. [0,14] range
+    uint8_t mcDischarge;         ///< CAN (MC): What state the motor controller discharger is in. [0,4] range
+    bool ignitionOn;             ///< GPIO: Whether or not the ignition is on.
+    bool hmFault;                ///< GPIO: Whether or not the hardware monitor is telling the MCUC to go into a fault state.
+    int16_t throttle;            ///< CAN (HIB): Signal state of the throttle.
+    bool lvssOn;                 ///< GPIO: Whether or not the LVSS is on.
+    bool mcOn;                   ///< GPIO: Whether or not the motor controller is on.
+    bool powertrainCANSelfTestIn;///< CAN (Hardmon): If the powertrain CAN network is working.
+    bool accessoryCANSelfTestIn; ///< CAN (Hardmon): If the accessory CAN network is working.
 
     //Model output data
-    bool lvssEnable;                   ///< GPIO: Whether or not the lvss should be on.
-    bool inverterEnable;               ///< CAN (MC): Whether or not the inverter on the motor controller should be enabled.
-    bool ucFault;                      ///< GPIO: Whether or not the MCUC is in a fault state
-    bool watchdog;                     ///< GPIO: watchdog signal between the Hardmon and MCUC.
-    bool ucState[4];                   ///< GPIO: Current State of the MCUC;
-    bool inverterDischarge;            ///< CAN (MC): Whether or not the inverter on the motor controller should be discharging.
-    bool mcTogglePositive;             ///< GPIO: Together with mcToggleNegative controls whether the motor controller should be on or not.
-    bool mcToggleNegative;             ///< GPIO: Together with mcTogglePositive controls whether the motor controller should be on or not.
-    int16_t torqueRequest;             ///< CAN (MC): How much torque the MCUC is requesting the motor controller to output
-    bool mcSelfTestOut;                ///< GPIO: Whether or not the motor controller should be self-testing.
-    bool estopSelfTestOut;             ///< GPIO: Whether or not the estop should be self-testing.
-    bool ignitionSelfTestOut;          ///< GPIO: Whether or not ignition should be self-testing.
-    bool accessoryCanSelfTestOut;      ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over accessoryCAN
-    bool powertrainCanSelfTestOut;     ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over powertrainCAN
+    bool lvssEnable;              ///< GPIO: Whether or not the lvss should be on.
+    bool inverterEnable;          ///< CAN (MC): Whether or not the inverter on the motor controller should be enabled.
+    bool ucFault;                 ///< GPIO: Whether or not the MCUC is in a fault state
+    bool watchdog;                ///< GPIO: watchdog signal between the Hardmon and MCUC.
+    bool ucState[4];              ///< GPIO: Current State of the MCUC;
+    bool inverterDischarge;       ///< CAN (MC): Whether or not the inverter on the motor controller should be discharging.
+    bool mcTogglePositive;        ///< GPIO: Together with mcToggleNegative controls whether the motor controller should be on or not.
+    bool mcToggleNegative;        ///< GPIO: Together with mcTogglePositive controls whether the motor controller should be on or not.
+    int16_t torqueRequest;        ///< CAN (MC): How much torque the MCUC is requesting the motor controller to output
+    bool mcSelfTestOut;           ///< GPIO: Whether or not the motor controller should be self-testing.
+    bool estopSelfTestOut;        ///< GPIO: Whether or not the estop should be self-testing.
+    bool ignitionSelfTestOut;     ///< GPIO: Whether or not ignition should be self-testing.
+    bool accessoryCanSelfTestOut; ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over accessoryCAN
+    bool powertrainCanSelfTestOut;///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over powertrainCAN
 
     ///the gpios
     reqGPIO gpios;
@@ -228,12 +224,12 @@ private:
     /**
      * The node ID used to identify the device on the CAN network.
      */
-    static constexpr uint8_t NODE_ID = 255; //TODO: CANopen set node ID
+    static constexpr uint8_t NODE_ID = 255;//TODO: CANopen set node ID
 
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 51; //TODO: CANopen set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 51;//TODO: CANopen set size of object dictionary
 
     /**
      * The object dictionary itself. Will be populated by this object during

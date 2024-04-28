@@ -1,12 +1,12 @@
 #ifndef VCU_POWERTRAINCAN_HPP
 #define VCU_POWERTRAINCAN_HPP
 
+#include <EVT/io/CAN.hpp>
+#include <EVT/io/types/CANMessage.hpp>
+#include <EVT/utils/types/FixedQueue.hpp>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <cstddef>
-#include <EVT/utils/types/FixedQueue.hpp>
-#include <EVT/io/types/CANMessage.hpp>
-#include <EVT/io/CAN.hpp>
 
 #define POWERTRAIN_QUEUE_SIZE 64
 #define MC_COMMAND_MESSAGE_ID 0x0C0
@@ -17,15 +17,14 @@ namespace VCU::DEV {
 
 class PowertrainCAN {
 public:
-
     /**
      * An enumeration of the Powertrain CAN message ids that are relevant to the
      */
     enum MessageIDs {
         MC_INTERNAL_STATES_ID = (uint32_t) 0x0AA,
-        HIB_MESSAGE_ID = (uint32_t) 0x012, //TODO: HIB this is NOT the correct id, must be updated when the HIB is finished
-        HARDMON_SELF_TEST_MESSAGE_ID = (uint32_t) 0x044, //TODO: This is not the correct ID, will not work!
-        UC_SELF_TEST_MESSAGE_ID = (uint32_t) 0x045 //TODO: This is not the correct ID, will not work!
+        HIB_MESSAGE_ID = (uint32_t) 0x012,              //TODO: HIB this is NOT the correct id, must be updated when the HIB is finished
+        HARDMON_SELF_TEST_MESSAGE_ID = (uint32_t) 0x044,//TODO: This is not the correct ID, will not work!
+        UC_SELF_TEST_MESSAGE_ID = (uint32_t) 0x045      //TODO: This is not the correct ID, will not work!
     };
 
     /**
@@ -127,6 +126,7 @@ public:
      *  (Message is the same every time).
      */
     void sendHardmonSelfTestResponse();
+
 private:
     /**
      * Struct that represents the structure of the Motor Controller Command Message.
@@ -135,18 +135,16 @@ private:
         int16_t torque;
         int16_t speed;
         uint8_t direction;
-        uint8_t inverterEnable:1;
-        uint8_t inverterDischarge:1;
-        uint8_t speedModeEnable:1;
-        uint8_t padding:5;
+        uint8_t inverterEnable : 1;
+        uint8_t inverterDischarge : 1;
+        uint8_t speedModeEnable : 1;
+        uint8_t padding : 5;
         int16_t CommandedTorqueLimit;
     } __attribute__((packed));
 
-
-     ///Local instantiation of the command payload.
+    ///Local instantiation of the command payload.
     MCCommandPayload mcCommandPayload = {
-        0,0,1,0,0,0,0,0
-    };
+        0, 0, 1, 0, 0, 0, 0, 0};
 
     /// Can Driver
     IO::CAN& can;
@@ -162,6 +160,6 @@ private:
     IO::CANMessage HardmonSelfTestResponse = IO::CANMessage(HARDMON_SELF_TEST_MESSAGE_ID, 1, &HardmonSelfTestResponsePayload, false);
 };
 
-} //namespace VCU::DEV
+}//namespace VCU::DEV
 
 #endif//VCU_POWERTRAINCAN_HPP

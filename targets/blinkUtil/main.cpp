@@ -18,7 +18,7 @@ namespace time = EVT::core::time;
 int main() {
     // Initialize system
     EVT::core::platform::init();
-/*
+    /*
     // Setup the GPIO pin.
     // Notice that the pin used is called "LED". Each platform has a dedicated
     // LED pin, for the f3xx that is PB_13.

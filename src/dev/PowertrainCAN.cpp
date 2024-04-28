@@ -14,7 +14,6 @@ uint8_t PowertrainCAN::parseMCDischarge(IO::CANMessage& message) {
     return ((message.getPayload()[4] >> 5));
 }
 
-
 int16_t PowertrainCAN::parseHIBThrottle(IO::CANMessage& message) {
     //TODO: HIB example implementation, update when HIB is completed
     uint8_t* message_payload = message.getPayload();
@@ -66,4 +65,4 @@ void PowertrainCAN::sendHardmonSelfTestResponse() {
     can.transmit(UCSelfTestMessage);
 }
 
-}
+}// namespace VCU::DEV

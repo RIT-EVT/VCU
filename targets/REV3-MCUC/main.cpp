@@ -4,7 +4,6 @@
  * and sends and receives CAN messages from the powertrain.
  */
 
-
 #include <EVT/io/CAN.hpp>
 #include <EVT/io/UART.hpp>
 #include <EVT/io/types/CANMessage.hpp>
@@ -149,16 +148,14 @@ int main() {
         IO::getGPIO<VCU::MCUC::MC_SELF_TEST_PIN>(IO::GPIO::Direction::OUTPUT),
         IO::getGPIO<VCU::MCUC::ESTOP_SELF_TEST_PIN>(IO::GPIO::Direction::OUTPUT),
         IO::getGPIO<VCU::MCUC::IGNITION_SELF_TEST_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::CAN_SELF_TEST_PIN>(IO::GPIO::Direction::OUTPUT)
-    };
+        IO::getGPIO<VCU::MCUC::CAN_SELF_TEST_PIN>(IO::GPIO::Direction::OUTPUT)};
 
-    VCU::MCUC mcuc(gpios,ptCAN);
+    VCU::MCUC mcuc(gpios, ptCAN);
     ptCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(mcuc.getPowertrainQueue()));
 
     ///////////////////////////////////////////////////////////////////////////
     // Main loop
     ///////////////////////////////////////////////////////////////////////////
-
 
     while (1) {
         //IO::processCANopenNode(&canNode); //TODO CANopen uncomment when we add in Accessory can

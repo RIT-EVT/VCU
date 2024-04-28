@@ -3,7 +3,6 @@
 namespace VCU {
 
 Hardmon::Hardmon(reqGPIO gpios, IO::CAN& ptCAN) : gpios(gpios), powertrainCAN(ptCAN) {
-
 }
 
 CO_OBJ_T* Hardmon::getObjectDictionary() {
@@ -19,7 +18,7 @@ uint8_t Hardmon::getNodeID() {
 }
 
 void Hardmon::handlePowertrainCanMessage(IO::CANMessage& message) {
-    switch(message.getId()) {
+    switch (message.getId()) {
     case DEV::PowertrainCAN::HIB_MESSAGE_ID:
         forwardEnable = powertrainCAN.parseHIBForwardEnable(message);
         break;
@@ -39,7 +38,7 @@ EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* Hardmon::ge
 void Hardmon::process() {
     //handle all the powertrain CAN messages
     IO::CANMessage message;
-    while(!powertrainCAN.queue.isEmpty()) {
+    while (!powertrainCAN.queue.isEmpty()) {
         powertrainCAN.queue.pop(&message);
         handlePowertrainCanMessage(message);
     }
@@ -80,15 +79,14 @@ void Hardmon::process() {
         lvssStatus,
         mcStatus,
         {ucState[0],
-        ucState[1],
-        ucState[2],
-        ucState[3]},
+         ucState[1],
+         ucState[2],
+         ucState[3]},
         eStopCheck,
         discharge,
         watchdog,
         eStop3v3,
-        lvssEnableUC
-    };
+        lvssEnableUC};
 
     model.setExternalInputs(&modelInputs);
     model.step();
@@ -104,14 +102,14 @@ void Hardmon::process() {
     hmFault = modelOutputs.HM_Fault;
 
     //use outputs
-    gpios.mcToggleOverrideGPIO.writePin( mcSwitchEnable ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
-    gpios.lvssEnableOverrideGPIO.writePin( lvssSwitchEnable ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
+    gpios.mcToggleOverrideGPIO.writePin(mcSwitchEnable ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    gpios.lvssEnableOverrideGPIO.writePin(lvssSwitchEnable ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
     //inverter discharge will be handled over CAN
-    gpios.mcToggleNegativeGPIO.writePin( mcToggleNeg ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
-    gpios.mcTogglePositiveGPIO.writePin( mcTogglePos ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
-    gpios.ucResetGPIO.writePin( ucReset ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
-    gpios.lvssEnableHardmonGPIO.writePin( lvssEnableHardMon ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
-    gpios.hmFaultGPIO.writePin( hmFault ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
+    gpios.mcToggleNegativeGPIO.writePin(mcToggleNeg ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    gpios.mcTogglePositiveGPIO.writePin(mcTogglePos ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    gpios.ucResetGPIO.writePin(ucReset ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    gpios.lvssEnableHardmonGPIO.writePin(lvssEnableHardMon ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    gpios.hmFaultGPIO.writePin(hmFault ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
 
     //TODO: right now the message sets all values but inverter discharge to be 0. This might be REALLY BAD,
     // discuss it more with the EES and maybe Matt.
@@ -119,7 +117,6 @@ void Hardmon::process() {
         powertrainCAN.setMCInverterDischarge(true);
         powertrainCAN.sendMCMessage();
     }
-
 }
 
-}
+}// namespace VCU

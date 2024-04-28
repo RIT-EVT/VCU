@@ -1,13 +1,13 @@
 #ifndef VCU_HARDMON_HPP
 #define VCU_HARDMON_HPP
 
-#include <dev/PowertrainCAN.hpp>
-#include <EVT/io/types/CANMessage.hpp>
+#include <EVT/io/CAN.hpp>
 #include <EVT/io/CANDevice.hpp>
 #include <EVT/io/CANOpenMacros.hpp>
-#include <EVT/io/CAN.hpp>
-#include <EVT/io/pin.hpp>
 #include <EVT/io/GPIO.hpp>
+#include <EVT/io/pin.hpp>
+#include <EVT/io/types/CANMessage.hpp>
+#include <dev/PowertrainCAN.hpp>
 #include <models/Hardmon_Model.hpp>
 
 namespace IO = EVT::core::IO;
@@ -53,7 +53,7 @@ public:
      * Hardmon Pinout
      */
 
-        /** UART Pins */
+    /** UART Pins */
 
     /** UART TX pin */
     static constexpr IO::Pin UART_TX_PIN = IO::Pin::PA_0;
@@ -83,7 +83,6 @@ public:
     static constexpr IO::Pin MOTOR_CONTROLLER_TOGGLE_POS_PIN = IO::Pin::PC_7;
     /** Motor Controller Toggle Override Pin */
     static constexpr IO::Pin MOTOR_CONTROLLER_TOGGLE_OVERRIDE_PIN = IO::Pin::PC_8;
-
 
     /** Accessory CAN RX Pin */
     static constexpr IO::Pin ACCESSORY_CAN_RX_PIN = IO::Pin::PA_11;
@@ -157,8 +156,8 @@ public:
     EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* getPowertrainQueue();
 
     void process();
-private:
 
+private:
     /**
      * Local instance of PowertrainCan (handles PowertrainCAN messages
      */
@@ -174,41 +173,41 @@ private:
 
     //Model input data
 
-     bool forwardEnable;       ///< CAN (HIB): handlebar forward enable
-     bool ignitionCheck;       ///< GPIO: whether the ignition is on or off on 12v line
-     bool ignition3v3;         ///< GPIO: whether the ignition is on or off on 3.3v line
-     bool lvssStatus;          ///< GPIO: whether the lvss is on or not
-     bool mcStatus;            ///< GPIO: whether the Motor Controller is on or off
-     bool ucState[4];          ///< CAN (MC): what state the microcontroller is in
-     bool eStopCheck;          ///< GPIO: whether the estop is on or off on 12v line
-     uint8_t discharge;        ///< CAN (MC): current state of the Motor Controller's discharge state machine
-     bool watchdog;            ///< GPIO: alternating on and off signal from the MCUC to the Hardmon
-     bool eStop3v3;            ///< GPIO: whether the estop is on or off on 3.3v line
-     bool lvssEnableUC;        ///< GPIO: whether or not the MCUC is telling the LVSS to be enabled
+    bool forwardEnable;///< CAN (HIB): handlebar forward enable
+    bool ignitionCheck;///< GPIO: whether the ignition is on or off on 12v line
+    bool ignition3v3;  ///< GPIO: whether the ignition is on or off on 3.3v line
+    bool lvssStatus;   ///< GPIO: whether the lvss is on or not
+    bool mcStatus;     ///< GPIO: whether the Motor Controller is on or off
+    bool ucState[4];   ///< CAN (MC): what state the microcontroller is in
+    bool eStopCheck;   ///< GPIO: whether the estop is on or off on 12v line
+    uint8_t discharge; ///< CAN (MC): current state of the Motor Controller's discharge state machine
+    bool watchdog;     ///< GPIO: alternating on and off signal from the MCUC to the Hardmon
+    bool eStop3v3;     ///< GPIO: whether the estop is on or off on 3.3v line
+    bool lvssEnableUC; ///< GPIO: whether or not the MCUC is telling the LVSS to be enabled
 
-     //Model output data
+    //Model output data
 
-     bool mcSwitchEnable;      ///< GPIO: whether or not the Hardmon is taking over mcEnable control from the MCUC
-     bool lvssSwitchEnable;    ///< GPIO: whether or not the Hardmon is taking over lvssEnable control from the MCUC
-     bool inverterDischarge;   ///< CAN (MC): whether or not the Motor Controller is commanded to discharge
-     bool mcToggleNeg;         ///< GPIO: Together with MCTogglePos commands the Motor Controller being on or not
-     bool mcTogglePos;         ///< GPIO: Together with MCToggleNeg commands the Motor Controller being on or not
-     bool ucReset;             ///< GPIO: Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)
-     bool lvssEnableHardMon;   ///< GPIO: Whether or not the Hardmon is commanding the LVSS to be enabled
-     bool hmFault;             ///< GPIO: Whether or not the Hardmon is commanding the MCUC to go into a fault state
+    bool mcSwitchEnable;   ///< GPIO: whether or not the Hardmon is taking over mcEnable control from the MCUC
+    bool lvssSwitchEnable; ///< GPIO: whether or not the Hardmon is taking over lvssEnable control from the MCUC
+    bool inverterDischarge;///< CAN (MC): whether or not the Motor Controller is commanded to discharge
+    bool mcToggleNeg;      ///< GPIO: Together with MCTogglePos commands the Motor Controller being on or not
+    bool mcTogglePos;      ///< GPIO: Together with MCToggleNeg commands the Motor Controller being on or not
+    bool ucReset;          ///< GPIO: Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)
+    bool lvssEnableHardMon;///< GPIO: Whether or not the Hardmon is commanding the LVSS to be enabled
+    bool hmFault;          ///< GPIO: Whether or not the Hardmon is commanding the MCUC to go into a fault state
 
-     ///The gpios
-     reqGPIO gpios;
+    ///The gpios
+    reqGPIO gpios;
 
     /**
      * The node ID used to identify the device on the CAN network.
      */
-    static constexpr uint8_t NODE_ID = 254; //TODO set node ID
+    static constexpr uint8_t NODE_ID = 254;//TODO set node ID
 
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 51; //TODO set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 51;//TODO set size of object dictionary
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -221,12 +220,11 @@ private:
         IDENTITY_OBJECT_1018,
         SDO_CONFIGURATION_1200,
 
-
         // End of dictionary marker
         CO_OBJ_DICT_ENDMARK,
     };
 };
 
-}
+}// namespace VCU
 
 #endif//VCU_HARDMON_HPP

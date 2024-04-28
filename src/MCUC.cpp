@@ -3,7 +3,6 @@
 namespace VCU {
 
 MCUC::MCUC(VCU::MCUC::reqGPIO gpios, IO::CAN& can) : gpios(gpios), powertrainCAN(can) {
-
 }
 
 CO_OBJ_T* MCUC::getObjectDictionary() {
@@ -19,7 +18,7 @@ uint8_t MCUC::getNodeID() {
 }
 
 void MCUC::handlePowertrainCanMessage(IO::CANMessage& message) {
-    switch(message.getId()) {
+    switch (message.getId()) {
     case DEV::PowertrainCAN::MC_INTERNAL_STATES_ID:
         mcState = powertrainCAN.parseMCState(message);
         mcDischarge = powertrainCAN.parseMCDischarge(message);
@@ -27,7 +26,7 @@ void MCUC::handlePowertrainCanMessage(IO::CANMessage& message) {
     case DEV::PowertrainCAN::HIB_MESSAGE_ID:
         throttle = powertrainCAN.parseHIBThrottle(message);
         forwardEnable = powertrainCAN.parseHIBForwardEnable(message);
-        startPressed  = powertrainCAN.parseHIBStartPressed(message);
+        startPressed = powertrainCAN.parseHIBStartPressed(message);
         break;
     case DEV::PowertrainCAN::HARDMON_SELF_TEST_MESSAGE_ID:
         powertrainCANSelfTestIn = true;
@@ -45,7 +44,7 @@ EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* MCUC::getPo
 void MCUC::process() {
     //handle all the powertrain CAN messages
     IO::CANMessage message;
-    while(!powertrainCAN.queue.isEmpty()) {
+    while (!powertrainCAN.queue.isEmpty()) {
         powertrainCAN.queue.pop(&message);
         handlePowertrainCanMessage(message);
     }
@@ -74,8 +73,7 @@ void MCUC::process() {
         lvssOn,
         mcOn,
         powertrainCANSelfTestIn,
-        accessoryCANSelfTestIn
-    };
+        accessoryCANSelfTestIn};
     model.setExternalInputs(&inputs);
 
     model.step();
@@ -102,21 +100,21 @@ void MCUC::process() {
     powertrainCanSelfTestOut = outputs.MC_CAN_out;
 
     //use outputs
-    gpios.lvssEnableGPIO.writePin(lvssEnable ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
+    gpios.lvssEnableGPIO.writePin(lvssEnable ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
     //set inverterEnable before we send the message
-    gpios.ucFaultGPIO.writePin( ucFault ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
-    gpios.watchdogGPIO.writePin( watchdog ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
-    gpios.ucStateZeroGPIO.writePin(ucState[0] ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
-    gpios.ucStateOneGPIO.writePin(ucState[1] ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
-    gpios.ucStateTwoGPIO.writePin(ucState[2] ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
-    gpios.ucStateThreeGPIO.writePin(ucState[3] ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
+    gpios.ucFaultGPIO.writePin(ucFault ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    gpios.watchdogGPIO.writePin(watchdog ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    gpios.ucStateZeroGPIO.writePin(ucState[0] ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    gpios.ucStateOneGPIO.writePin(ucState[1] ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    gpios.ucStateTwoGPIO.writePin(ucState[2] ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    gpios.ucStateThreeGPIO.writePin(ucState[3] ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
     //set inverterDisable before we send the message
-    gpios.mcTogglePositiveGPIO.writePin( mcTogglePositive ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
-    gpios.mcToggleNegativeGPIO.writePin( mcToggleNegative ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
+    gpios.mcTogglePositiveGPIO.writePin(mcTogglePositive ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    gpios.mcToggleNegativeGPIO.writePin(mcToggleNegative ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
     //set torqueRequest before we send the message
-    gpios.mcSelfTestGPIO.writePin(mcSelfTestOut ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
-    gpios.estopSelfTestGPIO.writePin( estopSelfTestOut ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
-    gpios.ignitionSelfTestGPIO.writePin( ignitionSelfTestOut ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
+    gpios.mcSelfTestGPIO.writePin(mcSelfTestOut ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    gpios.estopSelfTestGPIO.writePin(estopSelfTestOut ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    gpios.ignitionSelfTestGPIO.writePin(ignitionSelfTestOut ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
     //We will send accessory CAN SelfTest message over CANopen
     //Send the powertrainCanSelfTest message
     if (powertrainCanSelfTestOut) {
@@ -126,14 +124,13 @@ void MCUC::process() {
     //setting the CAN self test: only true when we are in ucState 10 (self test state)
     //ucState should be 0b1010, we are reading each bit individually cause that's what we get them as.
     bool canSelfTest = ucState[3] && !ucState[2] && ucState[1] && !ucState[0];
-    gpios.canSelfTestGPIO.writePin( canSelfTest ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW );
+    gpios.canSelfTestGPIO.writePin(canSelfTest ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
 
     //Send the Motor Controller CAN message (set values first)
     powertrainCAN.setMCInverterEnable(inverterEnable);
     powertrainCAN.setMCInverterDischarge(inverterDischarge);
     powertrainCAN.setMCTorque(torqueRequest);
     powertrainCAN.sendMCMessage();
-
 }
 
-}
+}// namespace VCU
