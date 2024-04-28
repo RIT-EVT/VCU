@@ -64,11 +64,11 @@ void Hardmon::process() {
     //TODO: check with EEs if a fault should make this true or not
     //getting the state value from the array.
     uint8_t states = ucState[3];
-    states << 1;
+    states <<= 1;
     states += ucState[2];
-    states << 1;
+    states <<= 1;
     states += ucState[1];
-    states << 1;
+    states <<= 1;
     states += ucState[0];
     lvssEnableUC = (states >= 1 && states <= 5);
 
