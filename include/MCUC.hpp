@@ -1,17 +1,18 @@
 #ifndef VCU_HPP
 #define VCU_HPP
 
-#include <EVT/io/CANDevice.hpp>
-#include <EVT/io/CANOpenMacros.hpp>
-#include <EVT/io/GPIO.hpp>
-#include <EVT/io/pin.hpp>
-#include <EVT/io/types/CANMessage.hpp>
+#include <core/utils/types/FixedQueue.hpp>
+#include <core/io/CANDevice.hpp>
+#include <core/io/CANOpenMacros.hpp>
+#include <core/io/GPIO.hpp>
+#include <core/io/pin.hpp>
+#include <core/io/types/CANMessage.hpp>
 #include <dev/PowertrainCAN.hpp>
 #include <models/MCuC_Model.hpp>
 
-namespace IO = EVT::core::IO;
+namespace io = core::io;
 
-namespace VCU {
+namespace vcu {
 
 /**
  * Driver for the VCU device
@@ -23,30 +24,30 @@ public:
      */
     struct reqGPIO {
         //model input GPIOs
-        IO::GPIO& eStopGPIO;
-        IO::GPIO& ignitionGPIO;
-        IO::GPIO& hmFaultGPIO;
-        IO::GPIO& lvssStatusGPIO;
-        IO::GPIO& mcStatusGPIO;
+        io::GPIO& eStopGPIO;
+        io::GPIO& ignitionGPIO;
+        io::GPIO& hmFaultGPIO;
+        io::GPIO& lvssStatusGPIO;
+        io::GPIO& mcStatusGPIO;
 
         //model output GPIOs
-        IO::GPIO& ucFaultGPIO;
-        IO::GPIO& lvssEnableGPIO;
-        IO::GPIO& watchdogGPIO;
+        io::GPIO& ucFaultGPIO;
+        io::GPIO& lvssEnableGPIO;
+        io::GPIO& watchdogGPIO;
 
-        IO::GPIO& ucStateZeroGPIO;
-        IO::GPIO& ucStateOneGPIO;
-        IO::GPIO& ucStateTwoGPIO;
-        IO::GPIO& ucStateThreeGPIO;
+        io::GPIO& ucStateZeroGPIO;
+        io::GPIO& ucStateOneGPIO;
+        io::GPIO& ucStateTwoGPIO;
+        io::GPIO& ucStateThreeGPIO;
 
-        IO::GPIO& mcToggleNegativeGPIO;
-        IO::GPIO& mcTogglePositiveGPIO;
-        IO::GPIO& mcSelfTestGPIO;
-        IO::GPIO& estopSelfTestGPIO;
-        IO::GPIO& ignitionSelfTestGPIO;
+        io::GPIO& mcToggleNegativeGPIO;
+        io::GPIO& mcTogglePositiveGPIO;
+        io::GPIO& mcSelfTestGPIO;
+        io::GPIO& estopSelfTestGPIO;
+        io::GPIO& ignitionSelfTestGPIO;
 
         //Set based off of ucState.
-        IO::GPIO& canSelfTestGPIO;
+        io::GPIO& canSelfTestGPIO;
     };
     /**
      * VCU Pinout
@@ -169,7 +170,7 @@ public:
      *
      * @return pointer to the fixed queue.
      */
-    EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* getPowertrainQueue();
+    core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* getPowertrainQueue();
 
     void process();
 
@@ -177,7 +178,7 @@ private:
     /**
      * Local instance of PowertrainCan
      */
-    DEV::PowertrainCAN powertrainCAN;
+    dev::PowertrainCAN powertrainCAN;
 
     /**
      * The model that is determining our control flow

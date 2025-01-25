@@ -4,14 +4,14 @@
  * and sends and receives CAN messages from the powertrain.
  */
 
-#include <EVT/io/CAN.hpp>
-#include <EVT/io/UART.hpp>
-#include <EVT/io/types/CANMessage.hpp>
-#include <EVT/manager.hpp>
-#include <EVT/utils/time.hpp>
-#include <EVT/utils/types/FixedQueue.hpp>
+#include <core/io/CAN.hpp>
+#include <core/io/UART.hpp>
+#include <core/io/types/CANMessage.hpp>
+#include <core/manager.hpp>
+#include <core/utils/time.hpp>
+#include <core/utils/types/FixedQueue.hpp>
 
-#include <EVT/io/CANopen.hpp>
+#include <core/io/CANopen.hpp>
 
 #include <co_core.h>
 #include <co_if.h>
@@ -20,9 +20,9 @@
 #include <MCUC.hpp>
 #include <dev/PowertrainCAN.hpp>
 
-namespace IO = EVT::core::IO;
-namespace DEV = EVT::core::DEV;
-namespace time = EVT::core::time;
+namespace io = core::io;
+namespace dev = core::dev;
+namespace time = core::time;
 
 ///////////////////////////////////////////////////////////////////////////////
 // EVT-core CAN callback and CAN setup. This will include logic to set
@@ -40,7 +40,7 @@ namespace time = EVT::core::time;
  * @param message[in] The passed in CAN message that was read.
  */
 void accessoryCANOpenInterrupt(IO::CANMessage& message, void* priv) {
-    auto* queue = (EVT::core::types::FixedQueue<CANOPEN_QUEUE_SIZE, IO::CANMessage>*) priv;
+    auto* queue = (core::types::FixedQueue<CANOPEN_QUEUE_SIZE, IO::CANMessage>*) priv;
     if (queue != nullptr)
         queue->append(message);
 }
@@ -51,17 +51,17 @@ void accessoryCANOpenInterrupt(IO::CANMessage& message, void* priv) {
  * @param priv[in] the private data this mesasge requires. Should be the mcuc instance we want to update.
  */
 void powertrainCANInterrupt(IO::CANMessage& message, void* priv) {
-    auto* queue = (EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>*) priv;
+    auto* queue = (core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>*) priv;
     if (queue != nullptr)
         queue->append(message);
 }
 
 int main() {
     // Initialize system
-    EVT::core::platform::init();
+    core::platform::init();
 
     // Initialize the timer
-    DEV::Timer& timer = DEV::getTimer<DEV::MCUTimer::Timer2>(100);
+    dev::Timer& timer = dev::getTimer<dev::MCUTimer::Timer2>(100);
 
     // UART for testing
     IO::UART& uart = IO::getUART<IO::Pin::UART_TX, IO::Pin::UART_RX>(9600);
@@ -76,7 +76,7 @@ int main() {
     ///////////////////////////////////////////////////////////////////////////
 
     // Will store CANopen messages that will be populated by the EVT-core CAN interrupt
-    EVT::core::types::FixedQueue<CANOPEN_QUEUE_SIZE, IO::CANMessage> canOpenQueue;
+    core::types::FixedQueue<CANOPEN_QUEUE_SIZE, IO::CANMessage> canOpenQueue;
 
     // Initialize CAN, add an IRQ which will add messages to the queue above
     IO::CAN& accessoryCAN = IO::getCAN<VCU::MCUC::ACCESSORY_CAN_TX_PIN, VCU::MCUC::ACCESSORY_CAN_RX_PIN>();
@@ -125,40 +125,41 @@ int main() {
     // so it is simpler than te CANopen setup.
     //////////////////////////////////////////////////////////
 
-    IO::CAN& ptCAN = IO::getCAN<VCU::MCUC::POWERTRAIN_CAN_TX_PIN, VCU::MCUC::POWERTRAIN_CAN_RX_PIN>();
+    IO::CAN& ptCAN = IO::getCAN<vcu::MCUC::POWERTRAIN_CAN_TX_PIN, vcu::MCUC::POWERTRAIN_CAN_RX_PIN>();
 
-    VCU::MCUC::reqGPIO gpios = {
-        IO::getGPIO<VCU::MCUC::ESTOP_PIN>(IO::GPIO::Direction::INPUT),
-        IO::getGPIO<VCU::MCUC::IGNITION_PIN>(IO::GPIO::Direction::INPUT),
-        IO::getGPIO<VCU::MCUC::HM_FAULT_PIN>(IO::GPIO::Direction::INPUT),
-        IO::getGPIO<VCU::MCUC::LVSS_STATUS_PIN>(IO::GPIO::Direction::INPUT),
-        IO::getGPIO<VCU::MCUC::MC_STATUS_PIN>(IO::GPIO::Direction::INPUT),
+    vcu::MCUC::reqGPIO gpios = {
+        io::getGPIO<vcu::MCUC::ESTOP_PIN>(io::GPIO::Direction::INPUT),
+        io::getGPIO<vcu::MCUC::IGNITION_PIN>(io::GPIO::Direction::INPUT),
+        io::getGPIO<vcu::MCUC::HM_FAULT_PIN>(io::GPIO::Direction::INPUT),
+        io::getGPIO<vcu::MCUC::LVSS_STATUS_PIN>(io::GPIO::Direction::INPUT),
+        io::getGPIO<vcu::MCUC::MC_STATUS_PIN>(io::GPIO::Direction::INPUT),
 
-        IO::getGPIO<VCU::MCUC::UC_FAULT_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::LVSS_ENABLE_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::WATCHDOG_PIN>(IO::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCUC::UC_FAULT_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCUC::LVSS_ENABLE_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCUC::WATCHDOG_PIN>(io::GPIO::Direction::OUTPUT),
 
-        IO::getGPIO<VCU::MCUC::UC_STATE_ZERO_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::UC_STATE_ONE_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::UC_STATE_TWO_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::UC_STATE_THREE_PIN>(IO::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCUC::UC_STATE_ZERO_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCUC::UC_STATE_ONE_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCUC::UC_STATE_TWO_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCUC::UC_STATE_THREE_PIN>(io::GPIO::Direction::OUTPUT),
 
-        IO::getGPIO<VCU::MCUC::MC_TOGGLE_NEGATIVE_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::MC_TOGGLE_POSITIVE_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::MC_SELF_TEST_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::ESTOP_SELF_TEST_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::IGNITION_SELF_TEST_PIN>(IO::GPIO::Direction::OUTPUT),
-        IO::getGPIO<VCU::MCUC::CAN_SELF_TEST_PIN>(IO::GPIO::Direction::OUTPUT)};
+        io::getGPIO<vcu::MCUC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCUC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCUC::MC_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCUC::ESTOP_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCUC::IGNITION_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCUC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT)
+    };
 
-    VCU::MCUC mcuc(gpios, ptCAN);
+    vcu::MCUC mcuc(gpios, ptCAN);
     ptCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(mcuc.getPowertrainQueue()));
 
     ///////////////////////////////////////////////////////////////////////////
     // Main loop
     ///////////////////////////////////////////////////////////////////////////
 
-    while (1) {
-        //IO::processCANopenNode(&canNode); //TODO CANopen uncomment when we add in Accessory can
+    while (true) {
+        //IO:processCANopenNode(&canNode); //TODO CANopen uncomment when we add in Accessory can
         mcuc.process();
         // Wait for new data to come in
         time::wait(10);

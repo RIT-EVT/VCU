@@ -1,9 +1,9 @@
 #ifndef VCU_POWERTRAINCAN_HPP
 #define VCU_POWERTRAINCAN_HPP
 
-#include <EVT/io/CAN.hpp>
-#include <EVT/io/types/CANMessage.hpp>
-#include <EVT/utils/types/FixedQueue.hpp>
+#include <core/io/CAN.hpp>
+#include <core/io/types/CANMessage.hpp>
+#include <core/utils/types/FixedQueue.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -11,9 +11,9 @@
 #define POWERTRAIN_QUEUE_SIZE 64
 #define MC_COMMAND_MESSAGE_ID 0x0C0
 
-namespace IO = EVT::core::IO;
+namespace IO = core::io;
 
-namespace VCU::DEV {
+namespace vcu::dev {
 
 class PowertrainCAN {
 public:
@@ -30,7 +30,7 @@ public:
     /**
      * Queue to store CAN messages.
      */
-    EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage> queue;
+    core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage> queue;
 
     /**
      * Constructor for a PowertrainCan instance.

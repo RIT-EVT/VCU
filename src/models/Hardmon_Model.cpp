@@ -59,7 +59,7 @@ const uint8_t Hardmon_Model_IN_WD_Low{2U};
 
 const uint8_t Hardmon_Model_IN_count{2U};
 
-namespace VCU {
+namespace vcu {
 // Function for Chart: '<Root>/Chart'
 void Hardmon_Model::Hardmon__Invalid_State_Checking(const uint8_t* DataTypeConversion) {
     uint16_t tmp;
@@ -477,7 +477,7 @@ void Hardmon_Model::enter_internal_Normal_Operation(void) {
 }
 }// namespace VCU
 
-namespace VCU {
+namespace vcu {
 // Model step function
 void Hardmon_Model::step() {
     double x_idx_0;

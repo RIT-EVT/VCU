@@ -85,7 +85,7 @@ const uint8_t MCuC_Model_IN_WD0{1U};
 
 const uint8_t MCuC_Model_IN_WD1{2U};
 
-namespace VCU {
+namespace vcu {
 // Function for Chart: '<Root>/MCuC'
 void MCuC_Model::MCuC_Model_Setup(void) {
     MCuC_Model_B.MC_Self_Test = true;
@@ -750,7 +750,7 @@ void MCuC_Model::MCuC_Model_MCuC(bool* Watchdog) {
 }
 }// namespace VCU
 
-namespace VCU {
+namespace vcu {
 // Model step function
 void MCuC_Model::step() {
     // Outport: '<Root>/LVSS_EN_uC' incorporates:

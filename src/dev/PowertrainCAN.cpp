@@ -1,9 +1,9 @@
 #include <dev/PowertrainCAN.hpp>
 
-namespace VCU::DEV {
+namespace vcu::dev {
 
 PowertrainCAN::PowertrainCAN(IO::CAN& can) : can(can) {
-    queue = EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>();
+    queue = core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>();
 }
 
 uint8_t PowertrainCAN::parseMCState(IO::CANMessage& message) {

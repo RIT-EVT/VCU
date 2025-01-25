@@ -1,9 +1,9 @@
 #ifndef VCU_LED
 #define VCU_LED
 
-#include <EVT/io/GPIO.hpp>
+#include <core/io/GPIO.hpp>
 
-namespace VCU::DEV {
+namespace vcu::dev {
 
 class LED {
 public:
@@ -21,7 +21,7 @@ public:
      * @param gpio GPIO pin
      * @param activeState Represents if the LED is active high or active low
      */
-    LED(EVT::core::IO::GPIO& gpio, ActiveState activeState);
+    LED(core::io::GPIO& gpio, ActiveState activeState);
 
     /**
      * Toggle the current state of the LED
@@ -33,11 +33,11 @@ public:
      *
      * @param state The state to set the LED to.
      */
-    void setState(EVT::core::IO::GPIO::State state);
+    void setState(core::io::GPIO::State state);
 
 private:
     /// The gpio pin used by the LED
-    EVT::core::IO::GPIO& gpio;
+    core::io::GPIO& gpio;
     /// If the LED is active high or active low
     ActiveState activeState;
 };

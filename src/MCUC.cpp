@@ -1,8 +1,8 @@
 #include <MCUC.hpp>
 
-namespace VCU {
+namespace vcu {
 
-MCUC::MCUC(VCU::MCUC::reqGPIO gpios, IO::CAN& can) : gpios(gpios), powertrainCAN(can) {
+MCUC::MCUC(vcu::MCUC::reqGPIO gpios, IO::CAN& can) : powertrainCAN(can), gpios(gpios) {
 }
 
 CO_OBJ_T* MCUC::getObjectDictionary() {
@@ -19,16 +19,16 @@ uint8_t MCUC::getNodeID() {
 
 void MCUC::handlePowertrainCanMessage(IO::CANMessage& message) {
     switch (message.getId()) {
-    case DEV::PowertrainCAN::MC_INTERNAL_STATES_ID:
+    case dev::PowertrainCAN::MC_INTERNAL_STATES_ID:
         mcState = powertrainCAN.parseMCState(message);
         mcDischarge = powertrainCAN.parseMCDischarge(message);
         break;
-    case DEV::PowertrainCAN::HIB_MESSAGE_ID:
+    case dev::PowertrainCAN::HIB_MESSAGE_ID:
         throttle = powertrainCAN.parseHIBThrottle(message);
         forwardEnable = powertrainCAN.parseHIBForwardEnable(message);
         startPressed = powertrainCAN.parseHIBStartPressed(message);
         break;
-    case DEV::PowertrainCAN::HARDMON_SELF_TEST_MESSAGE_ID:
+    case dev::PowertrainCAN::HARDMON_SELF_TEST_MESSAGE_ID:
         powertrainCANSelfTestIn = true;
         break;
     default:
@@ -37,7 +37,7 @@ void MCUC::handlePowertrainCanMessage(IO::CANMessage& message) {
     }
 }
 
-EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* MCUC::getPowertrainQueue() {
+core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* MCUC::getPowertrainQueue() {
     return &powertrainCAN.queue;
 }
 
@@ -59,7 +59,7 @@ void MCUC::process() {
     mcOn = gpios.mcStatusGPIO.readPin() == IO::GPIO::State::HIGH;
 
     //set the inputs and step the model
-    VCU::MCuC_Model::ExtU_MCuC_Model_T inputs = {
+    vcu::MCuC_Model::ExtU_MCuC_Model_T inputs = {
         ignitionOn,
         startPressed,
         brakeOn,
@@ -79,7 +79,7 @@ void MCUC::process() {
     model.step();
 
     //get outputs
-    VCU::MCuC_Model::ExtY_MCuC_Model_T outputs = model.getExternalOutputs();
+    vcu::MCuC_Model::ExtY_MCuC_Model_T outputs = model.getExternalOutputs();
     //save outputs
     lvssEnable = outputs.LVSS_EN_uC;
     inverterEnable = outputs.Inverter_EN_CAN;

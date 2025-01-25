@@ -30,7 +30,7 @@
     #endif
 
 // Class declaration for model MCuC_Model
-namespace VCU {
+namespace vcu {
 class MCuC_Model final {
     // public data and function members
 public:

@@ -1,18 +1,19 @@
 #ifndef VCU_HARDMON_HPP
 #define VCU_HARDMON_HPP
 
-#include <EVT/io/CAN.hpp>
-#include <EVT/io/CANDevice.hpp>
-#include <EVT/io/CANOpenMacros.hpp>
-#include <EVT/io/GPIO.hpp>
-#include <EVT/io/pin.hpp>
-#include <EVT/io/types/CANMessage.hpp>
+#include <core/utils/types/FixedQueue.hpp>
+#include <core/io/CAN.hpp>
+#include <core/io/CANDevice.hpp>
+#include <core/io/CANOpenMacros.hpp>
+#include <core/io/GPIO.hpp>
+#include <core/io/pin.hpp>
+#include <core/io/types/CANMessage.hpp>
 #include <dev/PowertrainCAN.hpp>
 #include <models/Hardmon_Model.hpp>
 
-namespace IO = EVT::core::IO;
+namespace io = core::io;
 
-namespace VCU {
+namespace vcu {
 
 /**
  * Driver for the Hardware Monitor
@@ -25,28 +26,28 @@ public:
      */
     struct reqGPIO {
         //model input pins
-        IO::GPIO& ignitionCheckGPIO;
-        IO::GPIO& ignition3V3GPIO;
-        IO::GPIO& lvssStatus3V3GPIO;
-        IO::GPIO& mcStatusGPIO;
+        io::GPIO& ignitionCheckGPIO;
+        io::GPIO& ignition3V3GPIO;
+        io::GPIO& lvssStatus3V3GPIO;
+        io::GPIO& mcStatusGPIO;
 
-        IO::GPIO& ucStateZeroGPIO;
-        IO::GPIO& ucStateOneGPIO;
-        IO::GPIO& ucStateTwoGPIO;
-        IO::GPIO& ucStateThreeGPIO;
+        io::GPIO& ucStateZeroGPIO;
+        io::GPIO& ucStateOneGPIO;
+        io::GPIO& ucStateTwoGPIO;
+        io::GPIO& ucStateThreeGPIO;
 
-        IO::GPIO& eStopCheckGPIO;
-        IO::GPIO& watchdogGPIO;
-        IO::GPIO& eStop3V3GPIO;
+        io::GPIO& eStopCheckGPIO;
+        io::GPIO& watchdogGPIO;
+        io::GPIO& eStop3V3GPIO;
 
         //model outputs pins
-        IO::GPIO& lvssEnableOverrideGPIO;
-        IO::GPIO& mcToggleNegativeGPIO;
-        IO::GPIO& mcTogglePositiveGPIO;
-        IO::GPIO& mcToggleOverrideGPIO;
-        IO::GPIO& ucResetGPIO;
-        IO::GPIO& lvssEnableHardmonGPIO;
-        IO::GPIO& hmFaultGPIO;
+        io::GPIO& lvssEnableOverrideGPIO;
+        io::GPIO& mcToggleNegativeGPIO;
+        io::GPIO& mcTogglePositiveGPIO;
+        io::GPIO& mcToggleOverrideGPIO;
+        io::GPIO& ucResetGPIO;
+        io::GPIO& lvssEnableHardmonGPIO;
+        io::GPIO& hmFaultGPIO;
     };
 
     /**
@@ -56,70 +57,70 @@ public:
     /** UART Pins */
 
     /** UART TX pin */
-    static constexpr IO::Pin UART_TX_PIN = IO::Pin::PA_0;
+    static constexpr io::Pin UART_TX_PIN = io::Pin::PA_0;
     /** UART RX pin */
-    static constexpr IO::Pin UART_RX_PIN = IO::Pin::PA_1;
+    static constexpr io::Pin UART_RX_PIN = io::Pin::PA_1;
 
     /** LVSS Enable Pin */
-    static constexpr IO::Pin LVSS_EN_PIN = IO::Pin::PA_8;
+    static constexpr io::Pin LVSS_EN_PIN = io::Pin::PA_8;
     /** LVSS Enable Override Pin */
-    static constexpr IO::Pin LVSS_EN_OVERRIDE_PIN = IO::Pin::PC_9;
+    static constexpr io::Pin LVSS_EN_OVERRIDE_PIN = io::Pin::PC_9;
     /** LVSS Status Pin */
-    static constexpr IO::Pin LVSS_STATUS_3V3_Pin = IO::Pin::PC_11;
+    static constexpr io::Pin LVSS_STATUS_3V3_Pin = io::Pin::PC_11;
 
     /** MicroController State Pins */
-    static constexpr IO::Pin UC_STATE_ZERO_PIN = IO::Pin::PA_9;
-    static constexpr IO::Pin UC_STATE_ONE_PIN = IO::Pin::PA_15;
-    static constexpr IO::Pin UC_STATE_TWO_PIN = IO::Pin::PC_2;
-    static constexpr IO::Pin UC_STATE_THREE_PIN = IO::Pin::PC_10;
+    static constexpr io::Pin UC_STATE_ZERO_PIN = io::Pin::PA_9;
+    static constexpr io::Pin UC_STATE_ONE_PIN = io::Pin::PA_15;
+    static constexpr io::Pin UC_STATE_TWO_PIN = io::Pin::PC_2;
+    static constexpr io::Pin UC_STATE_THREE_PIN = io::Pin::PC_10;
     /** Microcontroller Fault Status Pin */
-    static constexpr IO::Pin UC_FAULT_PIN = IO::Pin::PC_1;
+    static constexpr io::Pin UC_FAULT_PIN = io::Pin::PC_1;
 
     /** Motor Controller Status Pin */
-    static constexpr IO::Pin MOTOR_CONTROLLER_STATUS_PIN = IO::Pin::PA_10;
+    static constexpr io::Pin MOTOR_CONTROLLER_STATUS_PIN = io::Pin::PA_10;
     /** Motor Controller Toggle Negative Pin */
-    static constexpr IO::Pin MOTOR_CONTROLLER_TOGGLE_NEG_PIN = IO::Pin::PC_6;
+    static constexpr io::Pin MOTOR_CONTROLLER_TOGGLE_NEG_PIN = io::Pin::PC_6;
     /** Motor Controler Toggle Positive Pin */
-    static constexpr IO::Pin MOTOR_CONTROLLER_TOGGLE_POS_PIN = IO::Pin::PC_7;
+    static constexpr io::Pin MOTOR_CONTROLLER_TOGGLE_POS_PIN = io::Pin::PC_7;
     /** Motor Controller Toggle Override Pin */
-    static constexpr IO::Pin MOTOR_CONTROLLER_TOGGLE_OVERRIDE_PIN = IO::Pin::PC_8;
+    static constexpr io::Pin MOTOR_CONTROLLER_TOGGLE_OVERRIDE_PIN = io::Pin::PC_8;
 
     /** Accessory CAN RX Pin */
-    static constexpr IO::Pin ACCESSORY_CAN_RX_PIN = IO::Pin::PA_11;
+    static constexpr io::Pin ACCESSORY_CAN_RX_PIN = io::Pin::PA_11;
     /** Accessory CAN TX Pin */
-    static constexpr IO::Pin ACCESSORY_CAN_TX_PIN = IO::Pin::PA_12;
+    static constexpr io::Pin ACCESSORY_CAN_TX_PIN = io::Pin::PA_12;
 
     /** Powertrain Network CAN RX Pin */
-    static constexpr IO::Pin POWERTRAIN_CAN_RX_PIN = IO::Pin::PB_12;
+    static constexpr io::Pin POWERTRAIN_CAN_RX_PIN = io::Pin::PB_12;
     /** Powertrain Network CAN TX Pin */
-    static constexpr IO::Pin POWERTRAIN_CAN_TX_PIN = IO::Pin::PB_13;
+    static constexpr io::Pin POWERTRAIN_CAN_TX_PIN = io::Pin::PB_13;
 
     /** Watchdog Pin */
-    static constexpr IO::Pin WATCHDOG_PIN = IO::Pin::PB_4;
+    static constexpr io::Pin WATCHDOG_PIN = io::Pin::PB_4;
     /** Hardmon Fault Pin */
-    static constexpr IO::Pin HM_FAULT_PIN = IO::Pin::PB_5;
+    static constexpr io::Pin HM_FAULT_PIN = io::Pin::PB_5;
 
     /** Ignition "12v" Pin */
-    static constexpr IO::Pin IGNITION_CHECK_PIN = IO::Pin::PB_6;
+    static constexpr io::Pin IGNITION_CHECK_PIN = io::Pin::PB_6;
     /** Ignition 3V3 Pin */
-    static constexpr IO::Pin IGNITION_3V3_PIN = IO::Pin::PC_12;
+    static constexpr io::Pin IGNITION_3V3_PIN = io::Pin::PC_12;
 
     /** Estop "12v" Pin */
-    static constexpr IO::Pin ESTOP_CHECK_PIN = IO::Pin::PB_7;
+    static constexpr io::Pin ESTOP_CHECK_PIN = io::Pin::PB_7;
     /** Estop 3V3 Pin */
-    static constexpr IO::Pin ESTOP_3V3_PIN = IO::Pin::PD_2;
+    static constexpr io::Pin ESTOP_3V3_PIN = io::Pin::PD_2;
 
     /** MicroController Reset Pin */
-    static constexpr IO::Pin UC_RESET_PIN = IO::Pin::PB_8;
+    static constexpr io::Pin UC_RESET_PIN = io::Pin::PB_8;
     /** CAN Selftest Pin */
-    static constexpr IO::Pin CAN_SELFTEST_PIN = IO::Pin::PB_9;
+    static constexpr io::Pin CAN_SELFTEST_PIN = io::Pin::PB_9;
     /** MCUC CAN Override Pin */
-    static constexpr IO::Pin CAN_OVERRIDE_PIN = IO::Pin::PC_13;
+    static constexpr io::Pin CAN_OVERRIDE_PIN = io::Pin::PC_13;
 
     /**
      * Constructor for Hardmon object
      */
-    Hardmon(reqGPIO gpios, IO::CAN& ptCAN);
+    Hardmon(reqGPIO gpios, io::CAN& ptCAN);
 
     /**
      * Get a pointer to the start of the object dictionary
@@ -140,7 +141,7 @@ public:
      *
      * @param message message to handle
      */
-    void handlePowertrainCanMessage(IO::CANMessage& message);
+    void handlePowertrainCanMessage(io::CANMessage& message);
 
     /**
     * Get the device's node ID
@@ -153,7 +154,7 @@ public:
      * Returns a pointer to the queue for Powertrain CANopen messages
      * @return
      */
-    EVT::core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* getPowertrainQueue();
+    core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, io::CANMessage>* getPowertrainQueue();
 
     void process();
 
@@ -161,7 +162,7 @@ private:
     /**
      * Local instance of PowertrainCan (handles PowertrainCAN messages
      */
-    DEV::PowertrainCAN powertrainCAN;
+    dev::PowertrainCAN powertrainCAN;
 
     /**
      * The model that is determining our control flow

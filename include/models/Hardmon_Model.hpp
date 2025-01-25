@@ -30,7 +30,7 @@
     #endif
 
 // Class declaration for model Hardmon_Model
-namespace VCU {
+namespace vcu {
 class Hardmon_Model final {
     // public data and function members
 public:
