@@ -19,39 +19,10 @@ namespace vcu {
  */
 class MCUC : public CANDevice {
 public:
-    /**
-     * Struct that contains all the GPIOs that an instance of this class requires.
-     */
-    struct reqGPIO {
-        //model input GPIOs
-        io::GPIO& eStopGPIO;
-        io::GPIO& ignitionGPIO;
-        io::GPIO& hmFaultGPIO;
-        io::GPIO& lvssStatusGPIO;
-        io::GPIO& mcStatusGPIO;
 
-        //model output GPIOs
-        io::GPIO& ucFaultGPIO;
-        io::GPIO& lvssEnableGPIO;
-        io::GPIO& watchdogGPIO;
-
-        io::GPIO& ucStateZeroGPIO;
-        io::GPIO& ucStateOneGPIO;
-        io::GPIO& ucStateTwoGPIO;
-        io::GPIO& ucStateThreeGPIO;
-
-        io::GPIO& mcToggleNegativeGPIO;
-        io::GPIO& mcTogglePositiveGPIO;
-        io::GPIO& mcSelfTestGPIO;
-        io::GPIO& estopSelfTestGPIO;
-        io::GPIO& ignitionSelfTestGPIO;
-
-        //Set based off of ucState.
-        io::GPIO& canSelfTestGPIO;
-    };
-    /**
-     * VCU Pinout
-    */
+    //////////////////////////////////////////////
+    ///              MCUC Pinout               ///
+    //////////////////////////////////////////////
 
     /** LED Pins */
 
@@ -132,31 +103,42 @@ public:
 
     static constexpr uint8_t IMU_NODE_ID = 9;
 
+
+    /**
+     * Struct that contains all the GPIOs that an instance of this class requires.
+     */
+    struct ReqGPIO {
+        //model input GPIOs
+        io::GPIO& eStopGPIO;
+        io::GPIO& ignitionGPIO;
+        io::GPIO& hmFaultGPIO;
+        io::GPIO& lvssStatusGPIO;
+        io::GPIO& mcStatusGPIO;
+
+        //model output GPIOs
+        io::GPIO& ucFaultGPIO;
+        io::GPIO& lvssEnableGPIO;
+        io::GPIO& watchdogGPIO;
+
+        io::GPIO& ucStateZeroGPIO;
+        io::GPIO& ucStateOneGPIO;
+        io::GPIO& ucStateTwoGPIO;
+        io::GPIO& ucStateThreeGPIO;
+
+        io::GPIO& mcToggleNegativeGPIO;
+        io::GPIO& mcTogglePositiveGPIO;
+        io::GPIO& mcSelfTestGPIO;
+        io::GPIO& estopSelfTestGPIO;
+        io::GPIO& ignitionSelfTestGPIO;
+
+        //Set based off of ucState.
+        io::GPIO& canSelfTestGPIO;
+    };
+
     /**
      * Constructor for VCU object
      */
-    MCUC(reqGPIO gpios, IO::CAN& ptCAN);
-
-    /**
-     * Get a pointer to the start of the object dictionary
-     *
-     * @return Pointer to the start of the object dictionary
-     */
-    CO_OBJ_T* getObjectDictionary() override;
-
-    /**
-     * Get the number of elements in the object dictionary.
-     *
-     * @return The number of elements in the object dictionary
-     */
-    uint8_t getNumElements() override;
-
-    /**
-    * Get the device's node ID
-    *
-    * @return The node ID of the can device.
-     */
-    uint8_t getNodeID() override;
+    MCUC(ReqGPIO gpios, IO::CAN& ptCAN);
 
     /**
      * Handles the passed in Powertrain CAN message.
@@ -172,7 +154,18 @@ public:
      */
     core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* getPowertrainQueue();
 
+    /**
+     * Runs one step of the Hardmon model, including processing and handling inputs and outputs of the model.
+     */
     void process();
+
+    //override methods from CANDevice
+
+    CO_OBJ_T* getObjectDictionary() override;
+
+    uint8_t getNumElements() override;
+
+    uint8_t getNodeID() override;
 
 private:
     /**
@@ -185,6 +178,9 @@ private:
      * Automatically constructed here (not to be passed in)
      */
     MCuC_Model model;
+
+    ///the gpios
+    ReqGPIO gpios;
 
     //TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
 
@@ -218,9 +214,6 @@ private:
     bool ignitionSelfTestOut;     ///< GPIO: Whether or not ignition should be self-testing.
     bool accessoryCanSelfTestOut; ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over accessoryCAN
     bool powertrainCanSelfTestOut;///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over powertrainCAN
-
-    ///the gpios
-    reqGPIO gpios;
 
     /**
      * The node ID used to identify the device on the CAN network.

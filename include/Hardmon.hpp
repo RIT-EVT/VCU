@@ -18,41 +18,12 @@ namespace vcu {
 /**
  * Driver for the Hardware Monitor
  */
-
 class Hardmon : public CANDevice {
 public:
-    /**
-     * Struct that contains all the GPIOs that an instance of this class requires.
-     */
-    struct reqGPIO {
-        //model input pins
-        io::GPIO& ignitionCheckGPIO;
-        io::GPIO& ignition3V3GPIO;
-        io::GPIO& lvssStatus3V3GPIO;
-        io::GPIO& mcStatusGPIO;
 
-        io::GPIO& ucStateZeroGPIO;
-        io::GPIO& ucStateOneGPIO;
-        io::GPIO& ucStateTwoGPIO;
-        io::GPIO& ucStateThreeGPIO;
-
-        io::GPIO& eStopCheckGPIO;
-        io::GPIO& watchdogGPIO;
-        io::GPIO& eStop3V3GPIO;
-
-        //model outputs pins
-        io::GPIO& lvssEnableOverrideGPIO;
-        io::GPIO& mcToggleNegativeGPIO;
-        io::GPIO& mcTogglePositiveGPIO;
-        io::GPIO& mcToggleOverrideGPIO;
-        io::GPIO& ucResetGPIO;
-        io::GPIO& lvssEnableHardmonGPIO;
-        io::GPIO& hmFaultGPIO;
-    };
-
-    /**
-     * Hardmon Pinout
-     */
+    //////////////////////////////////////////////
+    ///           HardMon Pinout               ///
+    //////////////////////////////////////////////
 
     /** UART Pins */
 
@@ -80,7 +51,7 @@ public:
     static constexpr io::Pin MOTOR_CONTROLLER_STATUS_PIN = io::Pin::PA_10;
     /** Motor Controller Toggle Negative Pin */
     static constexpr io::Pin MOTOR_CONTROLLER_TOGGLE_NEG_PIN = io::Pin::PC_6;
-    /** Motor Controler Toggle Positive Pin */
+    /** Motor Controller Toggle Positive Pin */
     static constexpr io::Pin MOTOR_CONTROLLER_TOGGLE_POS_PIN = io::Pin::PC_7;
     /** Motor Controller Toggle Override Pin */
     static constexpr io::Pin MOTOR_CONTROLLER_TOGGLE_OVERRIDE_PIN = io::Pin::PC_8;
@@ -118,23 +89,39 @@ public:
     static constexpr io::Pin CAN_OVERRIDE_PIN = io::Pin::PC_13;
 
     /**
+    * Struct that contains all the GPIOs that an instance of this class requires.
+    */
+    struct ReqGPIO {
+        //model input pins
+        io::GPIO& ignitionCheckGPIO;
+        io::GPIO& ignition3V3GPIO;
+        io::GPIO& lvssStatus3V3GPIO;
+        io::GPIO& mcStatusGPIO;
+
+        io::GPIO& ucStateZeroGPIO;
+        io::GPIO& ucStateOneGPIO;
+        io::GPIO& ucStateTwoGPIO;
+        io::GPIO& ucStateThreeGPIO;
+
+        io::GPIO& eStopCheckGPIO;
+        io::GPIO& watchdogGPIO;
+        io::GPIO& eStop3V3GPIO;
+
+        //model outputs pins
+        io::GPIO& lvssEnableOverrideGPIO;
+        io::GPIO& mcToggleNegativeGPIO;
+        io::GPIO& mcTogglePositiveGPIO;
+        io::GPIO& mcToggleOverrideGPIO;
+        io::GPIO& ucResetGPIO;
+        io::GPIO& lvssEnableHardmonGPIO;
+        io::GPIO& hmFaultGPIO;
+    };
+
+
+    /**
      * Constructor for Hardmon object
      */
-    Hardmon(reqGPIO gpios, io::CAN& ptCAN);
-
-    /**
-     * Get a pointer to the start of the object dictionary
-     *
-     * @return Pointer to the start of the object dictionary
-     */
-    CO_OBJ_T* getObjectDictionary() override;
-
-    /**
-     * Get the number of elements in the object dictionary.
-     *
-     * @return The number of elements in the object dictionary
-     */
-    uint8_t getNumElements() override;
+    Hardmon(ReqGPIO gpios, io::CAN& ptCAN);
 
     /**
      * Handles the passed in Powertrain CAN message.
@@ -144,23 +131,27 @@ public:
     void handlePowertrainCanMessage(io::CANMessage& message);
 
     /**
-    * Get the device's node ID
-    *
-    * @return The node ID of the can device.
-     */
-    uint8_t getNodeID() override;
-
-    /**
      * Returns a pointer to the queue for Powertrain CANopen messages
-     * @return
+     * @return the pointer to the queue
      */
     core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, io::CANMessage>* getPowertrainQueue();
 
+    /**
+     * Runs one step of the McUc model, including processing and handling inputs and outputs of the model.
+     */
     void process();
+
+    //override methods from CANDevice
+
+    CO_OBJ_T* getObjectDictionary() override;
+
+    uint8_t getNumElements() override;
+
+    uint8_t getNodeID() override;
 
 private:
     /**
-     * Local instance of PowertrainCan (handles PowertrainCAN messages
+     * Local instance of PowertrainCan (handles PowertrainCAN messages)
      */
     dev::PowertrainCAN powertrainCAN;
 
@@ -169,6 +160,9 @@ private:
      * Automatically constructed here (not to be passed in)
      */
     Hardmon_Model model;
+
+    ///The gpios
+    ReqGPIO gpios;
 
     //TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
 
@@ -196,9 +190,6 @@ private:
     bool ucReset;          ///< GPIO: Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)
     bool lvssEnableHardMon;///< GPIO: Whether or not the Hardmon is commanding the LVSS to be enabled
     bool hmFault;          ///< GPIO: Whether or not the Hardmon is commanding the MCUC to go into a fault state
-
-    ///The gpios
-    reqGPIO gpios;
 
     /**
      * The node ID used to identify the device on the CAN network.

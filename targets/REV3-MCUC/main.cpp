@@ -127,7 +127,7 @@ int main() {
 
     IO::CAN& ptCAN = IO::getCAN<vcu::MCUC::POWERTRAIN_CAN_TX_PIN, vcu::MCUC::POWERTRAIN_CAN_RX_PIN>();
 
-    vcu::MCUC::reqGPIO gpios = {
+    vcu::MCUC::ReqGPIO gpios = {
         io::getGPIO<vcu::MCUC::ESTOP_PIN>(io::GPIO::Direction::INPUT),
         io::getGPIO<vcu::MCUC::IGNITION_PIN>(io::GPIO::Direction::INPUT),
         io::getGPIO<vcu::MCUC::HM_FAULT_PIN>(io::GPIO::Direction::INPUT),

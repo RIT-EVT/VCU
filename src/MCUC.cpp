@@ -2,7 +2,7 @@
 
 namespace vcu {
 
-MCUC::MCUC(vcu::MCUC::reqGPIO gpios, IO::CAN& can) : powertrainCAN(can), gpios(gpios) {
+MCUC::MCUC(vcu::MCUC::ReqGPIO gpios, IO::CAN& can) : powertrainCAN(can), gpios(gpios) {
 }
 
 CO_OBJ_T* MCUC::getObjectDictionary() {
@@ -85,10 +85,10 @@ void MCUC::process() {
     inverterEnable = outputs.Inverter_EN_CAN;
     ucFault = outputs.Fault;
     watchdog = outputs.Watchdog;
-    ucState[0] = outputs.uC_State & 0b00000001;
-    ucState[1] = outputs.uC_State >> 1 & 0b00000001;
-    ucState[2] = outputs.uC_State >> 2 & 0b00000001;
-    ucState[3] = outputs.uC_State >> 3 & 0b00000001;
+    ucState[0] = outputs.uC_State & 0x01;
+    ucState[1] = outputs.uC_State >> 1 & 0x01;
+    ucState[2] = outputs.uC_State >> 2 & 0x01;
+    ucState[3] = outputs.uC_State >> 3 & 0x01;
     inverterDischarge = outputs.Inverter_DIS_CAN;
     mcTogglePositive = outputs.MC_TOGp_uC;
     mcToggleNegative = outputs.MC_TOGn_uC;
