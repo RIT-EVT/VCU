@@ -112,7 +112,8 @@ void Hardmon::process() {
     gpios.hmFaultGPIO.writePin(hmFault ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
     //TODO: right now the message sets all values but inverter discharge to be 0. This might be REALLY BAD,
-    // discuss it more with the EES and maybe Matt.
+    // discuss it more with the EES and maybe Matt. Also make sure that this is okay to send in terms of
+    // determining if the MCuC is untrustworthy.
     if (inverterDischarge) {
         powertrainCAN.setMCInverterDischarge(true);
         powertrainCAN.sendMCMessage();
