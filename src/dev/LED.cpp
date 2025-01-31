@@ -30,4 +30,4 @@ void LED::setState(core::io::GPIO::State state) {
     }
 }
 
-}// namespace VCU::DEV
+}// namespace vcu::dev

@@ -475,7 +475,7 @@ void Hardmon_Model::enter_internal_Normal_Operation(void) {
     // Inport: '<Root>/LVSS_EN_uC'
     Hardmon_Model_B.LVSS_EN_HM = Hardmon_Model_U.LVSS_EN_uC;
 }
-}// namespace VCU
+}// namespace vcu
 
 namespace vcu {
 // Model step function
@@ -869,7 +869,7 @@ Hardmon_Model::~Hardmon_Model() = default;
 Hardmon_Model::RT_MODEL_Hardmon_Model_T* Hardmon_Model::getRTM() {
     return (&Hardmon_Model_M);
 }
-}// namespace VCU
+}// namespace vcu
 
 //
 // File trailer for generated code.

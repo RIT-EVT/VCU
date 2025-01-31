@@ -120,4 +120,4 @@ void Hardmon::process() {
     }
 }
 
-}// namespace VCU
+}// namespace vcu

@@ -1,13 +1,13 @@
 #ifndef VCU_HARDMON_HPP
 #define VCU_HARDMON_HPP
 
-#include <core/utils/types/FixedQueue.hpp>
 #include <core/io/CAN.hpp>
 #include <core/io/CANDevice.hpp>
 #include <core/io/CANOpenMacros.hpp>
 #include <core/io/GPIO.hpp>
 #include <core/io/pin.hpp>
 #include <core/io/types/CANMessage.hpp>
+#include <core/utils/types/FixedQueue.hpp>
 #include <dev/PowertrainCAN.hpp>
 #include <models/Hardmon_Model.hpp>
 
@@ -20,7 +20,6 @@ namespace vcu {
  */
 class Hardmon : public CANDevice {
 public:
-
     //////////////////////////////////////////////
     ///           HardMon Pinout               ///
     //////////////////////////////////////////////
@@ -116,7 +115,6 @@ public:
         io::GPIO& lvssEnableHardmonGPIO;
         io::GPIO& hmFaultGPIO;
     };
-
 
     /**
      * Constructor for Hardmon object
@@ -217,6 +215,6 @@ private:
     };
 };
 
-}// namespace VCU
+}// namespace vcu
 
 #endif//VCU_HARDMON_HPP

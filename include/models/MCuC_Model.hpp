@@ -184,7 +184,7 @@ private:
     // Real-Time Model
     RT_MODEL_MCuC_Model_T MCuC_Model_M;
 };
-}// namespace VCU
+}// namespace vcu
 
 //-
 //  The generated code includes comments that allow you to trace directly

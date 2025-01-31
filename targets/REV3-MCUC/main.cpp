@@ -148,8 +148,7 @@ int main() {
         io::getGPIO<vcu::MCUC::MC_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCUC::ESTOP_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCUC::IGNITION_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCUC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT)
-    };
+        io::getGPIO<vcu::MCUC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT)};
 
     vcu::MCUC mcuc(gpios, ptCAN);
     ptCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(mcuc.getPowertrainQueue()));
