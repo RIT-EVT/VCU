@@ -16,7 +16,7 @@ env:
 jobs:
   build:
     # Select the server's operating system
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       # Checkout the repository, including all submodules
