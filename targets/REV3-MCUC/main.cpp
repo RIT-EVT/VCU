@@ -18,7 +18,7 @@
 #include <co_tmr.h>
 
 #include <MCUC.hpp>
-#include <dev/PowertrainCAN.hpp>
+#include <PowertrainCAN.hpp>
 
 namespace io = core::io;
 namespace dev = core::dev;
