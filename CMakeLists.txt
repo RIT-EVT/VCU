@@ -64,7 +64,7 @@ add_library(${PROJECT_NAME} STATIC)
 
 # Add sources
 target_sources(${PROJECT_NAME} PRIVATE
-        src/dev/PowertrainCAN.cpp
+        src/PowertrainCAN.cpp
         src/models/Hardmon_Model.cpp
         src/models/MCuC_Model.cpp
         src/MCUC.cpp

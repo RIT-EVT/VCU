@@ -119,9 +119,9 @@ int main() {
 
     */
 
-    ////////////////////////
-    //Initialize Powertrain CAN
-    ////////////////////////////
+    //////////////////////////////
+    //Initialize Powertrain CAN //
+    //////////////////////////////
 
     vcu::Hardmon::ReqGPIO hmGPIOS = {
         io::getGPIO<vcu::Hardmon::IGNITION_CHECK_PIN>(io::GPIO::Direction::INPUT),

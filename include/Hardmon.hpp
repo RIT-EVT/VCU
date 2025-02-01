@@ -8,7 +8,7 @@
 #include <core/io/GPIO.hpp>
 #include <core/io/pin.hpp>
 #include <core/io/types/CANMessage.hpp>
-#include <dev/PowertrainCAN.hpp>
+#include <PowertrainCAN.hpp>
 #include <models/Hardmon_Model.hpp>
 
 namespace io = core::io;
