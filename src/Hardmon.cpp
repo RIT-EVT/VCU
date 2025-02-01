@@ -57,8 +57,8 @@ void Hardmon::process() {
     //discharge will be updated over CAN
     watchdog = gpios.watchdogGPIO.readPin() == io::GPIO::State::HIGH;
     eStop3v3 = gpios.eStop3V3GPIO.readPin() == io::GPIO::State::HIGH;
-    // lvssEnableUC should be a pin, but electrical fucked it up and forgot to add it
-    // so instead we are calculating it based on the microcontroller state. yay!
+    // lvssEnableUC should be a pin, but electrical forgot to add it
+    // so instead we are calculating it based on the microcontroller state.
     // ucStates 1 through 5 should make this true
     // TODO: check with EEs if a fault should make this true or not
     // getting the state value from the array.
