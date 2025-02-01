@@ -133,4 +133,4 @@ void MCUC::process() {
     powertrainCAN.sendMCMessage();
 }
 
-}// namespace VCU
+}// namespace vcu

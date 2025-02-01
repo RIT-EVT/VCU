@@ -65,4 +65,4 @@ void PowertrainCAN::sendHardmonSelfTestResponse() {
     can.transmit(UCSelfTestMessage);
 }
 
-}// namespace VCU::DEV
+}// namespace vcu::dev

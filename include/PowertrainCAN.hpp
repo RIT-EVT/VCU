@@ -162,6 +162,6 @@ private:
     IO::CANMessage HardmonSelfTestResponse = IO::CANMessage(HARDMON_SELF_TEST_MESSAGE_ID, 1, &HardmonSelfTestResponsePayload, false);
 };
 
-}//namespace VCU::DEV
+}// namespace vcu::dev
 
 #endif//VCU_POWERTRAINCAN_HPP

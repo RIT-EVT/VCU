@@ -748,7 +748,7 @@ void MCuC_Model::MCuC_Model_MCuC(bool* Watchdog) {
         }
     }
 }
-}// namespace VCU
+}// namespace vcu
 
 namespace vcu {
 // Model step function
@@ -937,7 +937,7 @@ MCuC_Model::~MCuC_Model() = default;
 MCuC_Model::RT_MODEL_MCuC_Model_T* MCuC_Model::getRTM() {
     return (&MCuC_Model_M);
 }
-}// namespace VCU
+}// namespace vcu
 
 //
 // File trailer for generated code.

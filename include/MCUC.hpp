@@ -1,12 +1,12 @@
 #ifndef VCU_HPP
 #define VCU_HPP
 
-#include <core/utils/types/FixedQueue.hpp>
 #include <core/io/CANDevice.hpp>
 #include <core/io/CANOpenMacros.hpp>
 #include <core/io/GPIO.hpp>
 #include <core/io/pin.hpp>
 #include <core/io/types/CANMessage.hpp>
+#include <core/utils/types/FixedQueue.hpp>
 #include <PowertrainCAN.hpp>
 #include <models/MCuC_Model.hpp>
 
@@ -19,7 +19,6 @@ namespace vcu {
  */
 class MCUC : public CANDevice {
 public:
-
     //////////////////////////////////////////////
     ///              MCUC Pinout               ///
     //////////////////////////////////////////////
@@ -102,7 +101,6 @@ public:
      */
 
     static constexpr uint8_t IMU_NODE_ID = 9;
-
 
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
@@ -243,6 +241,6 @@ private:
     };
 };
 
-}//namespace VCU
+}// namespace vcu
 
 #endif//VCU_HPP

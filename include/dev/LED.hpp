@@ -42,6 +42,6 @@ private:
     ActiveState activeState;
 };
 
-}//namespace VCU::DEV
+}// namespace vcu::dev
 
 #endif//VCU_LED
