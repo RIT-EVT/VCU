@@ -1,13 +1,13 @@
 #ifndef VCU_HPP
 #define VCU_HPP
 
+#include <PowertrainCAN.hpp>
 #include <core/io/CANDevice.hpp>
 #include <core/io/CANOpenMacros.hpp>
 #include <core/io/GPIO.hpp>
 #include <core/io/pin.hpp>
 #include <core/io/types/CANMessage.hpp>
 #include <core/utils/types/FixedQueue.hpp>
-#include <PowertrainCAN.hpp>
 #include <models/MCuC_Model.hpp>
 
 namespace io = core::io;
