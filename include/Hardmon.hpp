@@ -1,13 +1,13 @@
 #ifndef VCU_HARDMON_HPP
 #define VCU_HARDMON_HPP
 
+#include <PowertrainCAN.hpp>
 #include <core/io/CAN.hpp>
 #include <core/io/CANDevice.hpp>
 #include <core/io/CANOpenMacros.hpp>
 #include <core/io/GPIO.hpp>
 #include <core/io/pin.hpp>
 #include <core/io/types/CANMessage.hpp>
-#include <PowertrainCAN.hpp>
 #include <core/utils/types/FixedQueue.hpp>
 #include <models/Hardmon_Model.hpp>
 
