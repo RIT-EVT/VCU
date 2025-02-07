@@ -69,7 +69,6 @@ target_sources(${PROJECT_NAME} PRIVATE
         src/models/MCuC_Model.cpp
         src/MCUC.cpp
         src/Hardmon.cpp
-        src/dev/LED.cpp
         )
 
 ###############################################################################
