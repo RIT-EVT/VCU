@@ -90,7 +90,7 @@ public:
     /**
     * Struct that contains all the GPIOs that an instance of this class requires.
     */
-    struct ReqGPIO {
+    struct HardmonGPIO {
         //model input pins
         io::GPIO& ignitionCheckGPIO;
         io::GPIO& ignition3V3GPIO;
@@ -119,7 +119,7 @@ public:
     /**
      * Constructor for Hardmon object
      */
-    Hardmon(ReqGPIO gpios, io::CAN& ptCAN);
+    Hardmon(HardmonGPIO gpios, io::CAN& ptCAN);
 
     /**
      * Handles the passed in Powertrain CAN message.
@@ -160,7 +160,7 @@ private:
     Hardmon_Model model;
 
     ///The gpios
-    ReqGPIO gpios;
+    HardmonGPIO gpios;
 
     //TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
 

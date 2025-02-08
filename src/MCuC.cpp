@@ -1,23 +1,23 @@
-#include <MCUC.hpp>
+#include <MCuC.hpp>
 
 namespace vcu {
 
-MCUC::MCUC(vcu::MCUC::ReqGPIO gpios, IO::CAN& can) : powertrainCAN(can), gpios(gpios) {
+MCuC::MCuC(vcu::MCuC::MCuC_GPIO gpios, IO::CAN& can) : powertrainCAN(can), gpios(gpios) {
 }
 
-CO_OBJ_T* MCUC::getObjectDictionary() {
+CO_OBJ_T* MCuC::getObjectDictionary() {
     return &objectDictionary[0];
 }
 
-uint8_t MCUC::getNumElements() {
+uint8_t MCuC::getNumElements() {
     return OBJECT_DICTIONARY_SIZE;
 }
 
-uint8_t MCUC::getNodeID() {
+uint8_t MCuC::getNodeID() {
     return NODE_ID;
 }
 
-void MCUC::handlePowertrainCanMessage(IO::CANMessage& message) {
+void MCuC::handlePowertrainCanMessage(IO::CANMessage& message) {
     switch (message.getId()) {
     case dev::PowertrainCAN::MC_INTERNAL_STATES_ID:
         mcState = powertrainCAN.parseMCState(message);
@@ -37,11 +37,11 @@ void MCUC::handlePowertrainCanMessage(IO::CANMessage& message) {
     }
 }
 
-core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* MCUC::getPowertrainQueue() {
+core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* MCuC::getPowertrainQueue() {
     return &powertrainCAN.queue;
 }
 
-void MCUC::process() {
+void MCuC::process() {
     //handle all the powertrain CAN messages
     IO::CANMessage message;
     while (!powertrainCAN.queue.isEmpty()) {

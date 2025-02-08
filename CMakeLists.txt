@@ -67,7 +67,7 @@ target_sources(${PROJECT_NAME} PRIVATE
         src/PowertrainCAN.cpp
         src/models/Hardmon_Model.cpp
         src/models/MCuC_Model.cpp
-        src/MCUC.cpp
+        src/MCuC.cpp
         src/Hardmon.cpp
         )
 

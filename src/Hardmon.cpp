@@ -2,7 +2,7 @@
 
 namespace vcu {
 
-Hardmon::Hardmon(ReqGPIO gpios, io::CAN& ptCAN) : gpios(gpios), powertrainCAN(ptCAN) {
+Hardmon::Hardmon(HardmonGPIO gpios, io::CAN& ptCAN) : gpios(gpios), powertrainCAN(ptCAN) {
 }
 
 CO_OBJ_T* Hardmon::getObjectDictionary() {

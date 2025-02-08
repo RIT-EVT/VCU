@@ -17,7 +17,7 @@ namespace vcu {
 /**
  * Driver for the VCU device
  */
-class MCUC : public CANDevice {
+class MCuC : public CANDevice {
 public:
     //////////////////////////////////////////////
     ///              MCUC Pinout               ///
@@ -105,7 +105,7 @@ public:
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
      */
-    struct ReqGPIO {
+    struct MCuC_GPIO {
         //model input GPIOs
         io::GPIO& eStopGPIO;
         io::GPIO& ignitionGPIO;
@@ -136,7 +136,7 @@ public:
     /**
      * Constructor for VCU object
      */
-    MCUC(ReqGPIO gpios, IO::CAN& ptCAN);
+    MCuC(MCuC_GPIO gpios, IO::CAN& ptCAN);
 
     /**
      * Handles the passed in Powertrain CAN message.
@@ -178,7 +178,7 @@ private:
     MCuC_Model model;
 
     ///the gpios
-    ReqGPIO gpios;
+    MCuC_GPIO gpios;
 
     //TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
 

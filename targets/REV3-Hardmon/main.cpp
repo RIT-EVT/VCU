@@ -123,7 +123,7 @@ int main() {
     //Initialize Powertrain CAN //
     //////////////////////////////
 
-    vcu::Hardmon::ReqGPIO hmGPIOS = {
+    vcu::Hardmon::HardmonGPIO hmGPIOS = {
         io::getGPIO<vcu::Hardmon::IGNITION_CHECK_PIN>(io::GPIO::Direction::INPUT),
         io::getGPIO<vcu::Hardmon::IGNITION_3V3_PIN>(io::GPIO::Direction::INPUT),
         io::getGPIO<vcu::Hardmon::LVSS_STATUS_3V3_Pin>(io::GPIO::Direction::INPUT),
