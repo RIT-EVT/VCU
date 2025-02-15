@@ -54,26 +54,24 @@ void Hardmon::process() {
     // so instead we are calculating it based on the microcontroller state.
     // ucStates 1 through 5 should make this true
     // getting the state value from the array.
-    uint8_t states = modelGPIOInputs.ucState[0];
-    states <<= 1;
-    states += modelGPIOInputs.ucState[1];
-    states <<= 1;
-    states += modelGPIOInputs.ucState[2];
-    states <<= 1;
-    states += modelGPIOInputs.ucState[3];
-    lvssEnableUC = (states >= 1 && states <= 5);
+    uint16_t state = modelGPIOInputs.ucState[0];
+    state <<= 1;
+    state += modelGPIOInputs.ucState[1];
+    state <<= 1;
+    state += modelGPIOInputs.ucState[2];
+    state <<= 1;
+    state += modelGPIOInputs.ucState[3];
+    lvssEnableUC = (state >= 1 && state <= 5);
+    ucState = static_cast<UC_State>(state);
 
     //step the model
-    const Hardmon_Model::ExtU_Hardmon_Model_T modelInputs = {
+    const Hardmon_Model::ExtU_Hardmon_T modelInputs = {
         forwardEnable,
         modelGPIOInputs.ignitionCheck,
         modelGPIOInputs.ignition3v3,
         modelGPIOInputs.lvssStatus,
         modelGPIOInputs.mcStatus,
-        {modelGPIOInputs.ucState[0],
-         modelGPIOInputs.ucState[1],
-         modelGPIOInputs.ucState[2],
-         modelGPIOInputs.ucState[3]},
+        ucState,
         modelGPIOInputs.eStopCheck,
         discharge,
         modelGPIOInputs.watchdog,

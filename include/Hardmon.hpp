@@ -190,15 +190,8 @@ private:
             bool lvssEnableHardMon;///< GPIO: Whether or not the Hardmon is commanding the LVSS to be enabled
             bool hmFault;          ///< GPIO: Whether or not the Hardmon is commanding the MCUC to go into a fault state
         };
-        Hardmon_Model::ExtY_Hardmon_Model_T modelOutputStruct;
+        Hardmon_Model::ExtY_Hardmon_T modelOutputStruct;
     };
-
-    /**
-     * Union that holds the gpio struct and an array
-     * Lets us index into it like an array
-     */
-
-    bool lvssEnableUC;///< GPIO: whether or not the MCuC is telling the LVSS to be enabled
 
     /**
      * Local instance of PowertrainCan (handles PowertrainCAN messages)
@@ -218,7 +211,14 @@ private:
 
     //Model input data
     ModelGPIOInputs_t modelGPIOInputs;
-    uint8_t discharge; ///< CAN (MC): current state of the Motor Controller's discharge state machine
+
+    /**
+     * Union that holds the gpio struct and an array
+     * Lets us index into it like an array
+     */
+    UC_State ucState;
+    bool lvssEnableUC;///< GPIO: whether or not the MCuC is telling the LVSS to be enabled (calculated from ucState)
+    MC_DC_State discharge; ///< CAN (MC): current state of the Motor Controller's discharge state machine
     bool forwardEnable;///< CAN (HIB): handlebar forward enable
 
     //Model output data

@@ -186,6 +186,14 @@ private:
     ///the gpios
     MCuC_GPIO gpios;
 
+    union UCState {
+        struct {
+            bool buffer[12];
+            bool stateBits[4];
+        };
+        UC_State stateEnum;
+    };
+
     //TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
 
     //Model input data
@@ -193,8 +201,8 @@ private:
     bool eStop;                  ///< GPIO: Whether or not the emergency stop is enabled.
     bool forwardEnable;          ///< CAN (HIB): Whether or not the bike is commanded to go forward.
     bool startPressed;           ///< CAN (HIB): Whether or not the bike is starting.
-    uint8_t mcState;             ///< CAN (MC): What state the motor controller state machine is in. [0,14] range
-    uint8_t mcDischarge;         ///< CAN (MC): What state the motor controller discharger is in. [0,4] range
+    MC_VSM_State mcState;        ///< CAN (MC): What state the motor controller state machine is in. [0,14] range
+    MC_DC_State mcDischarge;     ///< CAN (MC): What state the motor controller discharger is in. [0,4] range
     bool ignitionOn;             ///< GPIO: Whether or not the ignition is on.
     bool hmFault;                ///< GPIO: Whether or not the hardware monitor is telling the MCUC to go into a fault state.
     int16_t throttle;            ///< CAN (HIB): Signal state of the throttle.
@@ -208,10 +216,9 @@ private:
     bool inverterEnable;          ///< CAN (MC): Whether or not the inverter on the motor controller should be enabled.
     bool ucFault;                 ///< GPIO: Whether or not the MCUC is in a fault state
     bool watchdog;                ///< GPIO: watchdog signal between the Hardmon and MCUC.
-    bool ucState[4];              ///< GPIO: Current State of the MCUC;
+    UCState ucState;              ///< GPIO: Current State of the MCUC;
     bool inverterDischarge;       ///< CAN (MC): Whether or not the inverter on the motor controller should be discharging.
-    bool mcTogglePositive;        ///< GPIO: Together with mcToggleNegative controls whether the motor controller should be on or not.
-    bool mcToggleNegative;        ///< GPIO: Together with mcTogglePositive controls whether the motor controller should be on or not.
+    bool mcEnableUC;              /// GPIO: controls mcTogglePositive and mcToggleNegative to enable or disable the motor controller
     int16_t torqueRequest;        ///< CAN (MC): How much torque the MCUC is requesting the motor controller to output
     bool mcSelfTestOut;           ///< GPIO: Whether or not the motor controller should be self-testing.
     bool estopSelfTestOut;        ///< GPIO: Whether or not the estop should be self-testing.
