@@ -78,6 +78,8 @@ void MCuC::process() {
 
     model.step();
 
+    //TODO: in the future when the model is reworked so the inputs and outputs are in separate blocks of CAN & GPIO inputs
+    // we can use unions for this and iterate through it.
     //get outputs
     vcu::MCuC_Model::ExtY_MCuC_Model_T outputs = model.getExternalOutputs();
     //save outputs

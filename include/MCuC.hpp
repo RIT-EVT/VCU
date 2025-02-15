@@ -105,33 +105,39 @@ public:
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
      */
-    struct MCuC_GPIO {
-        //model input GPIOs
-        io::GPIO& eStopGPIO;
-        io::GPIO& ignitionGPIO;
-        io::GPIO& hmFaultGPIO;
-        io::GPIO& lvssStatusGPIO;
-        io::GPIO& mcStatusGPIO;
+     union MCuC_GPIO {
+         struct  {
+             //model input GPIOs
+             io::GPIO& eStopGPIO;
+             io::GPIO& ignitionGPIO;
+             io::GPIO& hmFaultGPIO;
+             io::GPIO& lvssStatusGPIO;
+             io::GPIO& mcStatusGPIO;
 
-        //model output GPIOs
-        io::GPIO& ucFaultGPIO;
-        io::GPIO& lvssEnableGPIO;
-        io::GPIO& watchdogGPIO;
+             //model output GPIOs
+             io::GPIO& ucFaultGPIO;
+             io::GPIO& lvssEnableGPIO;
+             io::GPIO& watchdogGPIO;
 
-        io::GPIO& ucStateZeroGPIO;
-        io::GPIO& ucStateOneGPIO;
-        io::GPIO& ucStateTwoGPIO;
-        io::GPIO& ucStateThreeGPIO;
+             io::GPIO& ucStateZeroGPIO;
+             io::GPIO& ucStateOneGPIO;
+             io::GPIO& ucStateTwoGPIO;
+             io::GPIO& ucStateThreeGPIO;
 
-        io::GPIO& mcToggleNegativeGPIO;
-        io::GPIO& mcTogglePositiveGPIO;
-        io::GPIO& mcSelfTestGPIO;
-        io::GPIO& estopSelfTestGPIO;
-        io::GPIO& ignitionSelfTestGPIO;
+             io::GPIO& mcToggleNegativeGPIO;
+             io::GPIO& mcTogglePositiveGPIO;
+             io::GPIO& mcSelfTestGPIO;
+             io::GPIO& estopSelfTestGPIO;
+             io::GPIO& ignitionSelfTestGPIO;
 
-        //Set based off of ucState.
-        io::GPIO& canSelfTestGPIO;
-    };
+             //Set based off of ucState.
+             io::GPIO& canSelfTestGPIO;
+         };
+         struct {
+             io::GPIO* inputArr[5];
+             io::GPIO* outputArr[12];
+         };
+     };
 
     /**
      * Constructor for VCU object
