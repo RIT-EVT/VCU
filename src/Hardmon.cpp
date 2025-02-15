@@ -53,15 +53,14 @@ void Hardmon::process() {
     // lvssEnableUC should be a pin, but electrical forgot to add it
     // so instead we are calculating it based on the microcontroller state.
     // ucStates 1 through 5 should make this true
-    // TODO: check with EEs if a fault should make this true or not
     // getting the state value from the array.
-    uint8_t states = modelGPIOInputs.ucState[3];
-    states <<= 1;
-    states += modelGPIOInputs.ucState[2];
+    uint8_t states = modelGPIOInputs.ucState[0];
     states <<= 1;
     states += modelGPIOInputs.ucState[1];
     states <<= 1;
-    states += modelGPIOInputs.ucState[0];
+    states += modelGPIOInputs.ucState[2];
+    states <<= 1;
+    states += modelGPIOInputs.ucState[3];
     lvssEnableUC = (states >= 1 && states <= 5);
 
     //step the model
