@@ -79,8 +79,7 @@ void Hardmon::process() {
         discharge,
         modelGPIOInputs.watchdog,
         modelGPIOInputs.eStop3v3,
-        lvssEnableUC
-    };
+        lvssEnableUC};
 
     model.setExternalInputs(&modelInputs);
     model.step();

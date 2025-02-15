@@ -126,9 +126,6 @@ public:
         };
     };
 
-
-
-
     /**
      * Constructor for Hardmon object
      */
@@ -161,40 +158,39 @@ public:
     uint8_t getNodeID() override;
 
 private:
-
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
      * THE ORDER OF THIS MUST MATCH THE HARDMON GPIO ORDER.
     */
     union ModelGPIOInputs_t {
-            struct {
-                bool ignitionCheck;///< GPIO: whether the ignition is on or off on 12v line
-                bool ignition3v3;  ///< GPIO: whether the ignition is on or off on 3.3v line
-                bool lvssStatus;   ///< GPIO: whether the lvss is on or not
-                bool mcStatus;     ///< GPIO: whether the Motor Controller is on or off
-                bool ucState[4];   ///< GPIO: what state the MCuC is in
-                bool eStopCheck;   ///< GPIO: whether the estop is on or off on 12v line
-                bool watchdog;     ///< GPIO: alternating on and off signal from the MCUC to the Hardmon
-                bool eStop3v3;     ///< GPIO: whether the estop is on or off on 3.3v line
-            };
-            bool arr[11];
+        struct {
+            bool ignitionCheck;///< GPIO: whether the ignition is on or off on 12v line
+            bool ignition3v3;  ///< GPIO: whether the ignition is on or off on 3.3v line
+            bool lvssStatus;   ///< GPIO: whether the lvss is on or not
+            bool mcStatus;     ///< GPIO: whether the Motor Controller is on or off
+            bool ucState[4];   ///< GPIO: what state the MCuC is in
+            bool eStopCheck;   ///< GPIO: whether the estop is on or off on 12v line
+            bool watchdog;     ///< GPIO: alternating on and off signal from the MCUC to the Hardmon
+            bool eStop3v3;     ///< GPIO: whether the estop is on or off on 3.3v line
+        };
+        bool arr[11];
     };
 
     /**
      * Union that lets us rename the Hardmon outputs into better names.
      */
     union ModelOutputs_t {
-            struct {
-                bool mcSwitchEnable;   ///< GPIO: whether or not the Hardmon is taking over mcEnable control from the MCUC
-                bool lvssSwitchEnable; ///< GPIO: whether or not the Hardmon is taking over lvssEnable control from the MCUC
-                bool inverterDischarge;///< CAN (MC): whether or not the Motor Controller is commanded to discharge
-                bool mcToggleNeg;      ///< GPIO: Together with MCTogglePos commands the Motor Controller being on or not
-                bool mcTogglePos;      ///< GPIO: Together with MCToggleNeg commands the Motor Controller being on or not
-                bool ucReset;          ///< GPIO: Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)
-                bool lvssEnableHardMon;///< GPIO: Whether or not the Hardmon is commanding the LVSS to be enabled
-                bool hmFault;          ///< GPIO: Whether or not the Hardmon is commanding the MCUC to go into a fault state
-            };
-            Hardmon_Model::ExtY_Hardmon_Model_T modelOutputStruct;
+        struct {
+            bool mcSwitchEnable;   ///< GPIO: whether or not the Hardmon is taking over mcEnable control from the MCUC
+            bool lvssSwitchEnable; ///< GPIO: whether or not the Hardmon is taking over lvssEnable control from the MCUC
+            bool inverterDischarge;///< CAN (MC): whether or not the Motor Controller is commanded to discharge
+            bool mcToggleNeg;      ///< GPIO: Together with MCTogglePos commands the Motor Controller being on or not
+            bool mcTogglePos;      ///< GPIO: Together with MCToggleNeg commands the Motor Controller being on or not
+            bool ucReset;          ///< GPIO: Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)
+            bool lvssEnableHardMon;///< GPIO: Whether or not the Hardmon is commanding the LVSS to be enabled
+            bool hmFault;          ///< GPIO: Whether or not the Hardmon is commanding the MCUC to go into a fault state
+        };
+        Hardmon_Model::ExtY_Hardmon_Model_T modelOutputStruct;
     };
 
     /**
@@ -202,7 +198,7 @@ private:
      * Lets us index into it like an array
      */
 
-    bool lvssEnableUC;     ///< GPIO: whether or not the MCuC is telling the LVSS to be enabled
+    bool lvssEnableUC;///< GPIO: whether or not the MCuC is telling the LVSS to be enabled
 
     /**
      * Local instance of PowertrainCan (handles PowertrainCAN messages)
@@ -222,8 +218,8 @@ private:
 
     //Model input data
     ModelGPIOInputs_t modelGPIOInputs;
-    uint8_t discharge;  ///< CAN (MC): current state of the Motor Controller's discharge state machine
-    bool forwardEnable; ///< CAN (HIB): handlebar forward enable
+    uint8_t discharge; ///< CAN (MC): current state of the Motor Controller's discharge state machine
+    bool forwardEnable;///< CAN (HIB): handlebar forward enable
 
     //Model output data
     ModelOutputs_t modelOutputs;
