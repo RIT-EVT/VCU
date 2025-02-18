@@ -20,8 +20,8 @@ uint8_t MCuC::getNodeID() {
 void MCuC::handlePowertrainCanMessage(IO::CANMessage& message) {
     switch (message.getId()) {
     case dev::PowertrainCAN::MC_INTERNAL_STATES_ID:
-        mcState = powertrainCAN.parseMCState(message);
-        mcDischarge = powertrainCAN.parseMCDischarge(message);
+        mcState = static_cast<MC_VSM_State>(powertrainCAN.parseMCState(message));
+        mcDischarge = static_cast<MC_DC_State>(powertrainCAN.parseMCDischarge(message));
         break;
     case dev::PowertrainCAN::HIB_MESSAGE_ID:
         throttle = powertrainCAN.parseHIBThrottle(message);
@@ -103,9 +103,9 @@ void MCuC::process() {
     gpios.ucStateThreeGPIO.writePin(ucState.stateBits[3] ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
     //set inverterDisable before we send the message
     // set Motor Controller via the two gpios
-    //TODO: this should be handled with a latching relay driver- need to make one.
-    gpios.mcTogglePositiveGPIO.writePin(mcTogglePositive ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
-    gpios.mcToggleNegativeGPIO.writePin(mcToggleNegative ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    // If mcEnableUC is true, Positive should be High and Negative should be Low, otherwise they should be the opposite.
+    gpios.mcTogglePositiveGPIO.writePin(mcEnableUC ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
+    gpios.mcToggleNegativeGPIO.writePin(mcEnableUC ? IO::GPIO::State::LOW : IO::GPIO::State::HIGH);
     //set torqueRequest before we send the message
     gpios.mcSelfTestGPIO.writePin(mcSelfTestOut ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
     gpios.estopSelfTestGPIO.writePin(estopSelfTestOut ? IO::GPIO::State::HIGH : IO::GPIO::State::LOW);
