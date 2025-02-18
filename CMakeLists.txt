@@ -11,12 +11,15 @@ if(EVT_CORE_LOG_ENABLE)
 endif()
 
 # Handle selection of the target device
-option(TARGET_DEV "Target device" "STM32F334x8")
+option(TARGET_DEV "Target device" "STM32F446xx")
 if(NOT TARGET_DEV)
-    set(TARGET_DEV "STM32F334x8")
+    set(TARGET_DEV "STM32F446xx")
 endif()
 
-if(TARGET_DEV STREQUAL "STM32F302x8")
+if (TARGET_DEV STREQUAL "STM32F446xx")
+    add_compile_definitions(STM32F446)
+    add_compile_definitions(STM32F4xx)
+elseif(TARGET_DEV STREQUAL "STM32F302x8")
     add_compile_definitions(STM32F302x8)
     add_compile_definitions(STM32F3xx)
 elseif(TARGET_DEV STREQUAL "STM32F334x8")
@@ -61,8 +64,11 @@ add_library(${PROJECT_NAME} STATIC)
 
 # Add sources
 target_sources(${PROJECT_NAME} PRIVATE
-        src/dev/LED.cpp
-        src/VCU.cpp
+        src/PowertrainCAN.cpp
+        src/models/Hardmon_Model.cpp
+        src/models/MCuC_Model.cpp
+        src/MCuC.cpp
+        src/Hardmon.cpp
         )
 
 ###############################################################################
