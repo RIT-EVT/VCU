@@ -17,11 +17,41 @@
 #include <co_if.h>
 #include <co_tmr.h>
 
+// rtos includes
+#include <core/rtos/BytePool.hpp>
+#include <core/rtos/Enums.hpp>
+#include <core/rtos/EventFlags.hpp>
+#include <core/rtos/Queue.hpp>
+#include <core/rtos/Semaphore.hpp>
+#include <core/rtos/Thread.hpp>
+#include <core/rtos/tsio/ThreadUART.hpp>
+
+
 #include <Hardmon.hpp>
 
+namespace rtos = core::rtos;
 namespace io = core::io;
 namespace dev = core::dev;
 namespace time = core::time;
+
+///////////////////////////////////////////////////////////////////////////////
+//RTOS GLOBAlS SETUP
+///////////////////////////////////////////////////////////////////////////////
+
+#define MODEL_THREAD_STACK_SIZE 1024
+#define MODEL_THREAD_PRIORITY 1
+#define MODEL_THREAD_PREEMPT_THRESHOLD 1
+#define MODEL_THREAD_TIME_SLICE MS_TO_TICKS(0)
+#define MODEL_THREAD_AUTOSTART true
+#define TX_APP_MEM_POOL_SIZE 65536
+
+/**
+ * Struct that holds information needed for the model thread
+ */
+
+
+// Thread Function Prototypes-- implementation below main.
+[[noreturn]] void modelThreadEntry(vcu::Hardmon* hardmon);
 
 ///////////////////////////////////////////////////////////////////////////////
 // EVT-core CAN callback and CAN setup. This will include logic to set
@@ -151,13 +181,24 @@ int main() {
     ptCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(hardmon.getPowertrainQueue()));
 
     ///////////////////////////////////////////////////////////////////////////
-    // Main loop //
+    // Initialize Threads //
     ///////////////////////////////////////////////////////////////////////////
 
-    while (1) {
-        //io::processCANopenNode(&canNode);
-        hardmon.process();
-        // Wait for new data to come in
-        time::wait(10);
+    ///Model Thread
+    rtos::Thread<vcu::Hardmon*> modelThread((char *)"Model Thread", modelThreadEntry, &hardmon,
+                                            MODEL_THREAD_STACK_SIZE, MODEL_THREAD_PRIORITY, MODEL_THREAD_PREEMPT_THRESHOLD,
+                                            MODEL_THREAD_TIME_SLICE, MODEL_THREAD_AUTOSTART);
+}
+
+[[noreturn]] void modelThreadEntry(vcu::Hardmon* hardmon) {
+    dev::Timer& timer2 = dev::getTimer<dev::MCUTimer::Timer2>(500);
+    rtos::TXError error;
+    while(true) {
+        timer2.startTimer();
+
+        //time the process step
+        hardmon->process();
+        //sleep for some base time - the process step
+        rtos::sleep(MS_TO_TICKS(500));
     }
 }
