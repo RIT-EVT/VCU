@@ -217,9 +217,9 @@ private:
      * Lets us index into it like an array
      */
     UC_State ucState;
-    bool lvssEnableUC;///< GPIO: whether or not the MCuC is telling the LVSS to be enabled (calculated from ucState)
-    MC_DC_State discharge; ///< CAN (MC): current state of the Motor Controller's discharge state machine
-    bool forwardEnable;///< CAN (HIB): handlebar forward enable
+    bool lvssEnableUC;    ///< GPIO: whether or not the MCuC is telling the LVSS to be enabled (calculated from ucState)
+    MC_DC_State discharge;///< CAN (MC): current state of the Motor Controller's discharge state machine
+    bool forwardEnable;   ///< CAN (HIB): handlebar forward enable
 
     //Model output data
     ModelOutputs_t modelOutputs;
