@@ -11,14 +11,18 @@
 #include <core/utils/types/FixedQueue.hpp>
 #include <models/Hardmon_Model.hpp>
 
+#include <core/rtos/Initializable.hpp>
+#include <core/rtos/Mutex.hpp>
+
 namespace io = core::io;
+namespace rtos = core::rtos;
 
 namespace vcu {
 
 /**
  * Driver for the Hardware Monitor
  */
-class Hardmon : public CANDevice {
+class Hardmon : public CANDevice, public rtos::Initializable {
 public:
     //////////////////////////////////////////////
     ///           HardMon Pinout               ///
@@ -121,8 +125,8 @@ public:
         };
         // allows iteration through outputs and inputs
         struct {
-            IO::GPIO* inputArr[11];
-            IO::GPIO* outputArr[7];
+            io::GPIO* inputArr[11];
+            io::GPIO* outputArr[7];
         };
     };
 
@@ -142,12 +146,15 @@ public:
      * Returns a pointer to the queue for Powertrain CANopen messages
      * @return the pointer to the queue
      */
-    core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, io::CANMessage>* getPowertrainQueue();
+    rtos::Queue* getPowertrainQueue();
 
     /**
      * Runs one step of the McUc model, including processing and handling inputs and outputs of the model.
      */
     void process();
+
+    //override methods from Initializable
+    rtos::TXError init(rtos::BytePoolBase& pool) override;
 
     //override methods from CANDevice
 
@@ -158,6 +165,11 @@ public:
     uint8_t getNodeID() override;
 
 private:
+    /**
+     * Mutex that protects internal access to the Hardmon
+     */
+    rtos::Mutex mutex;
+
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
      * THE ORDER OF THIS MUST MATCH THE HARDMON GPIO ORDER.

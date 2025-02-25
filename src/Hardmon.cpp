@@ -1,8 +1,11 @@
 #include <Hardmon.hpp>
 
+#include <core/rtos/Enums.hpp>
+
 namespace vcu {
 
-Hardmon::Hardmon(HardmonGPIO gpio, io::CAN& ptCAN) : powertrainCAN(ptCAN), gpios(gpio) {
+Hardmon::Hardmon(HardmonGPIO gpio, io::CAN& ptCAN) : powertrainCAN(ptCAN), gpios(gpio),
+                                                     mutex((char*)"Hardmon Mutex", true) {
     model.initialize();
 }
 
@@ -21,10 +24,14 @@ uint8_t Hardmon::getNodeID() {
 void Hardmon::handlePowertrainCanMessage(io::CANMessage& message) {
     switch (message.getId()) {
     case dev::PowertrainCAN::HIB_MESSAGE_ID:
+        mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
         forwardEnable = powertrainCAN.parseHIBForwardEnable(message);
+        mutex.put(rtos::TXWait::TXW_WAIT_FOREVER);
         break;
     case dev::PowertrainCAN::UC_SELF_TEST_MESSAGE_ID:
+        mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
         powertrainCAN.sendHardmonSelfTestResponse();
+        mutex.put(rtos::TXWait::TXW_WAIT_FOREVER);
         break;
     default:
         //we don't care about this message lol
@@ -32,18 +39,12 @@ void Hardmon::handlePowertrainCanMessage(io::CANMessage& message) {
     }
 }
 
-core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, io::CANMessage>* Hardmon::getPowertrainQueue() {
+rtos::Queue* Hardmon::getPowertrainQueue() {
     return &powertrainCAN.queue;
 }
 
 void Hardmon::process() {
-    //handle all the powertrain CAN messages
-    io::CANMessage message;
-    while (!powertrainCAN.queue.isEmpty()) {
-        powertrainCAN.queue.pop(&message);
-        handlePowertrainCanMessage(message);
-    }
-
+    mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     //update inputs
     //forwardEnable has been updated over CAN
     //update the gpio inputs in a loop using the unions
@@ -80,6 +81,9 @@ void Hardmon::process() {
 
     model.setExternalInputs(&modelInputs);
     model.step();
+
+    mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
+
     modelOutputs.modelOutputStruct = model.getExternalOutputs();
 
     //use outputs
@@ -98,6 +102,16 @@ void Hardmon::process() {
     if (modelOutputs.inverterDischarge) {
         powertrainCAN.setMCInverterDischarge(true);
         powertrainCAN.sendMCMessage();
+    }
+}
+
+rtos::TXError Hardmon::init(rtos::BytePoolBase& pool) {
+    rtos::TXError status = mutex.init(pool);
+    if (status != rtos::TXError::TXE_SUCCESS) {
+        //we fucked up on initializing mutex.
+        return status;
+    } else {
+        return powertrainCAN.init(pool);
     }
 }
 

@@ -1,6 +1,8 @@
 #ifndef VCU_POWERTRAINCAN_HPP
 #define VCU_POWERTRAINCAN_HPP
 
+#include <core/rtos/Initializable.hpp>
+#include <core/rtos/Queue.hpp>
 #include <core/io/CAN.hpp>
 #include <core/io/types/CANMessage.hpp>
 #include <core/utils/types/FixedQueue.hpp>
@@ -11,11 +13,12 @@
 #define POWERTRAIN_QUEUE_SIZE 64
 #define MC_COMMAND_MESSAGE_ID 0x0C0
 
-namespace IO = core::io;
+namespace io = core::io;
+namespace rtos = core::rtos;
 
 namespace vcu::dev {
 
-class PowertrainCAN {
+class PowertrainCAN : rtos::Initializable {
 public:
     /**
      * An enumeration of the Powertrain CAN message ids that are relevant to the
@@ -30,14 +33,14 @@ public:
     /**
      * Queue to store CAN messages.
      */
-    core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage> queue;
+    rtos::Queue queue;
 
     /**
      * Constructor for a PowertrainCan instance.
      *
      * @param can[in] powertrain can driver
      */
-    PowertrainCAN(IO::CAN& can);
+    PowertrainCAN(io::CAN& can);
 
     /**
      * Parses the motor controller state from the motor controller internal state message
@@ -46,7 +49,7 @@ public:
      * @param message[in] a message from the motor controller describing its internal state
      * @return the state of the motor controller state machine
      */
-    uint8_t parseMCState(IO::CANMessage& message);
+    uint8_t parseMCState(io::CANMessage& message);
 
     /**
      * Parses the motor controller discharge machine state from the motor controller internal state message
@@ -55,7 +58,7 @@ public:
      * @param message[in] a message from the motor controller describing its internal state.
      * @return the state of the motor controller's discharger internal state machine.
      */
-    uint8_t parseMCDischarge(IO::CANMessage& message);
+    uint8_t parseMCDischarge(io::CANMessage& message);
 
     /**
      * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
@@ -65,7 +68,7 @@ public:
      * @param message[in] a message from the HIB that contains throttle information.
      * @return the value of the throttle.
      */
-    int16_t parseHIBThrottle(IO::CANMessage& message);
+    int16_t parseHIBThrottle(io::CANMessage& message);
 
     /**
      * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
@@ -75,7 +78,7 @@ public:
      * @param message[in] a message from the HIB that contains forward enable information.
      * @return whether or not forward enable is on.
      */
-    bool parseHIBForwardEnable(IO::CANMessage& message);
+    bool parseHIBForwardEnable(io::CANMessage& message);
 
     /**
      * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
@@ -85,7 +88,7 @@ public:
      * @param message[in] a message from the HIB that contains start pressed information.
      * @return whether or not start is pressed
      */
-    bool parseHIBStartPressed(IO::CANMessage& message);
+    bool parseHIBStartPressed(io::CANMessage& message);
 
     /**
      * Sets the inverterEnable value of the Motor Controller Command message.
@@ -127,6 +130,8 @@ public:
      */
     void sendHardmonSelfTestResponse();
 
+    core::rtos::TXError init(rtos::BytePoolBase& pool) override;
+
 private:
     /**
      * Struct that represents the structure of the Motor Controller Command Message.
@@ -147,19 +152,19 @@ private:
         0, 0, 1, 0, 0, 0, 0, 0};
 
     /// Can Driver
-    IO::CAN& can;
+    io::CAN& can;
 
     /// Example payload for the UC selfTest Message.
     /// In the future, could be replaced by a more meaningful payload
     uint8_t UCSelfTestPayload = 4;
     ///the uc self test message
-    IO::CANMessage UCSelfTestMessage = IO::CANMessage(UC_SELF_TEST_MESSAGE_ID, 1, &UCSelfTestPayload, false);
+    io::CANMessage UCSelfTestMessage = io::CANMessage(UC_SELF_TEST_MESSAGE_ID, 1, &UCSelfTestPayload, false);
 
     /// Example payload for the Hardmon selfTest Response Message.
     /// In the future, could be replaced by a more meaningful payload
     uint8_t HardmonSelfTestResponsePayload = 3;
     ///the hardmon self test message
-    IO::CANMessage HardmonSelfTestResponse = IO::CANMessage(HARDMON_SELF_TEST_MESSAGE_ID, 1, &HardmonSelfTestResponsePayload, false);
+    io::CANMessage HardmonSelfTestResponse = io::CANMessage(HARDMON_SELF_TEST_MESSAGE_ID, 1, &HardmonSelfTestResponsePayload, false);
 };
 
 }// namespace vcu::dev
