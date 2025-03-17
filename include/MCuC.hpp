@@ -25,76 +25,76 @@ public:
 
     /** LED Pins */
 
-    static constexpr IO::Pin LED_THREE_PIN = IO::Pin::PA_0;
-    static constexpr IO::Pin LED_TWO_PIN = IO::Pin::PA_1;
-    static constexpr IO::Pin LED_ONE_PIN = IO::Pin::PA_2;
+    static constexpr io::Pin LED_THREE_PIN = io::Pin::PA_0;
+    static constexpr io::Pin LED_TWO_PIN = io::Pin::PA_1;
+    static constexpr io::Pin LED_ONE_PIN = io::Pin::PA_2;
     /** Self Test Led Pin */
-    static constexpr IO::Pin SELF_TEST_LED_PIN = IO::Pin::PC_5;
+    static constexpr io::Pin SELF_TEST_LED_PIN = io::Pin::PC_5;
 
     /** CAN Pins */
 
     /** Accessory CAN RX pin */
-    static constexpr IO::Pin ACCESSORY_CAN_RX_PIN = IO::Pin::PA_11;
+    static constexpr io::Pin ACCESSORY_CAN_RX_PIN = io::Pin::PA_11;
     /** Accessory CAN TX pin */
-    static constexpr IO::Pin ACCESSORY_CAN_TX_PIN = IO::Pin::PA_12;
+    static constexpr io::Pin ACCESSORY_CAN_TX_PIN = io::Pin::PA_12;
     /** Powertrain CAN RX Pin*/
-    static constexpr IO::Pin POWERTRAIN_CAN_RX_PIN = IO::Pin::PB_12;
+    static constexpr io::Pin POWERTRAIN_CAN_RX_PIN = io::Pin::PB_12;
     /** Powertrain CAN TX Pin*/
-    static constexpr IO::Pin POWERTRAIN_CAN_TX_PIN = IO::Pin::PB_13;
+    static constexpr io::Pin POWERTRAIN_CAN_TX_PIN = io::Pin::PB_13;
 
     /** Hardware Monitor Pins */
 
     /** Watchdog pin */
-    static constexpr IO::Pin WATCHDOG_PIN = IO::Pin::PA_15;
+    static constexpr io::Pin WATCHDOG_PIN = io::Pin::PA_15;
     /** Microcontroller State Pins */
-    static constexpr IO::Pin UC_STATE_ZERO_PIN = IO::Pin::PB_5;
-    static constexpr IO::Pin UC_STATE_ONE_PIN = IO::Pin::PB_4;
-    static constexpr IO::Pin UC_STATE_TWO_PIN = IO::Pin::PB_15;
-    static constexpr IO::Pin UC_STATE_THREE_PIN = IO::Pin::PD_2;
+    static constexpr io::Pin UC_STATE_ZERO_PIN = io::Pin::PB_5;
+    static constexpr io::Pin UC_STATE_ONE_PIN = io::Pin::PB_4;
+    static constexpr io::Pin UC_STATE_TWO_PIN = io::Pin::PB_15;
+    static constexpr io::Pin UC_STATE_THREE_PIN = io::Pin::PD_2;
     /** Hardware Monitor Fault Pin */
-    static constexpr IO::Pin HM_FAULT_PIN = IO::Pin::PC_8;
+    static constexpr io::Pin HM_FAULT_PIN = io::Pin::PC_8;
     /** Microcontroller Fault Pin */
-    static constexpr IO::Pin UC_FAULT_PIN = IO::Pin::PC_9;
+    static constexpr io::Pin UC_FAULT_PIN = io::Pin::PC_9;
 
     /** Self Test Pins */
 
     /** CAN Self Test Pin */
-    static constexpr IO::Pin CAN_SELF_TEST_PIN = IO::Pin::PB_8;
+    static constexpr io::Pin CAN_SELF_TEST_PIN = io::Pin::PB_8;
     /** Ignition Self Test Pin */
-    static constexpr IO::Pin IGNITION_SELF_TEST_PIN = IO::Pin::PC_2;
+    static constexpr io::Pin IGNITION_SELF_TEST_PIN = io::Pin::PC_2;
     /** ESTOP Self Test Pin */
-    static constexpr IO::Pin ESTOP_SELF_TEST_PIN = IO::Pin::PC_3;
+    static constexpr io::Pin ESTOP_SELF_TEST_PIN = io::Pin::PC_3;
     /** Motor Controller Self Test Pin */
-    static constexpr IO::Pin MC_SELF_TEST_PIN = IO::Pin::PC_4;
+    static constexpr io::Pin MC_SELF_TEST_PIN = io::Pin::PC_4;
 
     /** Motor Controller Pins */
 
     /** Motor Controller Toggle Pins */
-    static constexpr IO::Pin MC_TOGGLE_POSITIVE_PIN = IO::Pin::PC_1;
-    static constexpr IO::Pin MC_TOGGLE_NEGATIVE_PIN = IO::Pin::PC_0;
+    static constexpr io::Pin MC_TOGGLE_POSITIVE_PIN = io::Pin::PC_1;
+    static constexpr io::Pin MC_TOGGLE_NEGATIVE_PIN = io::Pin::PC_0;
     /** Motor Controller Enable Pins */
-    static constexpr IO::Pin MC_ENABLE_POSITIVE_PIN = IO::Pin::PB_6;
-    static constexpr IO::Pin MC_ENABLE_NEGATIVE_PIN = IO::Pin::PB_7;
+    static constexpr io::Pin MC_ENABLE_POSITIVE_PIN = io::Pin::PB_6;
+    static constexpr io::Pin MC_ENABLE_NEGATIVE_PIN = io::Pin::PB_7;
     /** Motor Controller Status Pin */
-    static constexpr IO::Pin MC_STATUS_PIN = IO::Pin::PB_9;
+    static constexpr io::Pin MC_STATUS_PIN = io::Pin::PB_9;
 
     /** UART Pins */
 
     /** UART TX Pin */
-    static constexpr IO::Pin UART_TX = IO::Pin::PC_6;
+    static constexpr io::Pin UART_TX = io::Pin::PC_6;
     /** UART RX Pin */
-    static constexpr IO::Pin UART_RX = IO::Pin::PC_7;
+    static constexpr io::Pin UART_RX = io::Pin::PC_7;
 
     /** Component Communication Pins */
 
     /** ESTOP Pin */
-    static constexpr IO::Pin ESTOP_PIN = IO::Pin::PC_10;
+    static constexpr io::Pin ESTOP_PIN = io::Pin::PC_10;
     /** Ignition Pin */
-    static constexpr IO::Pin IGNITION_PIN = IO::Pin::PC_11;
+    static constexpr io::Pin IGNITION_PIN = io::Pin::PC_11;
     /** LVSS Status Pin */
-    static constexpr IO::Pin LVSS_STATUS_PIN = IO::Pin::PC_12;
+    static constexpr io::Pin LVSS_STATUS_PIN = io::Pin::PC_12;
     /** LVSS Enable Pin */
-    static constexpr IO::Pin LVSS_ENABLE_PIN = IO::Pin::PC_13;
+    static constexpr io::Pin LVSS_ENABLE_PIN = io::Pin::PC_13;
 
     /**
      * Accessory CAN Node IDs
@@ -142,21 +142,21 @@ public:
     /**
      * Constructor for VCU object
      */
-    MCuC(MCuC_GPIO gpios, IO::CAN& ptCAN);
+    MCuC(MCuC_GPIO gpios, io::CAN& ptCAN);
 
     /**
      * Handles the passed in Powertrain CAN message.
      *
      * @param message message to handle
      */
-    void handlePowertrainCanMessage(IO::CANMessage& message);
+    void handlePowertrainCanMessage(io::CANMessage& message);
 
     /**
      * Returns a pointer to the queue for Powertrain CANopen messages
      *
      * @return pointer to the fixed queue.
      */
-    core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>* getPowertrainQueue();
+    rtos::Queue* getPowertrainQueue();
 
     /**
      * Runs one step of the Hardmon model, including processing and handling inputs and outputs of the model.

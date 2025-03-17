@@ -5,7 +5,7 @@
 namespace vcu {
 
 Hardmon::Hardmon(HardmonGPIO gpio, io::CAN& ptCAN) : powertrainCAN(ptCAN), gpios(gpio),
-                                                     mutex((char*)"Hardmon Mutex", true) {
+                                                     mutex((char*)"Hardmon Mutex", true), Initializable("Hardmon") {
     model.initialize();
 }
 
@@ -26,12 +26,10 @@ void Hardmon::handlePowertrainCanMessage(io::CANMessage& message) {
     case dev::PowertrainCAN::HIB_MESSAGE_ID:
         mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
         forwardEnable = powertrainCAN.parseHIBForwardEnable(message);
-        mutex.put(rtos::TXWait::TXW_WAIT_FOREVER);
+        mutex.put();
         break;
     case dev::PowertrainCAN::UC_SELF_TEST_MESSAGE_ID:
-        mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
         powertrainCAN.sendHardmonSelfTestResponse();
-        mutex.put(rtos::TXWait::TXW_WAIT_FOREVER);
         break;
     default:
         //we don't care about this message lol
@@ -54,6 +52,7 @@ void Hardmon::process() {
     // lvssEnableUC should be a pin, but electrical forgot to add it
     // so instead we are calculating it based on the microcontroller state.
     // ucStates 1 through 5 should make this true
+
     // getting the state value from the array.
     uint16_t state = modelGPIOInputs.ucState[0];
     state <<= 1;

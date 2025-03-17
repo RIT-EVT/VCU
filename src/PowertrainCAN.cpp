@@ -2,8 +2,7 @@
 
 namespace vcu::dev {
 
-PowertrainCAN::PowertrainCAN(io::CAN& can) : can(can) {
-    queue = rtos::Queue("Powertrain Queue", sizeof(io::CANMessage), POWERTRAIN_QUEUE_SIZE);
+PowertrainCAN::PowertrainCAN(io::CAN& can) : Initializable("Powertrain CAN"), can(can), queue("Powertrain Queue", sizeof(io::CANMessage), POWERTRAIN_QUEUE_SIZE) {
 }
 
 uint8_t PowertrainCAN::parseMCState(io::CANMessage& message) {
