@@ -14,8 +14,6 @@
 #include <core/io/UART.hpp>
 #include <core/io/types/CANMessage.hpp>
 #include <core/manager.hpp>
-#include <core/utils/time.hpp>
-#include <core/utils/types/FixedQueue.hpp>
 
 #include <core/io/CANopen.hpp>
 
@@ -48,19 +46,27 @@ namespace time = core::time;
 #define TX_APP_MEM_POOL_SIZE 65536
 /// How often the model should take 1 step.
 #define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(500)
-// model thread stack size
+
+// Model Thread Parameters
 #define MODEL_THREAD_STACK_SIZE 1024
 #define MODEL_THREAD_PRIORITY 1
 #define MODEL_THREAD_PREEMPT_THRESHOLD 1
 #define MODEL_THREAD_TIME_SLICE MS_TO_TICKS(20)
 #define MODEL_THREAD_AUTOSTART true
 
-// Powertrain CAN Receive input
+// Powertrain CAN Receive Thread Parameters
 #define PT_CAN_RECEIVE_STACK_SIZE 1024
 #define PT_CAN_RECEIVE_PRIORITY 3
 #define PT_CAN_RECEIVE_PREEMPT_THRESHOLD 3
 #define PT_CAN_RECEIVE_TIME_SLICE MS_TO_TICKS(10)
 #define PT_CAN_RECEIVE_AUTOSTART true
+
+// Health Thread Parameters
+#define HEALTH_THREAD_STACK_SIZE 1024
+#define HEALTH_THREAD_PRIORITY 4
+#define HEALTH_THREAD_PREEMPT_THRESHOLD 4
+#define HEALTH_THREAD_TIME_SLICE MS_TO_TICKS(10)
+#define HEALTH_THREAD_AUTOSTART true
 
 // Thread Structs
 
@@ -73,11 +79,18 @@ typedef struct modelThreadArgs {
 } modelThreadArgs_t;
 
 /**
- * Struct that holds information needed to the powertrain CAN thread
+ * Struct that holds information needed for the powertrain CAN thread
  */
 typedef struct powertrainCANReceiveThreadArgs {
     vcu::Hardmon* hardmon;
 } powertrainCANReceiveThreadArgs_t;
+
+/**
+ * Struct that holds information needed for the health thread
+ */
+typedef struct healthThreadArgs {
+    vcu::Hardmon* hardmon;
+} healthThreadArgs_t;
 
 
 //Timer expiration function
@@ -86,6 +99,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag);
 // Thread Function Prototypes-- implementation below main.
 [[noreturn]] void modelThreadEntry(modelThreadArgs_t* args);
 [[noreturn]] void powertrainCANReceiveThreadEntry(powertrainCANReceiveThreadArgs_t* args);
+[[noreturn]] void healthThreadEntry(healthThreadArgs_t* args);
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,8 +120,10 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag);
 */
 void canOpenInterrupt(io::CANMessage& message, void* priv) {
     auto* queue = (rtos::Queue*) priv;
-    if (queue != nullptr)
+    if (queue != nullptr) {
+        //todo: determine if WaitForever is what we want to do in the interrupt- could be bad
         queue->send(static_cast<void*>(&message), rtos::TXWait::TXW_WAIT_FOREVER);
+    }
 }
 
 /**
@@ -117,8 +133,10 @@ void canOpenInterrupt(io::CANMessage& message, void* priv) {
  */
 void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
     auto* queue = (rtos::Queue*) priv;
-    if (queue != nullptr)
+    if (queue != nullptr) {
+        //todo: determine if WaitForever is what we want to do in the interrupt- could be bad
         queue->send(static_cast<void*>(&message), rtos::TXWait::TXW_WAIT_FOREVER);
+    }
 }
 
 int main() {
@@ -209,7 +227,8 @@ int main() {
          io::getGPIO<vcu::Hardmon::MOTOR_CONTROLLER_TOGGLE_POS_PIN>(io::GPIO::Direction::OUTPUT),
          io::getGPIO<vcu::Hardmon::UC_RESET_PIN>(io::GPIO::Direction::OUTPUT),
          io::getGPIO<vcu::Hardmon::LVSS_EN_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::Hardmon::HM_FAULT_PIN>(io::GPIO::Direction::OUTPUT)}};
+         io::getGPIO<vcu::Hardmon::HM_FAULT_PIN>(io::GPIO::Direction::OUTPUT)}
+    };
 
     io::CAN& ptCAN = io::getCAN<vcu::Hardmon::POWERTRAIN_CAN_TX_PIN, vcu::Hardmon::POWERTRAIN_CAN_RX_PIN>();
 
@@ -255,17 +274,28 @@ int main() {
     };
 
     /// Thread that processes the Powertrain CAN Receive queue
-    rtos::Thread<powertrainCANReceiveThreadArgs_t *> powertrainCANReceiveThread((char*)"Powertrain CAN Receive Thread",
+    rtos::Thread<powertrainCANReceiveThreadArgs_t*> powertrainCANReceiveThread((char*)"Powertrain CAN Receive Thread",
                                                                                powertrainCANReceiveThreadEntry, &powertrainCANReceiveThreadArgs,
                                                                                PT_CAN_RECEIVE_STACK_SIZE, PT_CAN_RECEIVE_PRIORITY,
                                                                                PT_CAN_RECEIVE_PREEMPT_THRESHOLD, PT_CAN_RECEIVE_TIME_SLICE,
                                                                                PT_CAN_RECEIVE_AUTOSTART);
 
+    ///Argument struct the healthThread takes in
+    healthThreadArgs_t healthThreadArgs {
+        &hardmon
+    };
+
+    /// Thread that checks the health of the other threads
+    rtos::Thread<healthThreadArgs_t*> healthThread((char*)"Hardmon Health Monitoring Thread",
+                                                                 healthThreadEntry, &healthThreadArgs,
+                                                                 HEALTH_THREAD_STACK_SIZE, HEALTH_THREAD_PRIORITY,
+                                                    HEALTH_THREAD_PREEMPT_THRESHOLD, HEALTH_THREAD_TIME_SLICE,
+                                                   HEALTH_THREAD_AUTOSTART);
 
 
 
     rtos::Initializable* initArr[] = {
-        &hardmon, &modelThread, &modelTriggerTimer
+        &hardmon, &modelThread,&modelTriggerFlag, &modelTriggerTimer, &powertrainCANReceiveThread, &healthThread
     };
 
     rtos::startKernel(initArr, sizeof(initArr) / sizeof(initArr[0]), txPool);
@@ -316,5 +346,19 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
         args->hardmon->handlePowertrainCanMessage(message);
     }
 }
+
+/**
+ * Entry Function for the healthThread.
+ *
+ * @param args the arguments for this thread
+ */
+[[noreturn]] void healthThreadEntry(healthThreadArgs_t* args) {
+    rtos::TXError error;
+    while(true) {
+        //do healththread stuff
+        error = rtos::sleep(MS_TO_TICKS(50));
+    }
+}
+
 
 

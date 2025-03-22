@@ -20,9 +20,83 @@
 #include <MCuC.hpp>
 #include <PowertrainCAN.hpp>
 
+// rtos includes
+#include <core/rtos/BytePool.hpp>
+#include <core/rtos/Enums.hpp>
+#include <core/rtos/EventFlags.hpp>
+#include <core/rtos/Queue.hpp>
+#include <core/rtos/Semaphore.hpp>
+#include <core/rtos/Thread.hpp>
+#include <core/rtos/tsio/ThreadUART.hpp>
+#include <core/rtos/Timer.hpp>
+
 namespace io = core::io;
 namespace dev = core::dev;
 namespace time = core::time;
+
+///////////////////////////////////////////////////////////////////////////////
+//RTOS GLOBAlS SETUP
+///////////////////////////////////////////////////////////////////////////////
+
+/// The size of the memory pool for the tx application
+#define TX_APP_MEM_POOL_SIZE 65536
+/// How often the model should take 1 step.
+#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(500)
+
+// Model Thread Parameters
+#define MODEL_THREAD_STACK_SIZE 1024
+#define MODEL_THREAD_PRIORITY 1
+#define MODEL_THREAD_PREEMPT_THRESHOLD 1
+#define MODEL_THREAD_TIME_SLICE MS_TO_TICKS(20)
+#define MODEL_THREAD_AUTOSTART true
+
+// Powertrain CAN Receive Thread Parameters
+#define PT_CAN_RECEIVE_STACK_SIZE 1024
+#define PT_CAN_RECEIVE_PRIORITY 3
+#define PT_CAN_RECEIVE_PREEMPT_THRESHOLD 3
+#define PT_CAN_RECEIVE_TIME_SLICE MS_TO_TICKS(10)
+#define PT_CAN_RECEIVE_AUTOSTART true
+
+// Health Thread Parameters
+#define HEALTH_THREAD_STACK_SIZE 1024
+#define HEALTH_THREAD_PRIORITY 4
+#define HEALTH_THREAD_PREEMPT_THRESHOLD 4
+#define HEALTH_THREAD_TIME_SLICE MS_TO_TICKS(10)
+#define HEALTH_THREAD_AUTOSTART true
+
+// Thread Structs
+
+/**
+ * Struct that holds information needed for the model thread
+ */
+typedef struct modelThreadArgs {
+    vcu::MCuC* mcuc;
+    rtos::EventFlags* triggerFlag;
+} modelThreadArgs_t;
+
+/**
+ * Struct that holds information needed for the powertrain CAN thread
+ */
+typedef struct powertrainCANReceiveThreadArgs {
+    vcu::MCuC* mcuc;
+} powertrainCANReceiveThreadArgs_t;
+
+/**
+ * Struct that holds information needed for the health thread
+ */
+typedef struct healthThreadArgs {
+    vcu::MCuC* mcuc;
+} healthThreadArgs_t;
+
+//Timer expiration function
+void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag);
+
+// Thread Function Prototypes-- implementation below main.
+[[noreturn]] void modelThreadEntry(modelThreadArgs_t* args);
+[[noreturn]] void powertrainCANReceiveThreadEntry(powertrainCANReceiveThreadArgs_t* args);
+[[noreturn]] void healthThreadEntry(healthThreadArgs_t* args);
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // EVT-core CAN callback and CAN setup. This will include logic to set
@@ -39,8 +113,8 @@ namespace time = core::time;
  *
  * @param message[in] The passed in CAN message that was read.
  */
-void accessoryCANOpenInterrupt(IO::CANMessage& message, void* priv) {
-    auto* queue = (core::types::FixedQueue<CANOPEN_QUEUE_SIZE, IO::CANMessage>*) priv;
+void accessoryCANOpenInterrupt(io::CANMessage& message, void* priv) {
+    auto* queue = (core::types::FixedQueue<CANOPEN_QUEUE_SIZE, io::CANMessage>*) priv;
     if (queue != nullptr)
         queue->append(message);
 }
@@ -50,8 +124,8 @@ void accessoryCANOpenInterrupt(IO::CANMessage& message, void* priv) {
  * @param message[in] the passed in in CAN message that was read.
  * @param priv[in] the private data this mesasge requires. Should be the mcuc instance we want to update.
  */
-void powertrainCANInterrupt(IO::CANMessage& message, void* priv) {
-    auto* queue = (core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>*) priv;
+void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
+    auto* queue = (core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, io::CANMessage>*) priv;
     if (queue != nullptr)
         queue->append(message);
 }
@@ -64,7 +138,7 @@ int main() {
     dev::Timer& timer = dev::getTimer<dev::MCUTimer::Timer2>(100);
 
     // UART for testing
-    IO::UART& uart = IO::getUART<IO::Pin::UART_TX, IO::Pin::UART_RX>(9600);
+    io::UART& uart = io::getUART<io::Pin::UART_TX, io::Pin::UART_RX>(9600);
 
     //TODO: CANopen uncomment when we add in Accessory CAN configuration
     /*
@@ -76,10 +150,10 @@ int main() {
     ///////////////////////////////////////////////////////////////////////////
 
     // Will store CANopen messages that will be populated by the EVT-core CAN interrupt
-    core::types::FixedQueue<CANOPEN_QUEUE_SIZE, IO::CANMessage> canOpenQueue;
+    core::types::FixedQueue<CANOPEN_QUEUE_SIZE, io::CANMessage> canOpenQueue;
 
     // Initialize CAN, add an IRQ which will add messages to the queue above
-    IO::CAN& accessoryCAN = IO::getCAN<VCU::MCUC::ACCESSORY_CAN_TX_PIN, VCU::MCUC::ACCESSORY_CAN_RX_PIN>();
+    io::CAN& accessoryCAN = io::getCAN<VCU::MCUC::ACCESSORY_CAN_TX_PIN, VCU::MCUC::ACCESSORY_CAN_RX_PIN>();
     accessoryCAN.addIRQHandler(accessoryCANOpenInterrupt, reinterpret_cast<void*>(&canOpenQueue));
 
     // Reserved memory for CANopen stack usage
@@ -96,19 +170,19 @@ int main() {
     CO_NODE canNode;
 
     // Attempt to join the CAN network
-    IO::CAN::CANStatus result = accessoryCAN.connect();
+    io::CAN::CANStatus result = accessoryCAN.connect();
 
     //test that the board is connected to the can network
-    if (result != IO::CAN::CANStatus::OK) {
+    if (result != io::CAN::CANStatus::OK) {
         uart.printf("Failed to connect to CAN network\r\n");
         return 1;
     }
 
     // Initialize all the CANOpen drivers.
-    IO::initializeCANopenDriver(&canOpenQueue, &accessoryCAN, &timer, &canStackDriver, &nvmDriver, &timerDriver, &canDriver);
+    io::initializeCANopenDriver(&canOpenQueue, &accessoryCAN, &timer, &canStackDriver, &nvmDriver, &timerDriver, &canDriver);
 
     // Initialize the CANOpen node we are using.
-    IO::initializeCANopenNode(&canNode, &mcuc, &canStackDriver, sdoBuffer, appTmrMem);
+    io::initializeCANopenNode(&canNode, &mcuc, &canStackDriver, sdoBuffer, appTmrMem);
 
     // Set the node to operational mode
     CONmtSetMode(&canNode.Nmt, CO_OPERATIONAL);
@@ -125,7 +199,7 @@ int main() {
     // so it is simpler than te CANopen setup.
     //////////////////////////////////////////////////////////
 
-    IO::CAN& ptCAN = IO::getCAN<vcu::MCuC::POWERTRAIN_CAN_TX_PIN, vcu::MCuC::POWERTRAIN_CAN_RX_PIN>();
+    io::CAN& ptCAN = io::getCAN<vcu::MCuC::POWERTRAIN_CAN_TX_PIN, vcu::MCuC::POWERTRAIN_CAN_RX_PIN>();
 
     vcu::MCuC::MCuC_GPIO gpios = {
         {io::getGPIO<vcu::MCuC::ESTOP_PIN>(io::GPIO::Direction::INPUT),
@@ -153,14 +227,124 @@ int main() {
     vcu::MCuC mcuc(gpios, ptCAN);
     ptCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(mcuc.getPowertrainQueue()));
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Main loop
-    ///////////////////////////////////////////////////////////////////////////
+    ////////////////////////
+    // Initialize Threadx //
+    ////////////////////////
 
-    while (true) {
-        //IO:processCANopenNode(&canNode); //TODO CANopen uncomment when we add in Accessory can
-        mcuc.process();
-        // Wait for new data to come in
-        time::wait(10);
+
+    //Initialize Bytepool
+
+    rtos::BytePool<TX_APP_MEM_POOL_SIZE> txPool((char*) "txBytePool");
+
+    // Initialize Threads
+
+    /// eventflag that triggers the model to run
+    rtos::EventFlags modelTriggerFlag((char*)"Model Trigger Flag");
+
+    /// timer that triggers the model eventflag (and thus steps the model)
+    rtos::Timer<rtos::EventFlags*> modelTriggerTimer((char*)"Model Trigger Timer", modelTimerExpiration,
+                                                     &modelTriggerFlag, MODEL_THREAD_TRIGGER_RATE, MODEL_THREAD_TRIGGER_RATE,
+                                                     true);
+
+    /// Argument struct the modelThread takes in
+    modelThreadArgs_t modelThreadArgs = {
+        &mcuc,
+        &modelTriggerFlag,
+    };
+
+    /// Thread that runs the model
+    rtos::Thread<modelThreadArgs_t*> modelThread((char *)"Model Thread", modelThreadEntry,
+                                                 &modelThreadArgs,MODEL_THREAD_STACK_SIZE,
+                                                 MODEL_THREAD_PRIORITY, MODEL_THREAD_PREEMPT_THRESHOLD,
+                                                 MODEL_THREAD_TIME_SLICE, MODEL_THREAD_AUTOSTART);
+
+    //PowerTrain CAN input Thread
+    /// argument struct the thread takes in
+    powertrainCANReceiveThreadArgs_t powertrainCANReceiveThreadArgs = {
+        &mcuc
+    };
+
+    /// Thread that processes the Powertrain CAN Receive queue
+    rtos::Thread<powertrainCANReceiveThreadArgs_t*> powertrainCANReceiveThread((char*)"Powertrain CAN Receive Thread",
+                                                                               powertrainCANReceiveThreadEntry, &powertrainCANReceiveThreadArgs,
+                                                                               PT_CAN_RECEIVE_STACK_SIZE, PT_CAN_RECEIVE_PRIORITY,
+                                                                               PT_CAN_RECEIVE_PREEMPT_THRESHOLD, PT_CAN_RECEIVE_TIME_SLICE,
+                                                                               PT_CAN_RECEIVE_AUTOSTART);
+
+    ///Argument struct the healthThread takes in
+    healthThreadArgs_t healthThreadArgs {
+        &mcuc
+    };
+
+    /// Thread that checks the health of the other threads
+    rtos::Thread<healthThreadArgs_t*> healthThread((char*)"Hardmon Health Monitoring Thread",
+                                                   healthThreadEntry, &healthThreadArgs,
+                                                   HEALTH_THREAD_STACK_SIZE, HEALTH_THREAD_PRIORITY,
+                                                   HEALTH_THREAD_PREEMPT_THRESHOLD, HEALTH_THREAD_TIME_SLICE,
+                                                   HEALTH_THREAD_AUTOSTART);
+
+    //Start kernel
+    rtos::Initializable* initArr[] = {
+        &mcuc, &modelThread,&modelTriggerFlag, &modelTriggerTimer, &powertrainCANReceiveThread, &healthThread
+    };
+
+    rtos::startKernel(initArr, sizeof(initArr) / sizeof(initArr[0]), txPool);
+}
+
+/**
+ * Triggers every time the model timer runs its course. Sets the first flag of the modelTriggerFlag to 1
+ *
+ * @param modelTriggerFlag the eventFlags that controls the model triggering.
+ */
+void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
+    uint32_t flags;
+    modelTriggerFlag->getCurrentFlags(&flags);
+    if ((flags & 0x01) == 0x01) {
+        //the model is not running fast enough- this is very bad!!!!
+        //todo: determine what error to throw
+    }
+    modelTriggerFlag->set(0x01);
+}
+
+/**
+ * Entry Function for the thread that runs the model. Waits for the modelTimer to
+ * set the modelTriggerFlag to run one step of the process method
+ *
+ * @param args the arguments for this thread
+ */
+[[noreturn]] void modelThreadEntry(modelThreadArgs_t* args) {
+    rtos::TXError error;
+    while(true) {
+        uint32_t flagOutput;
+        args->triggerFlag->get(0x01, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
+        args->mcuc->process();
+    }
+}
+
+/**
+ * Entry Function for the powertrainCANThread.
+ *
+ * @param args the arguments for this thread
+ */
+[[noreturn]] void powertrainCANReceiveThreadEntry(powertrainCANReceiveThreadArgs_t * args) {
+    io::CANMessage message;
+    rtos::Queue* queue = args->mcuc->getPowertrainQueue();
+    while(true) {
+        //suspends if there are no messages to receive
+        queue->receive(&message, rtos::TXWait::TXW_WAIT_FOREVER);
+        args->mcuc->handlePowertrainCanMessage(message);
+    }
+}
+
+/**
+ * Entry Function for the healthThread.
+ *
+ * @param args the arguments for this thread
+ */
+[[noreturn]] void healthThreadEntry(healthThreadArgs_t* args) {
+    rtos::TXError error;
+    while(true) {
+        //do healththread stuff
+        error = rtos::sleep(MS_TO_TICKS(50));
     }
 }

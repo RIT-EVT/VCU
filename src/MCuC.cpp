@@ -2,8 +2,22 @@
 
 namespace vcu {
 
-MCuC::MCuC(vcu::MCuC::MCuC_GPIO gpios, io::CAN& can) : powertrainCAN(can), gpios(gpios) {
+MCuC::MCuC(vcu::MCuC::MCuC_GPIO gpios, io::CAN& can) : powertrainCAN(can), gpios(gpios),
+                                                       mutex((char*)"MCuC Mutex", true),
+                                                       Initializable("MCuC"){
+    model.initialize();
 }
+
+rtos::TXError MCuC::init(rtos::BytePoolBase& pool) {
+    rtos::TXError status = mutex.init(pool);
+    if (status != rtos::TXError::TXE_SUCCESS) {
+        // we failed the mutex initialization
+        return status;
+    } else {
+        return powertrainCAN.init(pool);
+    }
+}
+
 
 CO_OBJ_T* MCuC::getObjectDictionary() {
     return &objectDictionary[0];
@@ -20,16 +34,22 @@ uint8_t MCuC::getNodeID() {
 void MCuC::handlePowertrainCanMessage(io::CANMessage& message) {
     switch (message.getId()) {
     case dev::PowertrainCAN::MC_INTERNAL_STATES_ID:
+        mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
         mcState = static_cast<MC_VSM_State>(powertrainCAN.parseMCState(message));
         mcDischarge = static_cast<MC_DC_State>(powertrainCAN.parseMCDischarge(message));
+        mutex.put();
         break;
     case dev::PowertrainCAN::HIB_MESSAGE_ID:
+        mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
         throttle = powertrainCAN.parseHIBThrottle(message);
         forwardEnable = powertrainCAN.parseHIBForwardEnable(message);
         startPressed = powertrainCAN.parseHIBStartPressed(message);
+        mutex.put();
         break;
     case dev::PowertrainCAN::HARDMON_SELF_TEST_MESSAGE_ID:
+        mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
         powertrainCANSelfTestIn = true;
+        mutex.put();
         break;
     default:
         //do nothing, we don't care about this message
@@ -42,6 +62,7 @@ rtos::Queue* MCuC::getPowertrainQueue() {
 }
 
 void MCuC::process() {
+    mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     //brakeOn updated over CAN
     eStop = gpios.eStopGPIO.readPin() == io::GPIO::State::HIGH;
     //forwardEnable, startPressed, mcStateMachine, discharge updated over CAN
@@ -66,6 +87,8 @@ void MCuC::process() {
         lvssOn,
         mcOn,
     };
+    mutex.put();
+
     model.setExternalInputs(&inputs);
 
     model.step();
@@ -75,6 +98,8 @@ void MCuC::process() {
     //get outputs
     vcu::MCuC_Model::ExtY_MCuC_T outputs = model.getExternalOutputs();
     //save outputs
+
+    mutex.get(rtos::TXW_WAIT_FOREVER);
     lvssEnable = outputs.LVSS_EN_uC;
     inverterEnable = outputs.Inverter_EN;
     ucFault = outputs.Fault;
@@ -120,6 +145,7 @@ void MCuC::process() {
     powertrainCAN.setMCInverterDischarge(inverterDischarge);
     powertrainCAN.setMCTorque(torqueRequest);
     powertrainCAN.sendMCMessage();
+    mutex.put();
 }
 
 }// namespace vcu

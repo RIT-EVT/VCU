@@ -5,8 +5,19 @@
 namespace vcu {
 
 Hardmon::Hardmon(HardmonGPIO gpio, io::CAN& ptCAN) : powertrainCAN(ptCAN), gpios(gpio),
-                                                     mutex((char*)"Hardmon Mutex", true), Initializable("Hardmon") {
+                                                     mutex((char*)"Hardmon Mutex", true),
+                                                     Initializable("Hardmon") {
     model.initialize();
+}
+
+rtos::TXError Hardmon::init(rtos::BytePoolBase& pool) {
+    rtos::TXError status = mutex.init(pool);
+    if (status != rtos::TXError::TXE_SUCCESS) {
+        // we failed the mutex initialization
+        return status;
+    } else {
+        return powertrainCAN.init(pool);
+    }
 }
 
 CO_OBJ_T* Hardmon::getObjectDictionary() {
@@ -63,7 +74,6 @@ void Hardmon::process() {
     state += modelGPIOInputs.ucState[3];
     lvssEnableUC = (state >= 1 && state <= 5);
     ucState = static_cast<UC_State>(state);
-
     //step the model
     const Hardmon_Model::ExtU_Hardmon_T modelInputs = {
         forwardEnable,
@@ -78,13 +88,12 @@ void Hardmon::process() {
         modelGPIOInputs.eStop3v3,
         lvssEnableUC};
 
+    mutex.put();
     model.setExternalInputs(&modelInputs);
     model.step();
 
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-
     modelOutputs.modelOutputStruct = model.getExternalOutputs();
-
     //use outputs
     gpios.mcToggleOverrideGPIO.writePin(modelOutputs.mcSwitchEnable ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.lvssEnableOverrideGPIO.writePin(modelOutputs.lvssSwitchEnable ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
@@ -94,7 +103,6 @@ void Hardmon::process() {
     gpios.ucResetGPIO.writePin(modelOutputs.ucReset ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.lvssEnableHardmonGPIO.writePin(modelOutputs.lvssEnableHardMon ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.hmFaultGPIO.writePin(modelOutputs.hmFault ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-
     //TODO: right now the message sets all values but inverter discharge to be 0. This might be REALLY BAD,
     // discuss it more with the EES and maybe Matt. Also make sure that this is okay to send in terms of
     // determining if the MCuC is untrustworthy.
@@ -102,16 +110,7 @@ void Hardmon::process() {
         powertrainCAN.setMCInverterDischarge(true);
         powertrainCAN.sendMCMessage();
     }
-}
-
-rtos::TXError Hardmon::init(rtos::BytePoolBase& pool) {
-    rtos::TXError status = mutex.init(pool);
-    if (status != rtos::TXError::TXE_SUCCESS) {
-        //we fucked up on initializing mutex.
-        return status;
-    } else {
-        return powertrainCAN.init(pool);
-    }
+    mutex.put();
 }
 
 }// namespace vcu

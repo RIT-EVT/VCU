@@ -10,14 +10,18 @@
 #include <core/utils/types/FixedQueue.hpp>
 #include <models/MCuC_Model.hpp>
 
+#include <core/rtos/Initializable.hpp>
+#include <core/rtos/Mutex.hpp>
+
 namespace io = core::io;
+namespace rtos = core::rtos;
 
 namespace vcu {
 
 /**
  * Driver for the VCU device
  */
-class MCuC : public CANDevice {
+class MCuC : public CANDevice, public rtos::Initializable {
 public:
     //////////////////////////////////////////////
     ///              MCUC Pinout               ///
@@ -140,7 +144,7 @@ public:
     };
 
     /**
-     * Constructor for VCU object
+     * Constructor for MCuC object
      */
     MCuC(MCuC_GPIO gpios, io::CAN& ptCAN);
 
@@ -163,6 +167,9 @@ public:
      */
     void process();
 
+    //override methods from Initializable
+    rtos::TXError init(rtos::BytePoolBase& pool) override;
+
     //override methods from CANDevice
 
     CO_OBJ_T* getObjectDictionary() override;
@@ -172,6 +179,11 @@ public:
     uint8_t getNodeID() override;
 
 private:
+    /**
+     * Mutex that protects internal access to the MCuC
+     */
+    rtos::Mutex mutex;
+
     /**
      * Local instance of PowertrainCan
      */
