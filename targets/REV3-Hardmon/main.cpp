@@ -63,17 +63,24 @@ namespace time = core::time;
 
 // Health Thread Parameters
 #define HEALTH_THREAD_STACK_SIZE 1024
-#define HEALTH_THREAD_PRIORITY 4
+#define HEALTH_THREAD_PRIORITY 5
 #define HEALTH_THREAD_PREEMPT_THRESHOLD 4
 #define HEALTH_THREAD_TIME_SLICE MS_TO_TICKS(10)
 #define HEALTH_THREAD_AUTOSTART true
+
+// Accessory CAN Receive Thread Parameters
+#define ACC_CAN_RECEIVE_THREAD_STACK_SIZE 1024
+#define ACC_CAN_RECEIVE_THREAD_PRIORITY 4
+#define ACC_CAN_RECEIVE_THREAD_PREEMPT_THRESHOLD 4
+#define ACC_CAN_RECEIVE_THREAD_TIME_SLICE MS_TO_TICKS(10)
+#define ACC_CAN_RECEIVE_THREAD_AUTOSTART true
 
 // Thread Structs
 
 /**
  * Struct that holds information needed for the model thread
  */
-typedef struct modelThreadArgs {
+typedef struct {
     vcu::Hardmon* hardmon;
     rtos::EventFlags* triggerFlag;
 } modelThreadArgs_t;
@@ -81,16 +88,24 @@ typedef struct modelThreadArgs {
 /**
  * Struct that holds information needed for the powertrain CAN thread
  */
-typedef struct powertrainCANReceiveThreadArgs {
+typedef struct {
     vcu::Hardmon* hardmon;
 } powertrainCANReceiveThreadArgs_t;
 
 /**
  * Struct that holds information needed for the health thread
  */
-typedef struct healthThreadArgs {
+typedef struct {
     vcu::Hardmon* hardmon;
 } healthThreadArgs_t;
+
+/**
+ * Struct that holds information needed for the accessory CANopen Thread
+ */
+typedef struct {
+    vcu::Hardmon* hardmon;
+    //todo: once threadsafe canopen is implemented, this should take an instance of that.
+} accessoryCanReceiveThreadArgs_t;
 
 
 //Timer expiration function
@@ -100,6 +115,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag);
 [[noreturn]] void modelThreadEntry(modelThreadArgs_t* args);
 [[noreturn]] void powertrainCANReceiveThreadEntry(powertrainCANReceiveThreadArgs_t* args);
 [[noreturn]] void healthThreadEntry(healthThreadArgs_t* args);
+[[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args);
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -292,10 +308,23 @@ int main() {
                                                     HEALTH_THREAD_PREEMPT_THRESHOLD, HEALTH_THREAD_TIME_SLICE,
                                                    HEALTH_THREAD_AUTOSTART);
 
+    ///Argument struct the Accessory Can Receive takes in
+    accessoryCanReceiveThreadArgs_t accessoryCanReceiveThreadArgs {
+        &hardmon
+    };
+
+    /// Thread that checks the health of the other threads
+    rtos::Thread<accessoryCanReceiveThreadArgs_t*> accessoryCanReceiveThread((char*)"Hardmon Accessory Can Recieve Thread",
+                                                   accessoryCanReceiveThreadEntry, &accessoryCanReceiveThreadArgs,
+                                                   ACC_CAN_RECEIVE_THREAD_STACK_SIZE, ACC_CAN_RECEIVE_THREAD_PRIORITY,
+                                                   ACC_CAN_RECEIVE_THREAD_PREEMPT_THRESHOLD, ACC_CAN_RECEIVE_THREAD_TIME_SLICE,
+                                                   ACC_CAN_RECEIVE_THREAD_AUTOSTART);
+
 
 
     rtos::Initializable* initArr[] = {
-        &hardmon, &modelThread,&modelTriggerFlag, &modelTriggerTimer, &powertrainCANReceiveThread, &healthThread
+        &hardmon, &modelThread,&modelTriggerFlag, &modelTriggerTimer,
+        &powertrainCANReceiveThread, &healthThread, &accessoryCanReceiveThread
     };
 
     rtos::startKernel(initArr, sizeof(initArr) / sizeof(initArr[0]), txPool);
@@ -357,6 +386,18 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
     while(true) {
         //do healththread stuff
         error = rtos::sleep(MS_TO_TICKS(50));
+    }
+}
+
+/**
+ * Entry Function for the Accessory CAN Receive Thread.
+ *
+ * @param args the arguments for this thread
+ */
+[[noreturn]] void accessoryCanReceiveThreadArgs(accessoryCanReceiveThreadArgs_t* args) {
+    rtos::TXError error;
+    while(true) {
+        //process accessory CAN
     }
 }
 

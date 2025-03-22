@@ -64,12 +64,19 @@ namespace time = core::time;
 #define HEALTH_THREAD_TIME_SLICE MS_TO_TICKS(10)
 #define HEALTH_THREAD_AUTOSTART true
 
+// Accessory CAN Receive Thread Parameters
+#define ACC_CAN_RECEIVE_THREAD_STACK_SIZE 1024
+#define ACC_CAN_RECEIVE_THREAD_PRIORITY 4
+#define ACC_CAN_RECEIVE_THREAD_PREEMPT_THRESHOLD 4
+#define ACC_CAN_RECEIVE_THREAD_TIME_SLICE MS_TO_TICKS(10)
+#define ACC_CAN_RECEIVE_THREAD_AUTOSTART true
+
 // Thread Structs
 
 /**
  * Struct that holds information needed for the model thread
  */
-typedef struct modelThreadArgs {
+typedef struct {
     vcu::MCuC* mcuc;
     rtos::EventFlags* triggerFlag;
 } modelThreadArgs_t;
@@ -77,16 +84,24 @@ typedef struct modelThreadArgs {
 /**
  * Struct that holds information needed for the powertrain CAN thread
  */
-typedef struct powertrainCANReceiveThreadArgs {
+typedef struct {
     vcu::MCuC* mcuc;
 } powertrainCANReceiveThreadArgs_t;
 
 /**
  * Struct that holds information needed for the health thread
  */
-typedef struct healthThreadArgs {
+typedef struct {
     vcu::MCuC* mcuc;
 } healthThreadArgs_t;
+
+/**
+ * Struct that holds information needed for the accessory CANopen Thread
+ */
+typedef struct {
+    vcu::MCuC* mcuc;
+    //todo: once threadsafe canopen is implemented, this should take an instance of that.
+} accessoryCanReceiveThreadArgs_t;
 
 //Timer expiration function
 void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag);
@@ -95,6 +110,8 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag);
 [[noreturn]] void modelThreadEntry(modelThreadArgs_t* args);
 [[noreturn]] void powertrainCANReceiveThreadEntry(powertrainCANReceiveThreadArgs_t* args);
 [[noreturn]] void healthThreadEntry(healthThreadArgs_t* args);
+[[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args);
+
 
 
 
@@ -277,15 +294,28 @@ int main() {
     };
 
     /// Thread that checks the health of the other threads
-    rtos::Thread<healthThreadArgs_t*> healthThread((char*)"Hardmon Health Monitoring Thread",
+    rtos::Thread<healthThreadArgs_t*> healthThread((char*)"MCuC Health Monitoring Thread",
                                                    healthThreadEntry, &healthThreadArgs,
                                                    HEALTH_THREAD_STACK_SIZE, HEALTH_THREAD_PRIORITY,
                                                    HEALTH_THREAD_PREEMPT_THRESHOLD, HEALTH_THREAD_TIME_SLICE,
                                                    HEALTH_THREAD_AUTOSTART);
 
+    ///Argument struct the Accessory Can Receive takes in
+    accessoryCanReceiveThreadArgs_t accessoryCanReceiveThreadArgs {
+        &mcuc
+    };
+
+    /// Thread that checks the health of the other threads
+    rtos::Thread<accessoryCanReceiveThreadArgs_t*> accessoryCanReceiveThread((char*)"MCuC Accessory Can Recieve Thread",
+                                                                             accessoryCanReceiveThreadEntry, &accessoryCanReceiveThreadArgs,
+                                                                             ACC_CAN_RECEIVE_THREAD_STACK_SIZE, ACC_CAN_RECEIVE_THREAD_PRIORITY,
+                                                                             ACC_CAN_RECEIVE_THREAD_PREEMPT_THRESHOLD, ACC_CAN_RECEIVE_THREAD_TIME_SLICE,
+                                                                             ACC_CAN_RECEIVE_THREAD_AUTOSTART);
+
     //Start kernel
     rtos::Initializable* initArr[] = {
-        &mcuc, &modelThread,&modelTriggerFlag, &modelTriggerTimer, &powertrainCANReceiveThread, &healthThread
+        &mcuc, &modelThread,&modelTriggerFlag, &modelTriggerTimer,
+        &powertrainCANReceiveThread, &healthThread, &accessoryCanReceiveThread
     };
 
     rtos::startKernel(initArr, sizeof(initArr) / sizeof(initArr[0]), txPool);
@@ -346,5 +376,17 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
     while(true) {
         //do healththread stuff
         error = rtos::sleep(MS_TO_TICKS(50));
+    }
+}
+
+/**
+ * Entry Function for the Accessory CAN Receive Thread.
+ *
+ * @param args the arguments for this thread
+ */
+[[noreturn]] void accessoryCanReceiveThreadArgs(accessoryCanReceiveThreadArgs_t* args) {
+    rtos::TXError error;
+    while(true) {
+        //process accessory CAN
     }
 }
