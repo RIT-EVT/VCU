@@ -1,4 +1,9 @@
 #include <MCuC.hpp>
+#include <core/utils/log.hpp>
+#include <core/utils/time.hpp>
+#include <tx_api.h>
+
+namespace log = core::log;
 
 namespace vcu {
 
@@ -62,6 +67,13 @@ rtos::Queue* MCuC::getPowertrainQueue() {
 }
 
 void MCuC::process() {
+    #ifdef EVT_CORE_LOG_ENABLE
+        uint32_t start, step, stepEnd, powerTrainCAN = 0, motorControllerCan, end;
+        uint32_t halstart, halstep, halstepEnd, halpowerTrainCAN = 0, halmotorControllerCan, halend;
+
+        halstart = core::time::millis();
+    #endif
+
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     //brakeOn updated over CAN
     eStop = gpios.eStopGPIO.readPin() == io::GPIO::State::HIGH;
@@ -89,6 +101,10 @@ void MCuC::process() {
     };
     mutex.put();
 
+    #ifdef EVT_CORE_LOG_ENABLE
+        halstep = core::time::millis();
+    #endif
+
     model.setExternalInputs(&inputs);
 
     model.step();
@@ -98,6 +114,10 @@ void MCuC::process() {
     //get outputs
     vcu::MCuC_Model::ExtY_MCuC_T outputs = model.getExternalOutputs();
     //save outputs
+
+    #ifdef EVT_CORE_LOG_ENABLE
+        halstepEnd = core::time::millis();
+    #endif
 
     mutex.get(rtos::TXW_WAIT_FOREVER);
     lvssEnable = outputs.LVSS_EN_uC;
@@ -130,7 +150,12 @@ void MCuC::process() {
     gpios.ignitionSelfTestGPIO.writePin(ignitionSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     //We will send accessory CAN SelfTest message over CANopen
     //Send the powertrainCanSelfTest message
+
     if (powertrainCanSelfTestOut) {
+        #ifdef EVT_CORE_LOG_ENABLE
+            halpowerTrainCAN = core::time::millis();
+        #endif
+
         powertrainCAN.sendUCSelfTestMessage();
     }
 
@@ -144,8 +169,26 @@ void MCuC::process() {
     powertrainCAN.setMCInverterEnable(inverterEnable);
     powertrainCAN.setMCInverterDischarge(inverterDischarge);
     powertrainCAN.setMCTorque(torqueRequest);
+
+    #ifdef EVT_CORE_LOG_ENABLE
+        halmotorControllerCan = core::time::millis();
+    #endif
+
     powertrainCAN.sendMCMessage();
     mutex.put();
+
+    #ifdef EVT_CORE_LOG_ENABLE
+        halend = core::time::millis();
+
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Hal Timing:");
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting: %d\n\r"
+                                                            "Stepping: %d\n\r"
+                                                            "Step Done: %d\n\r"
+                                                            "Sending PT Can: %d\n\r"
+                        , halstart, halstep, halstepEnd, halpowerTrainCAN);
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Sending Motor Can: %d\n\r"
+                                                            "Ended: %d\n\r", halend, halmotorControllerCan);
+    #endif
 }
 
 }// namespace vcu
