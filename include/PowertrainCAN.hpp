@@ -20,7 +20,7 @@ namespace vcu::dev {
 class PowertrainCAN : rtos::Initializable {
 public:
     /**
-     * An enumeration of the Powertrain CAN message ids that are relevant to the MCuC and Hardmon
+     * An enumeration of the Powertrain CAN message ids that are relevant to the MCuC and Hardmon.
      */
     enum MessageIDs {
         // motor controller recieve message ids
