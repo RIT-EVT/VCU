@@ -33,11 +33,15 @@ public:
         MC_PARAMETER_RESPONSE_ID = (uint32_t) 0x0C2,
         MC_INTERNAL_VOLTAGES_ID = (uint32_t) 0x0A9,
 
-        //motor controller send message ids
+        // motor controller send message ids
         MC_COMMAND_ID = 0x0C0,
         MC_PARAMETER_COMMAND_ID = 0x0C1,
 
+        // HIB message
         HIB_MESSAGE_ID = (uint32_t) 0x0D0,
+
+        // self test message ids
+
         HARDMON_SELF_TEST_MESSAGE_ID = (uint32_t) 0x044,//TODO: This is not the correct ID, will not work!
         UC_SELF_TEST_MESSAGE_ID = (uint32_t) 0x045      //TODO: This is not the correct ID, will not work!
     };
