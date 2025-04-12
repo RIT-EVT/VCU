@@ -36,7 +36,7 @@ jobs:
       # Build the code for all supported chips
       - name: F446 Build
         run: |
-          cmake --DTARGET_DEV=STM32F446xx -DUSE_RTOS=1 -B ${{github.workspace}}/build
+          cmake -DTARGET_DEV=STM32F446xx -DUSE_RTOS=1 -B ${{github.workspace}}/build
           cmake --build ${{github.workspace}}/build
 
       # Apply clang-format formatting to the branch and create a new commit if any files are changed
