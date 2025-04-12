@@ -11,7 +11,6 @@
 #include <cstring>
 
 #define POWERTRAIN_QUEUE_SIZE 64
-#define MC_COMMAND_MESSAGE_ID 0x0C0
 
 namespace io = core::io;
 namespace rtos = core::rtos;
@@ -21,11 +20,24 @@ namespace vcu::dev {
 class PowertrainCAN : rtos::Initializable {
 public:
     /**
-     * An enumeration of the Powertrain CAN message ids that are relevant to the
+     * An enumeration of the Powertrain CAN message ids that are relevant to the MCuC and Hardmon
      */
     enum MessageIDs {
+        // motor controller recieve message ids
+        MC_TEMPS_1_ID = (uint32_t) 0xA0,
+        MC_TEMPS_2_ID = (uint32_t) 0xA1,
+        MC_TEMPS_3_ID = (uint32_t) 0xA2,
         MC_INTERNAL_STATES_ID = (uint32_t) 0x0AA,
-        HIB_MESSAGE_ID = (uint32_t) 0x012,              //TODO: HIB this is NOT the correct id, must be updated when the HIB is finished
+        MC_FAULT_CODES_ID = (uint32_t) 0x0AB,
+        MC_HIGH_SPEED_ID = (uint32_t) 0x0B0,
+        MC_PARAMETER_RESPONSE_ID = (uint32_t) 0x0C2,
+        MC_INTERNAL_VOLTAGES_ID = (uint32_t) 0x0A9,
+
+        //motor controller send message ids
+        MC_COMMAND_ID = 0x0C0,
+        MC_PARAMETER_COMMAND_ID = 0x0C1,
+
+        HIB_MESSAGE_ID = (uint32_t) 0x0D0,
         HARDMON_SELF_TEST_MESSAGE_ID = (uint32_t) 0x044,//TODO: This is not the correct ID, will not work!
         UC_SELF_TEST_MESSAGE_ID = (uint32_t) 0x045      //TODO: This is not the correct ID, will not work!
     };
