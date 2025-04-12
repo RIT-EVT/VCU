@@ -51,7 +51,7 @@ void PowertrainCAN::sendMCMessage() {
     uint8_t payload[8];
     std::memcpy(payload, &mcCommandPayload, 8u);
     //make the message
-    io::CANMessage message = io::CANMessage(MC_COMMAND_MESSAGE_ID, 8u, payload, false);
+    io::CANMessage message = io::CANMessage(PowertrainCAN::MessageIDs::MC_COMMAND_ID, 8u, payload, false);
     //send the message
     can.transmit(message);
 }
