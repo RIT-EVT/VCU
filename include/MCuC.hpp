@@ -198,10 +198,16 @@ private:
     ///the gpios
     MCuC_GPIO gpios;
 
+    /**
+     * Union that represents the state of the microcontroller
+     */
     union UCState {
         struct {
-            bool buffer[12];
-            bool stateBits[4];
+            int16_t padding:12;
+            int16_t stateBit0:1;
+            int16_t stateBit1:1;
+            int16_t stateBit2:1;
+            int16_t stateBit3:1;
         };
         UC_State stateEnum;
     };

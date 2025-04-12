@@ -86,7 +86,8 @@ void Hardmon::process() {
         discharge,
         modelGPIOInputs.watchdog,
         modelGPIOInputs.eStop3v3,
-        lvssEnableUC};
+        lvssEnableUC
+    };
 
     mutex.put();
     model.setExternalInputs(&modelInputs);

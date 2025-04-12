@@ -12,6 +12,7 @@
 #include <core/utils/types/FixedQueue.hpp>
 
 #include <core/io/CANopen.hpp>
+#include <core/utils/log.hpp>
 
 #include <co_core.h>
 #include <co_if.h>
@@ -33,6 +34,7 @@
 namespace io = core::io;
 namespace dev = core::dev;
 namespace time = core::time;
+namespace log = core::log;
 
 ///////////////////////////////////////////////////////////////////////////////
 //RTOS GLOBAlS SETUP
@@ -66,10 +68,16 @@ namespace time = core::time;
 
 // Accessory CAN Receive Thread Parameters
 #define ACC_CAN_RECEIVE_THREAD_STACK_SIZE 1024
-#define ACC_CAN_RECEIVE_THREAD_PRIORITY 4
-#define ACC_CAN_RECEIVE_THREAD_PREEMPT_THRESHOLD 4
+#define ACC_CAN_RECEIVE_THREAD_PRIORITY 5
+#define ACC_CAN_RECEIVE_THREAD_PREEMPT_THRESHOLD 5
 #define ACC_CAN_RECEIVE_THREAD_TIME_SLICE MS_TO_TICKS(10)
 #define ACC_CAN_RECEIVE_THREAD_AUTOSTART true
+
+// Threadsafe UART Thread parameters
+#define UART_THREAD_STACK_SIZE 1024
+#define UART_THREAD_PRIORITY 3
+#define UART_THREAD_PREEMPT_THRESHOLD 3
+#define UART_THREAD_TIME_SLICE MS_TO_TICKS(15)
 
 // Thread Structs
 
@@ -113,8 +121,6 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag);
 [[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args);
 
 
-
-
 ///////////////////////////////////////////////////////////////////////////////
 // EVT-core CAN callback and CAN setup. This will include logic to set
 // aside CANopen messages into a specific queue
@@ -155,7 +161,20 @@ int main() {
     dev::Timer& timer = dev::getTimer<dev::MCUTimer::Timer2>(100);
 
     // UART for testing
+    //io::UART& uart = io::getUART<vcu::MCuC::UART_TX, vcu::MCuC::UART_RX>(9600);
+
+    // UART for testing not on VCU
     io::UART& uart = io::getUART<io::Pin::UART_TX, io::Pin::UART_RX>(9600);
+//    rtos::tsio::ThreadUART threadUART(uart, UART_THREAD_STACK_SIZE,
+//                                      UART_THREAD_PRIORITY,
+//                                      UART_THREAD_PREEMPT_THRESHOLD,
+//                                      UART_THREAD_TIME_SLICE);
+
+
+    log::LOGGER.setUART(&uart);
+    log::LOGGER.setLogLevel(log::Logger::LogLevel::DEBUG);
+
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MCuC Debug Logger Started.");
 
     //TODO: CANopen uncomment when we add in Accessory CAN configuration
     /*
@@ -213,7 +232,7 @@ int main() {
 
     ///////////////////////////////////////////////////////////
     // Setup the POWERTRAIN CAN configurations- this is RAW can
-    // so it is simpler than te CANopen setup.
+    // so it is simpler than the CANopen setup.
     //////////////////////////////////////////////////////////
 
     io::CAN& ptCAN = io::getCAN<vcu::MCuC::POWERTRAIN_CAN_TX_PIN, vcu::MCuC::POWERTRAIN_CAN_RX_PIN>();
@@ -239,7 +258,8 @@ int main() {
          io::getGPIO<vcu::MCuC::MC_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
          io::getGPIO<vcu::MCuC::ESTOP_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
          io::getGPIO<vcu::MCuC::IGNITION_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::MCuC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT)}};
+         io::getGPIO<vcu::MCuC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT)}
+    };
 
     vcu::MCuC mcuc(gpios, ptCAN);
     ptCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(mcuc.getPowertrainQueue()));
@@ -315,9 +335,9 @@ int main() {
     //Start kernel
     rtos::Initializable* initArr[] = {
         &mcuc, &modelThread,&modelTriggerFlag, &modelTriggerTimer,
-        &powertrainCANReceiveThread, &healthThread, &accessoryCanReceiveThread
+        &powertrainCANReceiveThread, &healthThread, &accessoryCanReceiveThread, //&threadUART
     };
-
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting Kernel");
     rtos::startKernel(initArr, sizeof(initArr) / sizeof(initArr[0]), txPool);
 }
 
@@ -330,8 +350,10 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
     uint32_t flags;
     modelTriggerFlag->getCurrentFlags(&flags);
     if ((flags & 0x01) == 0x01) {
+
         //the model is not running fast enough- this is very bad!!!!
         //todo: determine what error to throw
+        log::LOGGER.log(core::log::Logger::LogLevel::ERROR, "Model Thread Not Running Fast Enough!");
     }
     modelTriggerFlag->set(0x01);
 }
@@ -343,11 +365,14 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
  * @param args the arguments for this thread
  */
 [[noreturn]] void modelThreadEntry(modelThreadArgs_t* args) {
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Started");
     rtos::TXError error;
     while(true) {
         uint32_t flagOutput;
         args->triggerFlag->get(0x01, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
         args->mcuc->process();
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Triggered");
+
     }
 }
 
@@ -357,6 +382,7 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
  * @param args the arguments for this thread
  */
 [[noreturn]] void powertrainCANReceiveThreadEntry(powertrainCANReceiveThreadArgs_t * args) {
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Powertrain CAN Receive Thread started");
     io::CANMessage message;
     rtos::Queue* queue = args->mcuc->getPowertrainQueue();
     while(true) {
@@ -372,10 +398,13 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
  * @param args the arguments for this thread
  */
 [[noreturn]] void healthThreadEntry(healthThreadArgs_t* args) {
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Started");
     rtos::TXError error;
     while(true) {
-        //do healththread stuff
-        error = rtos::sleep(MS_TO_TICKS(50));
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Triggered");
+
+        //do health thread stuff
+        error = rtos::sleep(MS_TO_TICKS(120));
     }
 }
 
@@ -384,9 +413,11 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
  *
  * @param args the arguments for this thread
  */
-[[noreturn]] void accessoryCanReceiveThreadArgs(accessoryCanReceiveThreadArgs_t* args) {
+[[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args) {
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Started");
+
     rtos::TXError error;
-    while(true) {
-        //process accessory CAN
-    }
+//    while(true) {
+//        //process accessory CAN
+//    }
 }

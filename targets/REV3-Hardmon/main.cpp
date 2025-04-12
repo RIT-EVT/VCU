@@ -14,6 +14,8 @@
 #include <core/io/UART.hpp>
 #include <core/io/types/CANMessage.hpp>
 #include <core/manager.hpp>
+#include <core/utils/log.hpp>
+
 
 #include <core/io/CANopen.hpp>
 
@@ -37,6 +39,7 @@ namespace rtos = core::rtos;
 namespace io = core::io;
 namespace dev = core::dev;
 namespace time = core::time;
+namespace log = core::log;
 
 ///////////////////////////////////////////////////////////////////////////////
 //RTOS GLOBAlS SETUP
@@ -45,7 +48,7 @@ namespace time = core::time;
 /// The size of the memory pool for the tx application
 #define TX_APP_MEM_POOL_SIZE 65536
 /// How often the model should take 1 step.
-#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(500)
+#define MODEL_THREAD_TRIGGER_RATE S_TO_TICKS(5)
 
 // Model Thread Parameters
 #define MODEL_THREAD_STACK_SIZE 1024
@@ -64,7 +67,7 @@ namespace time = core::time;
 // Health Thread Parameters
 #define HEALTH_THREAD_STACK_SIZE 1024
 #define HEALTH_THREAD_PRIORITY 5
-#define HEALTH_THREAD_PREEMPT_THRESHOLD 4
+#define HEALTH_THREAD_PREEMPT_THRESHOLD 5
 #define HEALTH_THREAD_TIME_SLICE MS_TO_TICKS(10)
 #define HEALTH_THREAD_AUTOSTART true
 
@@ -163,7 +166,13 @@ int main() {
     dev::Timer& timer = dev::getTimer<dev::MCUTimer::Timer2>(100);
 
     // UART for testing
-    io::UART& uart = io::getUART<io::Pin::UART_TX, io::Pin::UART_RX>(9600);
+    io::UART& uart = io::getUART<vcu::Hardmon::UART_TX_PIN, vcu::Hardmon::UART_RX_PIN>(9600);
+    rtos::tsio::ThreadUART threadUART(uart);
+
+    log::LOGGER.setUART(&uart);
+    log::LOGGER.setLogLevel(log::Logger::LogLevel::DEBUG);
+
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MCuC Debug Logger Started.");
 
     //TODO: uncomment when we figure out Accessory CAN
     /*
@@ -327,8 +336,9 @@ int main() {
         &powertrainCANReceiveThread, &healthThread, &accessoryCanReceiveThread
     };
 
-    rtos::startKernel(initArr, sizeof(initArr) / sizeof(initArr[0]), txPool);
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting Kernel.");
 
+    rtos::startKernel(initArr, sizeof(initArr) / sizeof(initArr[0]), txPool);
 }
 
 /**
@@ -342,6 +352,7 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
     if ((flags & 0x01) == 0x1) {
         //THE MODEL IS NOT RUNNING FAST ENOUGH THROW AN ERROR
         //todo: determine what error to throw
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread not running fast enough.");
     }
     modelTriggerFlag->set(0x01);
 }
@@ -354,10 +365,13 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
  */
 [[noreturn]] void modelThreadEntry(modelThreadArgs_t* args) {
     rtos::TXError error;
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Started.");
     while(true) {
         uint32_t flagOutput;
         args->triggerFlag->get(0x01, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Starting.");
         args->hardmon->process();
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Processed.");
     }
 }
 
@@ -367,6 +381,7 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
  * @param args the arguments for this thread
  */
 [[noreturn]] void powertrainCANReceiveThreadEntry(powertrainCANReceiveThreadArgs_t * args) {
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Powertrain CAN Thread Started.");
     io::CANMessage message;
     rtos::Queue* queue = args->hardmon->getPowertrainQueue();
     while(true) {
@@ -382,10 +397,14 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
  * @param args the arguments for this thread
  */
 [[noreturn]] void healthThreadEntry(healthThreadArgs_t* args) {
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Started.");
+
     rtos::TXError error;
     while(true) {
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Triggered.");
         //do healththread stuff
         error = rtos::sleep(MS_TO_TICKS(50));
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Sleep Code %d", error);
     }
 }
 
@@ -394,11 +413,12 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
  *
  * @param args the arguments for this thread
  */
-[[noreturn]] void accessoryCanReceiveThreadArgs(accessoryCanReceiveThreadArgs_t* args) {
+[[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args) {
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory Can Thread Started.");
     rtos::TXError error;
-    while(true) {
-        //process accessory CAN
-    }
+//    while(true) {
+//        //process accessory CAN
+//    }
 }
 
 

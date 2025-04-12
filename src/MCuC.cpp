@@ -68,7 +68,6 @@ rtos::Queue* MCuC::getPowertrainQueue() {
 
 void MCuC::process() {
     #ifdef EVT_CORE_LOG_ENABLE
-        uint32_t start, step, stepEnd, powerTrainCAN = 0, motorControllerCan, end;
         uint32_t halstart, halstep, halstepEnd, halpowerTrainCAN = 0, halmotorControllerCan, halend;
 
         halstart = core::time::millis();
@@ -135,10 +134,10 @@ void MCuC::process() {
     //set inverterEnable before we send the message
     gpios.ucFaultGPIO.writePin(ucFault ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.watchdogGPIO.writePin(watchdog ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    gpios.ucStateZeroGPIO.writePin(ucState.stateBits[0] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    gpios.ucStateOneGPIO.writePin(ucState.stateBits[1] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    gpios.ucStateTwoGPIO.writePin(ucState.stateBits[2] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    gpios.ucStateThreeGPIO.writePin(ucState.stateBits[3] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.ucStateZeroGPIO.writePin(ucState.stateBit0 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.ucStateOneGPIO.writePin(ucState.stateBit1 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.ucStateTwoGPIO.writePin(ucState.stateBit2 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.ucStateThreeGPIO.writePin(ucState.stateBit3 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     //set inverterDisable before we send the message
     // set Motor Controller via the two gpios
     // If mcEnableUC is true, Positive should be High and Negative should be Low, otherwise they should be the opposite.
@@ -178,16 +177,16 @@ void MCuC::process() {
     mutex.put();
 
     #ifdef EVT_CORE_LOG_ENABLE
-        halend = core::time::millis();
-
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Hal Timing:");
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting: %d\n\r"
-                                                            "Stepping: %d\n\r"
-                                                            "Step Done: %d\n\r"
-                                                            "Sending PT Can: %d\n\r"
-                        , halstart, halstep, halstepEnd, halpowerTrainCAN);
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Sending Motor Can: %d\n\r"
-                                                            "Ended: %d\n\r", halend, halmotorControllerCan);
+//        halend = core::time::millis();
+//
+//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MS Timing:");
+//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting: %d\n\r"
+//                                                            "Stepping: %d\n\r"
+//                                                            "Step Done: %d\n\r"
+//                                                            "Sending PT Can: %d\n\r"
+//                        , halstart, halstep, halstepEnd, halpowerTrainCAN);
+//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Sending Motor Can: %d\n\r"
+//                                                            "Ended: %d\n\r", halend, halmotorControllerCan);
     #endif
 }
 
