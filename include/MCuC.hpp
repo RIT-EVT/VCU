@@ -144,6 +144,32 @@ public:
     };
 
     /**
+     * Struct that contains all the data that AccessoryCan should read in.
+     * Used for double buffering for threadsafety with CANOpen
+     */
+     struct AccessoryCanData_s {
+        uint16_t LVSS_out_EnableBoardSignal;     ///< Signal sent to LVSS that determines which boards it will send power to
+        uint16_t LVSS_in_HVCurrent;              ///< Signal received from LVSS
+        uint16_t LVSS_in_PowerSwitchErrorStatus; ///< Signal received from LVSS
+        uint16_t LVSS_in_PowerSwitchCurrents;    ///< Signal received from LVSS
+        uint16_t LVSS_in_Temperatures;           ///< Signal received from LVSS
+     } AccessoryCanData_t;
+
+     /**
+     * Union that represents the state of the microcontroller
+     */
+     union UCState {
+        struct {
+            int16_t padding:12;
+            int16_t stateBit0:1;
+            int16_t stateBit1:1;
+            int16_t stateBit2:1;
+            int16_t stateBit3:1;
+        };
+        UC_State stateEnum;
+     };
+
+    /**
      * Constructor for MCuC object
      */
     MCuC(MCuC_GPIO gpios, io::CAN& ptCAN);
@@ -178,6 +204,15 @@ public:
 
     uint8_t getNodeID() override;
 
+    /**
+     * Unsafe (non-mutexed) Buffer Data that comes in or is sent out over Accessory CAN.
+     */
+    AccessoryCanData_s accessoryCanDataUnsafeBuffer;
+
+    void sendOutputDataToUnsafeBuffer();
+
+    void sendInputDataToSafeBuffer();
+
 private:
     /**
      * Mutex that protects internal access to the MCuC
@@ -195,22 +230,14 @@ private:
      */
     MCuC_Model model;
 
+    /**
+     * Safe (mutexed) Buffer Data that comes in or is sent out over Accessory CAN.
+     */
+    AccessoryCanData_s accessoryCanDataSafeBuffer;
+
+
     ///the gpios
     MCuC_GPIO gpios;
-
-    /**
-     * Union that represents the state of the microcontroller
-     */
-    union UCState {
-        struct {
-            int16_t padding:12;
-            int16_t stateBit0:1;
-            int16_t stateBit1:1;
-            int16_t stateBit2:1;
-            int16_t stateBit3:1;
-        };
-        UC_State stateEnum;
-    };
 
     //TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
 
@@ -247,12 +274,13 @@ private:
     /**
      * The node ID used to identify the device on the CAN network.
      */
-    static constexpr uint8_t NODE_ID = 255;//TODO: CANopen set node ID
+    static constexpr uint8_t NODE_ID = 0;
+    static constexpr uint8_t LVSS_NODE_ID = 1;
 
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 51;//TODO: CANopen set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 34; //TODO: CANopen set size of object dictionary
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -266,6 +294,35 @@ private:
         SDO_CONFIGURATION_1200,
 
         //RPDOS and data links
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(0x00, 0x00, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x00, 0x04),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x02, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x03, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x04, PDO_MAPPING_UNSIGNED16),
+
+
+        //TPDOS
+        // Dummy TPDO for it to work (unsure if it is necessary)
+//        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 2000),
+//        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x00, 0x00),
+
+        // Actual TPDO
+        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x01, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 2000),
+        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x01, 0x01),
+        TRANSMIT_PDO_MAPPING_ENTRY_1AXX(0x01, 0x01, PDO_MAPPING_UNSIGNED16),
+
+        // data links
+        DATA_LINK_START_KEY_21XX(0x00, 0x01),
+        // Receive DATA
+        DATA_LINK_21XX(0x00, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent),
+        DATA_LINK_21XX(0x00, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus),
+        DATA_LINK_21XX(0x00, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents),
+        DATA_LINK_21XX(0x00, 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures),
+
+        //Transmit DATA
+        DATA_LINK_START_KEY_21XX(0x01, 0x01),
+        DATA_LINK_21XX(0x01, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal),
 
         // End of dictionary marker
         CO_OBJ_DICT_ENDMARK,

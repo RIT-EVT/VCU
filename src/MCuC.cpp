@@ -9,7 +9,8 @@ namespace vcu {
 
 MCuC::MCuC(vcu::MCuC::MCuC_GPIO gpios, io::CAN& can) : powertrainCAN(can), gpios(gpios),
                                                        mutex((char*)"MCuC Mutex", true),
-                                                       Initializable("MCuC"){
+                                                       Initializable("MCuC"),
+                                                       accessoryCanDataUnsafeBuffer(), accessoryCanDataSafeBuffer(){
     model.initialize();
 }
 
@@ -66,6 +67,21 @@ rtos::Queue* MCuC::getPowertrainQueue() {
     return &powertrainCAN.queue;
 }
 
+void MCuC::sendOutputDataToUnsafeBuffer() {
+    mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
+    accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal = accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal;
+    mutex.put();
+}
+
+void MCuC::sendInputDataToSafeBuffer() {
+    mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
+    accessoryCanDataSafeBuffer.LVSS_in_HVCurrent = accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent;
+    accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents = accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents;
+    accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchErrorStatus = accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus;
+    mutex.put();
+}
+
+
 void MCuC::process() {
     #ifdef EVT_CORE_LOG_ENABLE
         uint32_t halstart, halstep, halstepEnd, halpowerTrainCAN = 0, halmotorControllerCan, halend;
@@ -74,6 +90,9 @@ void MCuC::process() {
     #endif
 
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
+    // update Accessory Can Safe buffer
+    sendInputDataToSafeBuffer();
+
     //brakeOn updated over CAN
     eStop = gpios.eStopGPIO.readPin() == io::GPIO::State::HIGH;
     //forwardEnable, startPressed, mcStateMachine, discharge updated over CAN
@@ -173,20 +192,21 @@ void MCuC::process() {
         halmotorControllerCan = core::time::millis();
     #endif
 
+    sendOutputDataToUnsafeBuffer();
     powertrainCAN.sendMCMessage();
     mutex.put();
 
     #ifdef EVT_CORE_LOG_ENABLE
-//        halend = core::time::millis();
-//
-//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MS Timing:");
-//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting: %d\n\r"
-//                                                            "Stepping: %d\n\r"
-//                                                            "Step Done: %d\n\r"
-//                                                            "Sending PT Can: %d\n\r"
-//                        , halstart, halstep, halstepEnd, halpowerTrainCAN);
-//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Sending Motor Can: %d\n\r"
-//                                                            "Ended: %d\n\r", halend, halmotorControllerCan);
+        halend = core::time::millis();
+
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MS Timing:");
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting: %d\n\r"
+                                                            "Stepping: %d\n\r"
+                                                            "Step Done: %d\n\r"
+                                                            "Sending PT Can: %d\n\r"
+                        , halstart, halstep, halstepEnd, halpowerTrainCAN);
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Sending Motor Can: %d\n\r"
+                                                            "Ended: %d\n\r", halend, halmotorControllerCan);
     #endif
 }
 

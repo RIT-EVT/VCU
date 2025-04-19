@@ -221,7 +221,7 @@ private:
 
     //TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
 
-    //Model input data
+    //Model gpio input data
     ModelGPIOInputs_t modelGPIOInputs;
 
     /**
@@ -229,9 +229,9 @@ private:
      * Lets us index into it like an array
      */
     UC_State ucState;
-    bool lvssEnableUC;    ///< GPIO: whether or not the MCuC is telling the LVSS to be enabled (calculated from ucState)
-    MC_DC_State discharge;///< CAN (MC): current state of the Motor Controller's discharge state machine
-    bool forwardEnable;   ///< CAN (HIB): handlebar forward enable
+    bool lvssEnableUC;     ///< GPIO: whether or not the MCuC is telling the LVSS to be enabled (calculated from ucState)
+    MC_DC_State discharge; ///< CAN (MC): current state of the Motor Controller's discharge state machine
+    bool forwardEnable;    ///< CAN (HIB): handlebar forward enable
 
     //Model output data
     ModelOutputs_t modelOutputs;
@@ -239,7 +239,7 @@ private:
     /**
      * The node ID used to identify the device on the CAN network.
      */
-    static constexpr uint8_t NODE_ID = 254;//TODO set node ID
+    static constexpr uint8_t NODE_ID = 0;               //TODO set node ID
 
     /**
      * The size of the Object Dictionary

@@ -108,6 +108,7 @@ typedef struct {
  */
 typedef struct {
     vcu::MCuC* mcuc;
+    CO_NODE* accessoryCanNode;
     //todo: once threadsafe canopen is implemented, this should take an instance of that.
 } accessoryCanReceiveThreadArgs_t;
 
@@ -160,11 +161,13 @@ int main() {
     // Initialize the timer
     dev::Timer& timer = dev::getTimer<dev::MCUTimer::Timer2>(100);
 
-    // UART for testing
-    //io::UART& uart = io::getUART<vcu::MCuC::UART_TX, vcu::MCuC::UART_RX>(9600);
+    // UART for testing on VCU
+    io::UART& uart = io::getUART<vcu::MCuC::UART_TX, vcu::MCuC::UART_RX>(9600);
 
     // UART for testing not on VCU
-    io::UART& uart = io::getUART<io::Pin::UART_TX, io::Pin::UART_RX>(9600);
+//    io::UART& uart = io::getUART<io::Pin::UART_TX, io::Pin::UART_RX>(9600);
+
+    //thread safe UART instance
 //    rtos::tsio::ThreadUART threadUART(uart, UART_THREAD_STACK_SIZE,
 //                                      UART_THREAD_PRIORITY,
 //                                      UART_THREAD_PREEMPT_THRESHOLD,
@@ -176,8 +179,45 @@ int main() {
 
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MCuC Debug Logger Started.");
 
+    // Initialize MCuC and Powertrain CAN
+
+    vcu::MCuC::MCuC_GPIO gpios = {
+        {io::getGPIO<vcu::MCuC::ESTOP_PIN>(io::GPIO::Direction::INPUT),
+         io::getGPIO<vcu::MCuC::IGNITION_PIN>(io::GPIO::Direction::INPUT),
+         io::getGPIO<vcu::MCuC::HM_FAULT_PIN>(io::GPIO::Direction::INPUT),
+         io::getGPIO<vcu::MCuC::LVSS_STATUS_PIN>(io::GPIO::Direction::INPUT),
+         io::getGPIO<vcu::MCuC::MC_STATUS_PIN>(io::GPIO::Direction::INPUT),
+
+         io::getGPIO<vcu::MCuC::UC_FAULT_PIN>(io::GPIO::Direction::OUTPUT),
+         io::getGPIO<vcu::MCuC::LVSS_ENABLE_PIN>(io::GPIO::Direction::OUTPUT),
+         io::getGPIO<vcu::MCuC::WATCHDOG_PIN>(io::GPIO::Direction::OUTPUT),
+
+         io::getGPIO<vcu::MCuC::UC_STATE_ZERO_PIN>(io::GPIO::Direction::OUTPUT),
+         io::getGPIO<vcu::MCuC::UC_STATE_ONE_PIN>(io::GPIO::Direction::OUTPUT),
+         io::getGPIO<vcu::MCuC::UC_STATE_TWO_PIN>(io::GPIO::Direction::OUTPUT),
+         io::getGPIO<vcu::MCuC::UC_STATE_THREE_PIN>(io::GPIO::Direction::OUTPUT),
+
+         io::getGPIO<vcu::MCuC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT),
+         io::getGPIO<vcu::MCuC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT),
+         io::getGPIO<vcu::MCuC::MC_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
+         io::getGPIO<vcu::MCuC::ESTOP_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
+         io::getGPIO<vcu::MCuC::IGNITION_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
+         io::getGPIO<vcu::MCuC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT)}
+    };
+
+    ///////////////////////////////////////////////////////////
+    // Setup the POWERTRAIN CAN configurations- this is RAW can
+    // so it is simpler than the CANopen setup.
+    //////////////////////////////////////////////////////////
+
+    io::CAN& ptCAN = io::getCAN<vcu::MCuC::POWERTRAIN_CAN_TX_PIN, vcu::MCuC::POWERTRAIN_CAN_RX_PIN>();
+    vcu::MCuC mcuc(gpios, ptCAN);
+
+
+    ptCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(mcuc.getPowertrainQueue()));
+
+
     //TODO: CANopen uncomment when we add in Accessory CAN configuration
-    /*
 
     ///////////////////////////////////////////////////////////////////////////
     // Setup ACCESSORY CAN configuration, this handles making drivers, applying settings.
@@ -189,7 +229,13 @@ int main() {
     core::types::FixedQueue<CANOPEN_QUEUE_SIZE, io::CANMessage> canOpenQueue;
 
     // Initialize CAN, add an IRQ which will add messages to the queue above
-    io::CAN& accessoryCAN = io::getCAN<VCU::MCUC::ACCESSORY_CAN_TX_PIN, VCU::MCUC::ACCESSORY_CAN_RX_PIN>();
+    // Can init for testing on on VCU
+//    io::CAN& accessoryCAN = io::getCAN<io::Pin::PA_12, io::Pin::PA_11>();
+
+    // Actual CAN init
+    io::CAN& accessoryCAN = io::getCAN<vcu::MCuC::ACCESSORY_CAN_TX_PIN, vcu::MCuC::ACCESSORY_CAN_RX_PIN>();
+
+
     accessoryCAN.addIRQHandler(accessoryCANOpenInterrupt, reinterpret_cast<void*>(&canOpenQueue));
 
     // Reserved memory for CANopen stack usage
@@ -228,46 +274,9 @@ int main() {
     //print any CANopen errors
     uart.printf("Error: %d\r\n", CONodeGetErr(&canNode));
 
-    */
-
-    ///////////////////////////////////////////////////////////
-    // Setup the POWERTRAIN CAN configurations- this is RAW can
-    // so it is simpler than the CANopen setup.
-    //////////////////////////////////////////////////////////
-
-    io::CAN& ptCAN = io::getCAN<vcu::MCuC::POWERTRAIN_CAN_TX_PIN, vcu::MCuC::POWERTRAIN_CAN_RX_PIN>();
-
-    vcu::MCuC::MCuC_GPIO gpios = {
-        {io::getGPIO<vcu::MCuC::ESTOP_PIN>(io::GPIO::Direction::INPUT),
-         io::getGPIO<vcu::MCuC::IGNITION_PIN>(io::GPIO::Direction::INPUT),
-         io::getGPIO<vcu::MCuC::HM_FAULT_PIN>(io::GPIO::Direction::INPUT),
-         io::getGPIO<vcu::MCuC::LVSS_STATUS_PIN>(io::GPIO::Direction::INPUT),
-         io::getGPIO<vcu::MCuC::MC_STATUS_PIN>(io::GPIO::Direction::INPUT),
-
-         io::getGPIO<vcu::MCuC::UC_FAULT_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::MCuC::LVSS_ENABLE_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::MCuC::WATCHDOG_PIN>(io::GPIO::Direction::OUTPUT),
-
-         io::getGPIO<vcu::MCuC::UC_STATE_ZERO_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::MCuC::UC_STATE_ONE_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::MCuC::UC_STATE_TWO_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::MCuC::UC_STATE_THREE_PIN>(io::GPIO::Direction::OUTPUT),
-
-         io::getGPIO<vcu::MCuC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::MCuC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::MCuC::MC_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::MCuC::ESTOP_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::MCuC::IGNITION_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::MCuC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT)}
-    };
-
-    vcu::MCuC mcuc(gpios, ptCAN);
-    ptCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(mcuc.getPowertrainQueue()));
-
     ////////////////////////
     // Initialize Threadx //
     ////////////////////////
-
 
     //Initialize Bytepool
 
@@ -322,7 +331,7 @@ int main() {
 
     ///Argument struct the Accessory Can Receive takes in
     accessoryCanReceiveThreadArgs_t accessoryCanReceiveThreadArgs {
-        &mcuc
+        &mcuc, &canNode
     };
 
     /// Thread that checks the health of the other threads
@@ -370,9 +379,8 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
     while(true) {
         uint32_t flagOutput;
         args->triggerFlag->get(0x01, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
-        args->mcuc->process();
         log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Triggered");
-
+//        args->mcuc->process();
     }
 }
 
@@ -386,6 +394,7 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
     io::CANMessage message;
     rtos::Queue* queue = args->mcuc->getPowertrainQueue();
     while(true) {
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Powertrain CAN Receive Thread Triggered");
         //suspends if there are no messages to receive
         queue->receive(&message, rtos::TXWait::TXW_WAIT_FOREVER);
         args->mcuc->handlePowertrainCanMessage(message);
@@ -415,9 +424,25 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
  */
 [[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Started");
-
+    args->mcuc->sendOutputDataToUnsafeBuffer();
     rtos::TXError error;
-//    while(true) {
-//        //process accessory CAN
-//    }
+    while(true) {
+        //process accessory CAN
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Triggered");
+        io::processCANopenNode(args->accessoryCanNode);
+
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
+                        "Accessory Can Node Processed\n\r\t"
+                        "HV Current: %d\n\r\t"
+                        "Power Switch Error: %d",
+                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent,
+                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus);
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
+                        "\n\r\tPower Switch Current: %d"
+                        "\n\r\tTemps: %d",
+                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents,
+                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures);
+
+        rtos::sleep(MS_TO_TICKS(500));
+    }
 }
