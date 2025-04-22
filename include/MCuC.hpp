@@ -263,7 +263,7 @@ private:
     bool watchdog;                ///< GPIO: watchdog signal between the Hardmon and MCUC.
     UCState ucState;              ///< GPIO: Current State of the MCUC;
     bool inverterDischarge;       ///< CAN (MC): Whether or not the inverter on the motor controller should be discharging.
-    bool mcEnableUC;              /// GPIO: controls mcTogglePositive and mcToggleNegative to enable or disable the motor controller
+    bool mcEnableUC;              ///< GPIO: controls mcTogglePositive and mcToggleNegative to enable or disable the motor controller
     int16_t torqueRequest;        ///< CAN (MC): How much torque the MCUC is requesting the motor controller to output
     bool mcSelfTestOut;           ///< GPIO: Whether or not the motor controller should be self-testing.
     bool estopSelfTestOut;        ///< GPIO: Whether or not the estop should be self-testing.
@@ -280,7 +280,7 @@ private:
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 34; //TODO: CANopen set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 49; //TODO: CANopen set size of object dictionary
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -295,34 +295,48 @@ private:
 
         //RPDOS and data links
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x00, 0x00, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x00, 0x04),
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x00, 0x01),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x02, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x03, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x04, PDO_MAPPING_UNSIGNED16),
 
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(0x01, 0x01, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x01, 0x01),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x01, PDO_MAPPING_UNSIGNED16),
 
-        //TPDOS
-        // Dummy TPDO for it to work (unsure if it is necessary)
-//        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 2000),
-//        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x00, 0x00),
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(0x02, 0x02, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x02, 0x01),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x01, PDO_MAPPING_UNSIGNED16),
+
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(0x03, 0x03, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x03, 0x01),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x01, PDO_MAPPING_UNSIGNED16),
+
 
         // Actual TPDO
-        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x01, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 2000),
-        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x01, 0x01),
-        TRANSMIT_PDO_MAPPING_ENTRY_1AXX(0x01, 0x01, PDO_MAPPING_UNSIGNED16),
+        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x04, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 2000),
+        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x04, 0x01),
+        TRANSMIT_PDO_MAPPING_ENTRY_1AXX(0x04, 0x01, PDO_MAPPING_UNSIGNED16),
 
         // data links
+        // LVSS!!!!
+        // HV Current Data
         DATA_LINK_START_KEY_21XX(0x00, 0x01),
-        // Receive DATA
         DATA_LINK_21XX(0x00, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent),
-        DATA_LINK_21XX(0x00, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus),
-        DATA_LINK_21XX(0x00, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents),
-        DATA_LINK_21XX(0x00, 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures),
+
+        // Power Switch Error Status Data
+        DATA_LINK_START_KEY_21XX(0x01, 0x01),
+        DATA_LINK_21XX(0x01, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents),
+
+        // Power Switch Currents Data
+        DATA_LINK_START_KEY_21XX(0x02, 0x01),
+        DATA_LINK_21XX(0x02, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures),
+
+        // LVSS Temperature Data
+        DATA_LINK_START_KEY_21XX(0x03, 0x01),
+        DATA_LINK_21XX(0x03, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus),
 
         //Transmit DATA
-        DATA_LINK_START_KEY_21XX(0x01, 0x01),
-        DATA_LINK_21XX(0x01, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal),
+        DATA_LINK_START_KEY_21XX(0x04, 0x01),
+        DATA_LINK_21XX(0x04, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal),
 
         // End of dictionary marker
         CO_OBJ_DICT_ENDMARK,

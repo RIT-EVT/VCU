@@ -108,6 +108,7 @@ typedef struct {
 typedef struct {
     vcu::Hardmon* hardmon;
     //todo: once threadsafe canopen is implemented, this should take an instance of that.
+    CO_NODE* accessoryCanNode;
 } accessoryCanReceiveThreadArgs_t;
 
 
@@ -174,60 +175,6 @@ int main() {
 
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MCuC Debug Logger Started.");
 
-    //TODO: uncomment when we figure out Accessory CAN
-    /*
-   ///////////////////////////////////////////////////////////////////////////
-   // Setup CAN configuration, this handles making drivers, applying settings.
-   // And generally creating the CANopen stack node which is the interface
-   // between the application (the code we write) and the physical CAN network
-   ///////////////////////////////////////////////////////////////////////////
-
-   // Will store CANopen messages that will be populated by the EVT-core CAN
-   // interrupt
-   core::types::FixedQueue<CANOPEN_QUEUE_SIZE, io::CANMessage> canOpenQueue;
-
-   // Initialize CAN, add an IRQ which will add messages to the queue above
-   io::CAN& can = io::getCAN<VCU::Hardmon::ACCESSORY_CAN_TX_PIN, VCU::Hardmon::ACCESSORY_CAN_RX_PIN>();
-   can.addIRQHandler(canOpenInterrupt, reinterpret_cast<void*>(&canOpenQueue));
-
-   // Reserved memory for CANopen stack usage
-   uint8_t sdoBuffer[CO_SSDO_N * CO_SDO_BUF_BYTE];
-   CO_TMR_MEM appTmrMem[16];
-
-   // Reserve driver variables
-   CO_IF_DRV canStackDriver;
-
-   CO_IF_CAN_DRV canDriver;
-   CO_IF_TIMER_DRV timerDriver;
-   CO_IF_NVM_DRV nvmDriver;
-
-   CO_NODE canNode;
-
-   // Attempt to join the CAN network
-   io::CAN::CANStatus result = can.connect();
-
-   //test that the board is connected to the can network
-   if (result != io::CAN::CANStatus::OK) {
-       uart.printf("Failed to connect to CAN network\r\n");
-       return 1;
-   }
-
-   // Initialize all the CANOpen drivers.
-   io::initializeCANopenDriver(&canOpenQueue, &can, &timer, &canStackDriver, &nvmDriver, &timerDriver, &canDriver);
-
-   // Initialize the CANOpen node we are using.
-   io::initializeCANopenNode(&canNode, &hardmon, &canStackDriver, sdoBuffer, appTmrMem);
-
-   // Set the node to operational mode
-   CONmtSetMode(&canNode.Nmt, CO_OPERATioNAL);
-
-   time::wait(500);
-
-   //print any CANopen errors
-   uart.printf("Error: %d\r\n", CONodeGetErr(&canNode));
-
-    */
-
     //////////////////////////////
     //Initialize Powertrain CAN //
     //////////////////////////////
@@ -260,6 +207,55 @@ int main() {
     vcu::Hardmon hardmon(hmGPIOS, ptCAN);
     ptCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(hardmon.getPowertrainQueue()));
 
+    ///////////////////////////////////////////////////////////////////////////
+   // Setup CAN configuration, this handles making drivers, applying settings.
+   // And generally creating the CANopen stack node which is the interface
+   // between the application (the code we write) and the physical CAN network
+   ///////////////////////////////////////////////////////////////////////////
+
+   // Will store CANopen messages that will be populated by the EVT-core CAN
+   // interrupt
+   core::types::FixedQueue<CANOPEN_QUEUE_SIZE, io::CANMessage> canOpenQueue;
+
+   // Initialize CAN, add an IRQ which will add messages to the queue above
+   io::CAN& can = io::getCAN<vcu::Hardmon::ACCESSORY_CAN_TX_PIN, vcu::Hardmon::ACCESSORY_CAN_RX_PIN>();
+   can.addIRQHandler(canOpenInterrupt, reinterpret_cast<void*>(&canOpenQueue));
+
+   // Reserved memory for CANopen stack usage
+   uint8_t sdoBuffer[CO_SSDO_N * CO_SDO_BUF_BYTE];
+   CO_TMR_MEM appTmrMem[16];
+
+   // Reserve driver variables
+   CO_IF_DRV canStackDriver;
+
+   CO_IF_CAN_DRV canDriver;
+   CO_IF_TIMER_DRV timerDriver;
+   CO_IF_NVM_DRV nvmDriver;
+
+   CO_NODE canNode;
+
+   // Attempt to join the CAN network
+   io::CAN::CANStatus result = can.connect();
+
+   //test that the board is connected to the can network
+   if (result != io::CAN::CANStatus::OK) {
+       uart.printf("Failed to connect to CAN network\r\n");
+       return 1;
+   }
+
+   // Initialize all the CANOpen drivers.
+   io::initializeCANopenDriver(&canOpenQueue, &can, &timer, &canStackDriver, &nvmDriver, &timerDriver, &canDriver);
+
+   // Initialize the CANOpen node we are using.
+   io::initializeCANopenNode(&canNode, &hardmon, &canStackDriver, sdoBuffer, appTmrMem);
+
+   // Set the node to operational mode
+   CONmtSetMode(&canNode.Nmt, CO_OPERATIONAL);
+
+   time::wait(500);
+
+   //print any CANopen errors
+   uart.printf("Error: %d\r\n", CONodeGetErr(&canNode));
     ////////////////////////
     // Initialize Threadx //
     ////////////////////////
@@ -337,6 +333,12 @@ int main() {
     };
 
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting Kernel.");
+
+    // loop for testing- deactivates Hardmon and makes sure the MCuC is getting info
+    hmGPIOS.ucResetGPIO.writePin(core::io::GPIO::State::HIGH);
+    while (true) {
+        // :3
+    }
 
     rtos::startKernel(initArr, sizeof(initArr) / sizeof(initArr[0]), txPool);
 }
@@ -418,6 +420,7 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
     rtos::TXError error;
 //    while(true) {
 //        //process accessory CAN
+//        io::processCANopenNode(args->accessoryCanNode);
 //    }
 }
 

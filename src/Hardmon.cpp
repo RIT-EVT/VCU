@@ -52,6 +52,20 @@ rtos::Queue* Hardmon::getPowertrainQueue() {
     return &powertrainCAN.queue;
 }
 
+void Hardmon::sendOutputDataToUnsafeBuffer() {
+    mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
+    accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal = accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal;
+    mutex.put();
+}
+
+void Hardmon::sendInputDataToSafeBuffer() {
+    mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
+    accessoryCanDataSafeBuffer.LVSS_in_HVCurrent = accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent;
+    accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents = accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents;
+    accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchErrorStatus = accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus;
+    mutex.put();
+}
+
 void Hardmon::process() {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     //update inputs
@@ -94,7 +108,8 @@ void Hardmon::process() {
     model.step();
 
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    modelOutputs.modelOutputStruct = model.getExternalOutputs();
+    //memcpy from the output of the model to our output struct
+    memcpy((void*) &modelOutputs.modelOutputStruct, (const void*) &model.getExternalOutputs(), sizeof(modelOutputs.modelOutputStruct));
     //use outputs
     gpios.mcToggleOverrideGPIO.writePin(modelOutputs.mcSwitchEnable ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.lvssEnableOverrideGPIO.writePin(modelOutputs.lvssSwitchEnable ? io::GPIO::State::HIGH : io::GPIO::State::LOW);

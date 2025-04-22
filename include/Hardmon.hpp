@@ -131,6 +131,19 @@ public:
     };
 
     /**
+     * Struct that contains all the data that AccessoryCan should read in.
+     * Used for double buffering for threadsafety with CANOpen
+     */
+    struct AccessoryCanData_s {
+        uint16_t LVSS_out_EnableBoardSignal;     ///< Signal sent to LVSS that determines which boards it will send power to
+        uint16_t LVSS_in_HVCurrent;              ///< Signal received from LVSS
+        uint16_t LVSS_in_PowerSwitchErrorStatus; ///< Signal received from LVSS
+        uint16_t LVSS_in_PowerSwitchCurrents;    ///< Signal received from LVSS
+        uint16_t LVSS_in_Temperatures;           ///< Signal received from LVSS
+    } AccessoryCanData_t;
+
+
+    /**
      * Constructor for Hardmon object
      */
     Hardmon(HardmonGPIO gpios, io::CAN& ptCAN);
@@ -149,7 +162,7 @@ public:
     rtos::Queue* getPowertrainQueue();
 
     /**
-     * Runs one step of the McUc model, including processing and handling inputs and outputs of the model.
+     * Runs one step of the Hardmon model, including processing and handling inputs and outputs of the model.
      */
     void process();
 
@@ -164,11 +177,27 @@ public:
 
     uint8_t getNodeID() override;
 
+    /**
+     * Unsafe (non-mutexed) Buffer Data that comes in or is sent out over Accessory CAN.
+     */
+    AccessoryCanData_s accessoryCanDataUnsafeBuffer;
+
+    void sendOutputDataToUnsafeBuffer();
+
+    void sendInputDataToSafeBuffer();
+
+
 private:
     /**
      * Mutex that protects internal access to the Hardmon
      */
     rtos::Mutex mutex;
+
+    /**
+     * Safe (mutexed) Buffer Data that comes in or is sent out over Accessory CAN.
+     */
+    AccessoryCanData_s accessoryCanDataSafeBuffer;
+
 
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.

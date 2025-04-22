@@ -272,7 +272,7 @@ int main() {
     time::wait(500);
 
     //print any CANopen errors
-    uart.printf("Error: %d\r\n", CONodeGetErr(&canNode));
+    uart.printf("CanOpen Error: %d\r\n", CONodeGetErr(&canNode));
 
     ////////////////////////
     // Initialize Threadx //
@@ -425,6 +425,7 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
 [[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Started");
     args->mcuc->sendOutputDataToUnsafeBuffer();
+    args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal = 63;
     rtos::TXError error;
     while(true) {
         //process accessory CAN
