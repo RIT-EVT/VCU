@@ -280,7 +280,7 @@ private:
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 49; //TODO: CANopen set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 64; //TODO: CANopen set size of object dictionary
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -290,54 +290,83 @@ private:
      */
     CO_OBJ_T objectDictionary[OBJECT_DICTIONARY_SIZE + 1] = {
         MANDATORY_IDENTIFICATION_ENTRIES_1000_1014,
+        HEARTBEAT_PRODUCER_1017(2000),
         IDENTITY_OBJECT_1018,
         SDO_CONFIGURATION_1200,
 
         //RPDOS and data links
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x00, 0x00, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x00, 0x01),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
-
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x01, 0x01, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x01, 0x01),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x01, PDO_MAPPING_UNSIGNED16),
-
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x02, 0x02, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x02, 0x01),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x01, PDO_MAPPING_UNSIGNED16),
-
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x03, 0x03, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x03, 0x01),
+
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x00, 0x02),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x02, PDO_MAPPING_UNSIGNED16),
+
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x01, 0x04),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x01, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x02, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x03, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x04, PDO_MAPPING_UNSIGNED16),
+
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x02, 0x02),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x01, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x02, PDO_MAPPING_UNSIGNED16),
+
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x03, 0x03),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x01, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x02, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x03, PDO_MAPPING_UNSIGNED16),
+
 
 
         // Actual TPDO
-        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x04, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 2000),
-        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x04, 0x01),
-        TRANSMIT_PDO_MAPPING_ENTRY_1AXX(0x04, 0x01, PDO_MAPPING_UNSIGNED16),
-
+        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 2000),
+        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x00, 0x01),
+        {
+            .Key = CO_KEY(0x1A00 + 0x00, 0x01, CO_OBJ_D___R_),
+            .Type = CO_TUNSIGNED32,
+            .Data = (CO_DATA) CO_LINK(0x2200 + 0x00, 0x00 + 0x01, PDO_MAPPING_UNSIGNED16),
+        },
         // data links
         // LVSS!!!!
         // HV Current Data
-        DATA_LINK_START_KEY_21XX(0x00, 0x01),
+        DATA_LINK_START_KEY_21XX(0x00, 0x02),
         DATA_LINK_21XX(0x00, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent),
+        DATA_LINK_21XX(0x00, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent),
 
         // Power Switch Error Status Data
-        DATA_LINK_START_KEY_21XX(0x01, 0x01),
+        DATA_LINK_START_KEY_21XX(0x01, 0x04),
         DATA_LINK_21XX(0x01, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents),
+        DATA_LINK_21XX(0x01, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents),
+        DATA_LINK_21XX(0x01, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents),
+        DATA_LINK_21XX(0x01, 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents),
+
 
         // Power Switch Currents Data
-        DATA_LINK_START_KEY_21XX(0x02, 0x01),
+        DATA_LINK_START_KEY_21XX(0x02, 0x02),
         DATA_LINK_21XX(0x02, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures),
+        DATA_LINK_21XX(0x02, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures),
 
         // LVSS Temperature Data
-        DATA_LINK_START_KEY_21XX(0x03, 0x01),
+        DATA_LINK_START_KEY_21XX(0x03, 0x03),
         DATA_LINK_21XX(0x03, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus),
+        DATA_LINK_21XX(0x03, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus),
+        DATA_LINK_21XX(0x03, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus),
+
 
         //Transmit DATA
-        DATA_LINK_START_KEY_21XX(0x04, 0x01),
-        DATA_LINK_21XX(0x04, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal),
-
+        {                                                               \
+            .Key  = CO_KEY(0x2200 + 0x00, 0x00, CO_OBJ_D___R_),      \
+            .Type = CO_TUNSIGNED8,                                      \
+            .Data = (CO_DATA) 0x01,                    \
+        },
+        {                                                                  \
+            .Key  = CO_KEY(0x2200 + 0x00, 0x01, CO_OBJ____PRW), \
+            .Type = CO_TUNSIGNED16,                                             \
+            .Data = (CO_DATA) &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal,                                \
+        },
         // End of dictionary marker
         CO_OBJ_DICT_ENDMARK,
     };
