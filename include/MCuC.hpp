@@ -261,19 +261,19 @@ private:
     vcu::MCuC_Model::ExtU_MCuC_T modelInputs;
 
     //Model output data
-    bool lvssEnable;              ///< GPIO: Whether or not the lvss should be on.
-    bool inverterEnable;          ///< CAN (MC): Whether or not the inverter on the motor controller should be enabled.
-    bool ucFault;                 ///< GPIO: Whether or not the MCUC is in a fault state
-    bool watchdog;                ///< GPIO: watchdog signal between the Hardmon and MCUC.
-    UCState ucState;              ///< GPIO: Current State of the MCUC;
-    bool inverterDischarge;       ///< CAN (MC): Whether or not the inverter on the motor controller should be discharging.
-    bool mcEnableUC;              ///< GPIO: controls mcTogglePositive and mcToggleNegative to enable or disable the motor controller
-    int16_t torqueRequest;        ///< CAN (MC): How much torque the MCUC is requesting the motor controller to output
-    bool mcSelfTestOut;           ///< GPIO: Whether or not the motor controller should be self-testing.
-    bool estopSelfTestOut;        ///< GPIO: Whether or not the estop should be self-testing.
-    bool ignitionSelfTestOut;     ///< GPIO: Whether or not ignition should be self-testing.
-    bool accessoryCanSelfTestOut; ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over accessoryCAN
-    bool powertrainCanSelfTestOut;///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over powertrainCAN
+    bool lvssEnable = false;              ///< GPIO: Whether or not the lvss should be on.
+    bool inverterEnable = false;          ///< CAN (MC): Whether or not the inverter on the motor controller should be enabled.
+    bool ucFault = false;                 ///< GPIO: Whether or not the MCUC is in a fault state
+    bool watchdog = false;                ///< GPIO: watchdog signal between the Hardmon and MCUC.
+    UCState ucState;                      ///< GPIO: Current State of the MCUC;
+    bool inverterDischarge = false;       ///< CAN (MC): Whether or not the inverter on the motor controller should be discharging.
+    bool mcEnableUC = false;              ///< GPIO: controls mcTogglePositive and mcToggleNegative to enable or disable the motor controller
+    int16_t torqueRequest;                ///< CAN (MC): How much torque the MCUC is requesting the motor controller to output
+    bool mcSelfTestOut = false;           ///< GPIO: Whether or not the motor controller should be self-testing.
+    bool estopSelfTestOut = false;        ///< GPIO: Whether or not the estop should be self-testing.
+    bool ignitionSelfTestOut = false;     ///< GPIO: Whether or not ignition should be self-testing.
+    bool accessoryCanSelfTestOut = false; ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over accessoryCAN
+    bool powertrainCanSelfTestOut = false;///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over powertrainCAN
 
     //Model output data (struct)
     vcu::MCuC_Model::ExtY_MCuC_T modelOutputs;
