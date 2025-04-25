@@ -103,34 +103,37 @@ void MCuC::process() {
     mcOn = gpios.mcStatusGPIO.readPin() == io::GPIO::State::HIGH;
 
     //set the inputs and step the model
-    vcu::MCuC_Model::ExtU_MCuC_T inputs = {
-        ignitionOn,
-        startPressed,
-        brakeOn,
-        eStop,
-        forwardEnable,
-        mcState,
-        mcDischarge,
-        false,
-        hmFault,
-        throttle,
-        lvssOn,
-        mcOn,
-    };
+    modelInputs.Ignition_LS_A = ignitionOn;
+    modelInputs.ESTOP_LS_A = eStop;
+    modelInputs.HM_Fault = hmFault;
+    modelInputs.MC_ON = mcOn;
+    modelInputs.Start_CAN = startPressed;
+    modelInputs.LVSS_ON_CAN = lvssOn;
+    modelInputs.Brake_CAN = brakeOn;
+    modelInputs.Forward_EN_CAN = forwardEnable;
+    modelInputs.MC_VSM_State_CAN = mcState;
+    modelInputs.MC_DC_State_CAN = mcDischarge;
+    modelInputs.Throttle_CAN = throttle;
+
+    #ifdef EVT_CORE_LOG_ENABLE
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "EStop: %d, Ignition %d", eStop, ignitionOn);
+    #endif
+
+
     mutex.put();
 
     #ifdef EVT_CORE_LOG_ENABLE
         halstep = core::time::millis();
     #endif
 
-    model.setExternalInputs(&inputs);
+    model.setExternalInputs(&modelInputs);
 
     model.step();
 
     //TODO: in the future when the model is reworked so the inputs and outputs are in separate blocks of CAN & GPIO inputs
     // we can use unions for this and iterate through it.
     //get outputs
-    vcu::MCuC_Model::ExtY_MCuC_T outputs = model.getExternalOutputs();
+    modelOutputs = model.getExternalOutputs();
     //save outputs
 
     #ifdef EVT_CORE_LOG_ENABLE
@@ -138,15 +141,20 @@ void MCuC::process() {
     #endif
 
     mutex.get(rtos::TXW_WAIT_FOREVER);
-    lvssEnable = outputs.LVSS_EN_uC;
-    inverterEnable = outputs.Inverter_EN;
-    ucFault = outputs.Fault;
-    watchdog = outputs.Watchdog;
-    ucState.stateEnum = outputs.uC_State;
-    inverterDischarge = outputs.Inverter_DIS;
-    mcEnableUC = outputs.MC_EN_uC;
-    torqueRequest = outputs.Torque_Request;
-    mcSelfTestOut = outputs.MC_Self_Test;
+    lvssEnable = modelOutputs.LVSS_EN_uC;
+    inverterEnable = modelOutputs.Inverter_EN_uC_CAN;
+    ucFault = modelOutputs.Fault;
+    watchdog = modelOutputs.Watchdog;
+    ucState.stateEnum = modelOutputs.uC_State;
+    inverterDischarge = modelOutputs.Inverter_DC_uC_CAN;
+    mcEnableUC = modelOutputs.MC_EN_uC;
+    torqueRequest = modelOutputs.Torque_Request_CAN;
+    mcSelfTestOut = modelOutputs.Self_Test;
+
+    #ifdef EVT_CORE_LOG_ENABLE
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MC State Machine State: %d", ucState.stateEnum);
+    #endif
+
 
     //use outputs
     gpios.lvssEnableGPIO.writePin(lvssEnable ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
@@ -164,8 +172,9 @@ void MCuC::process() {
     gpios.mcToggleNegativeGPIO.writePin(mcEnableUC ? io::GPIO::State::LOW : io::GPIO::State::HIGH);
     //set torqueRequest before we send the message
     gpios.mcSelfTestGPIO.writePin(mcSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    gpios.estopSelfTestGPIO.writePin(estopSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    gpios.ignitionSelfTestGPIO.writePin(ignitionSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    // Setting one of these might have fried the board...
+//    gpios.estopSelfTestGPIO.writePin(estopSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+//    gpios.ignitionSelfTestGPIO.writePin(ignitionSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     //We will send accessory CAN SelfTest message over CANopen
     //Send the powertrainCanSelfTest message
 
@@ -178,7 +187,6 @@ void MCuC::process() {
     }
 
     //setting the CAN self test: only true when we are in ucState 10 (self test state)
-    //ucState should be 0b1010, we are reading each bit individually cause that's what we get them as.
     //TODO: unknown if this self test is true or not yet
     bool canSelfTest = ucState.stateEnum == UC_State::LVSS_MC_Shutdown;
     gpios.canSelfTestGPIO.writePin(canSelfTest ? io::GPIO::State::HIGH : io::GPIO::State::LOW);

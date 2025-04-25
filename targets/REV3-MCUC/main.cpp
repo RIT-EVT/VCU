@@ -380,7 +380,7 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
         uint32_t flagOutput;
         args->triggerFlag->get(0x01, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
         log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Triggered");
-//        args->mcuc->process();
+        args->mcuc->process();
     }
 }
 

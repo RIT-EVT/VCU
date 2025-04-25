@@ -241,6 +241,7 @@ private:
 
     //TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
 
+
     //Model input data
     bool brakeOn;                ///< CAN (HIB): Whether or not the brake is on.
     bool eStop;                  ///< GPIO: Whether or not the emergency stop is enabled.
@@ -256,6 +257,9 @@ private:
     bool powertrainCANSelfTestIn;///< CAN (Hardmon): If the powertrain CAN network is working.
     bool accessoryCANSelfTestIn; ///< CAN (Hardmon): If the accessory CAN network is working.
 
+    //Model input data (struct)
+    vcu::MCuC_Model::ExtU_MCuC_T modelInputs;
+
     //Model output data
     bool lvssEnable;              ///< GPIO: Whether or not the lvss should be on.
     bool inverterEnable;          ///< CAN (MC): Whether or not the inverter on the motor controller should be enabled.
@@ -270,6 +274,9 @@ private:
     bool ignitionSelfTestOut;     ///< GPIO: Whether or not ignition should be self-testing.
     bool accessoryCanSelfTestOut; ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over accessoryCAN
     bool powertrainCanSelfTestOut;///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over powertrainCAN
+
+    //Model output data (struct)
+    vcu::MCuC_Model::ExtY_MCuC_T modelOutputs;
 
     /**
      * The node ID used to identify the device on the CAN network.
