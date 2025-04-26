@@ -173,8 +173,8 @@ void MCuC::process() {
     //set torqueRequest before we send the message
     gpios.mcSelfTestGPIO.writePin(mcSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     // Setting one of these might have fried the board...
-//    gpios.estopSelfTestGPIO.writePin(estopSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-//    gpios.ignitionSelfTestGPIO.writePin(ignitionSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.estopSelfTestGPIO.writePin(estopSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.ignitionSelfTestGPIO.writePin(ignitionSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     //We will send accessory CAN SelfTest message over CANopen
     //Send the powertrainCanSelfTest message
 
@@ -217,5 +217,21 @@ void MCuC::process() {
                                                             "Ended: %d\n\r", halend, halmotorControllerCan);
     #endif
 }
+
+void MCuC::imagineNeuteredProcess() {
+        mutex.get(core::rtos::TXW_WAIT_FOREVER);
+        // both estop and ignition are active low
+        eStop = gpios.eStopGPIO.readPin() == io::GPIO::State::LOW;
+        ignitionOn = gpios.ignitionGPIO.readPin() == io::GPIO::State::LOW;
+        sendInputDataToSafeBuffer();
+        if (!eStop && ignitionOn) {
+            accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal = 63;
+        } else {
+            accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal = 0;
+        }
+        sendOutputDataToUnsafeBuffer();
+        mutex.put();
+}
+
 
 }// namespace vcu

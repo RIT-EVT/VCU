@@ -101,12 +101,6 @@ public:
     static constexpr io::Pin LVSS_ENABLE_PIN = io::Pin::PC_13;
 
     /**
-     * Accessory CAN Node IDs
-     */
-
-    static constexpr uint8_t IMU_NODE_ID = 9;
-
-    /**
      * Struct that contains all the GPIOs that an instance of this class requires.
      */
     union MCuC_GPIO {
@@ -192,6 +186,13 @@ public:
      * Runs one step of the Hardmon model, including processing and handling inputs and outputs of the model.
      */
     void process();
+
+    /**
+     * Process method for imagine- literally just
+     * reads estop and ignition and then sets the
+     * LVSS signal to 63 (all on) or 0 (all off)
+     */
+    void imagineNeuteredProcess();
 
     //override methods from Initializable
     rtos::TXError init(rtos::BytePoolBase& pool) override;
@@ -283,6 +284,7 @@ private:
      */
     static constexpr uint8_t NODE_ID = 0;
     static constexpr uint8_t LVSS_NODE_ID = 1;
+    static constexpr uint8_t IMU_NODE_ID = 9;
 
     /**
      * The size of the Object Dictionary

@@ -160,8 +160,14 @@ void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
 }
 
 int main() {
+    // loop for testing
+    while (true) {
+        // :3
+    }
+
     // Initialize system
     core::platform::init();
+
 
     // Initialize the timer
     dev::Timer& timer = dev::getTimer<dev::MCUTimer::Timer2>(100);
@@ -333,12 +339,6 @@ int main() {
     };
 
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting Kernel.");
-
-    // loop for testing- deactivates Hardmon and makes sure the MCuC is getting info
-    hmGPIOS.ucResetGPIO.writePin(core::io::GPIO::State::HIGH);
-    while (true) {
-        // :3
-    }
 
     rtos::startKernel(initArr, sizeof(initArr) / sizeof(initArr[0]), txPool);
 }

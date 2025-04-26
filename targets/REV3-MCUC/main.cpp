@@ -182,8 +182,8 @@ int main() {
     // Initialize MCuC and Powertrain CAN
 
     vcu::MCuC::MCuC_GPIO gpios = {
-        {io::getGPIO<vcu::MCuC::ESTOP_PIN>(io::GPIO::Direction::INPUT),
-         io::getGPIO<vcu::MCuC::IGNITION_PIN>(io::GPIO::Direction::INPUT),
+        {io::getGPIO<vcu::MCuC::ESTOP_PIN>(io::GPIO::Direction::INPUT, io::GPIO::Pull::PULL_UP),
+         io::getGPIO<vcu::MCuC::IGNITION_PIN>(io::GPIO::Direction::INPUT, io::GPIO::Pull::PULL_UP),
          io::getGPIO<vcu::MCuC::HM_FAULT_PIN>(io::GPIO::Direction::INPUT),
          io::getGPIO<vcu::MCuC::LVSS_STATUS_PIN>(io::GPIO::Direction::INPUT),
          io::getGPIO<vcu::MCuC::MC_STATUS_PIN>(io::GPIO::Direction::INPUT),
@@ -380,7 +380,9 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
         uint32_t flagOutput;
         args->triggerFlag->get(0x01, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
         log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Triggered");
-        args->mcuc->process();
+//        args->mcuc->process();
+        args->mcuc->imagineNeuteredProcess();
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Completed");
     }
 }
 
