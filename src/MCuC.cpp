@@ -75,9 +75,7 @@ void MCuC::sendOutputDataToUnsafeBuffer() {
 
 void MCuC::sendInputDataToSafeBuffer() {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    accessoryCanDataSafeBuffer.LVSS_in_HVCurrent = accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent;
-    accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents = accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents;
-    accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchErrorStatus = accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus;
+    std::memcpy(&accessoryCanDataSafeBuffer, &accessoryCanDataUnsafeBuffer, sizeof(AccessoryCanData_t));
     mutex.put();
 }
 
@@ -223,11 +221,15 @@ void MCuC::imagineNeuteredProcess() {
         // both estop and ignition are active low
         eStop = gpios.eStopGPIO.readPin() == io::GPIO::State::LOW;
         ignitionOn = gpios.ignitionGPIO.readPin() == io::GPIO::State::LOW;
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Estop: %d, ignition: %d", eStop, ignitionOn);
+
         sendInputDataToSafeBuffer();
         if (!eStop && ignitionOn) {
             accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal = 63;
+            log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Telling LVSS to turn ON boards");
         } else {
             accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal = 0;
+            log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Telling LVSS to turn OFF boards");
         }
         sendOutputDataToUnsafeBuffer();
         mutex.put();

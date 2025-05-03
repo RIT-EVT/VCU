@@ -141,12 +141,12 @@ public:
      * Struct that contains all the data that AccessoryCan should read in.
      * Used for double buffering for threadsafety with CANOpen
      */
-     struct AccessoryCanData_s {
-        uint16_t LVSS_out_EnableBoardSignal;     ///< Signal sent to LVSS that determines which boards it will send power to
-        uint16_t LVSS_in_HVCurrent;              ///< Signal received from LVSS
-        uint16_t LVSS_in_PowerSwitchErrorStatus; ///< Signal received from LVSS
-        uint16_t LVSS_in_PowerSwitchCurrents;    ///< Signal received from LVSS
-        uint16_t LVSS_in_Temperatures;           ///< Signal received from LVSS
+     typedef struct AccessoryCanData_s {
+        uint16_t LVSS_out_EnableBoardSignal;        ///< LVSS (out) Determines which boards it will send power to
+        uint16_t LVSS_in_HVCurrent[2];              ///< LVSS (in)
+        uint16_t LVSS_in_PowerSwitchCurrents[4];    ///< LVSS (in)
+        uint16_t LVSS_in_Temperatures[2];           ///< LVSS (in)
+        uint16_t LVSS_in_PowerSwitchErrorStatus[3]; ///< LVSS (in)
      } AccessoryCanData_t;
 
      /**
@@ -208,7 +208,7 @@ public:
     /**
      * Unsafe (non-mutexed) Buffer Data that comes in or is sent out over Accessory CAN.
      */
-    AccessoryCanData_s accessoryCanDataUnsafeBuffer;
+    AccessoryCanData_t accessoryCanDataUnsafeBuffer;
 
     void sendOutputDataToUnsafeBuffer();
 
@@ -234,7 +234,7 @@ private:
     /**
      * Safe (mutexed) Buffer Data that comes in or is sent out over Accessory CAN.
      */
-    AccessoryCanData_s accessoryCanDataSafeBuffer;
+    AccessoryCanData_t accessoryCanDataSafeBuffer;
 
 
     ///the gpios
@@ -331,7 +331,7 @@ private:
 
 
         // Actual TPDO
-        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 2000),
+        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 500),
         TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x00, 0x01),
         {
             .Key = CO_KEY(0x1A00 + 0x00, 0x01, CO_OBJ_D___R_),
@@ -342,21 +342,21 @@ private:
         // LVSS!!!!
         // HV Current Data
         DATA_LINK_START_KEY_21XX(0x00, 0x02),
-        DATA_LINK_21XX(0x00, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent),
-        DATA_LINK_21XX(0x00, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent),
+        DATA_LINK_21XX(0x00, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent[0]),
+        DATA_LINK_21XX(0x00, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent[1]),
 
         // Power Switch Error Status Data
         DATA_LINK_START_KEY_21XX(0x01, 0x04),
-        DATA_LINK_21XX(0x01, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents),
-        DATA_LINK_21XX(0x01, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents),
-        DATA_LINK_21XX(0x01, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents),
-        DATA_LINK_21XX(0x01, 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents),
+        DATA_LINK_21XX(0x01, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[0]),
+        DATA_LINK_21XX(0x01, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[1]),
+        DATA_LINK_21XX(0x01, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[2]),
+        DATA_LINK_21XX(0x01, 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[3]),
 
 
         // Power Switch Currents Data
         DATA_LINK_START_KEY_21XX(0x02, 0x02),
-        DATA_LINK_21XX(0x02, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures),
-        DATA_LINK_21XX(0x02, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures),
+        DATA_LINK_21XX(0x02, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures[0]),
+        DATA_LINK_21XX(0x02, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures[1]),
 
         // LVSS Temperature Data
         DATA_LINK_START_KEY_21XX(0x03, 0x03),

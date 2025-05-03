@@ -109,7 +109,6 @@ typedef struct {
 typedef struct {
     vcu::MCuC* mcuc;
     CO_NODE* accessoryCanNode;
-    //todo: once threadsafe canopen is implemented, this should take an instance of that.
 } accessoryCanReceiveThreadArgs_t;
 
 //Timer expiration function
@@ -211,6 +210,7 @@ int main() {
     //////////////////////////////////////////////////////////
 
     io::CAN& ptCAN = io::getCAN<vcu::MCuC::POWERTRAIN_CAN_TX_PIN, vcu::MCuC::POWERTRAIN_CAN_RX_PIN>();
+
     vcu::MCuC mcuc(gpios, ptCAN);
 
 
@@ -229,7 +229,7 @@ int main() {
     core::types::FixedQueue<CANOPEN_QUEUE_SIZE, io::CANMessage> canOpenQueue;
 
     // Initialize CAN, add an IRQ which will add messages to the queue above
-    // Can init for testing on on VCU
+    // Can init for testing not on VCU
 //    io::CAN& accessoryCAN = io::getCAN<io::Pin::PA_12, io::Pin::PA_11>();
 
     // Actual CAN init
@@ -380,8 +380,11 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
         uint32_t flagOutput;
         args->triggerFlag->get(0x01, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
         log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Triggered");
-//        args->mcuc->process();
-        args->mcuc->imagineNeuteredProcess();
+        args->mcuc->process();
+        //TODO: IMAGINE STUFF
+//        bool ignition = args->IgnitionGPIO->readPin() == io::GPIO::State::LOW;
+//        bool eStop = args->eStopGPIO->readPin() == io::GPIO::State::HIGH;
+//        args->mcuc->imagineNeuteredProcess(eStop, ignition);
         log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Completed");
     }
 }
@@ -396,7 +399,7 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
     io::CANMessage message;
     rtos::Queue* queue = args->mcuc->getPowertrainQueue();
     while(true) {
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Powertrain CAN Receive Thread Triggered");
+//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Powertrain CAN Receive Thread Triggered");
         //suspends if there are no messages to receive
         queue->receive(&message, rtos::TXWait::TXW_WAIT_FOREVER);
         args->mcuc->handlePowertrainCanMessage(message);
@@ -412,7 +415,7 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Started");
     rtos::TXError error;
     while(true) {
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Triggered");
+//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Triggered");
 
         //do health thread stuff
         error = rtos::sleep(MS_TO_TICKS(120));
@@ -431,21 +434,23 @@ void modelTimerExpiration(rtos::EventFlags *modelTriggerFlag) {
     rtos::TXError error;
     while(true) {
         //process accessory CAN
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Triggered");
+//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Triggered");
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "\tSending %d to LVSS", args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal);
+
         io::processCANopenNode(args->accessoryCanNode);
 
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-                        "Accessory Can Node Processed\n\r\t"
-                        "HV Current: %d\n\r\t"
-                        "Power Switch Error: %d",
-                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent,
-                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus);
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-                        "\n\r\tPower Switch Current: %d"
-                        "\n\r\tTemps: %d",
-                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents,
-                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures);
-
-        rtos::sleep(MS_TO_TICKS(500));
+//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
+//                        "Accessory Can Node Processed\n\r\t"
+//                        "HV Current: %d\n\r\t"
+//                        "Power Switch Error: %d",
+//                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent,
+//                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus);
+//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
+//                        "\n\r\tPower Switch Current: %d"
+//                        "\n\r\tTemps: %d",
+//                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents,
+//                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures);
+//
+        rtos::sleep(MS_TO_TICKS(400));
     }
 }
