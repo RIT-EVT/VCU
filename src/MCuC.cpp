@@ -8,9 +8,9 @@ namespace log = core::log;
 namespace vcu {
 
 MCuC::MCuC(vcu::MCuC::MCuC_GPIO gpios, io::CAN& can) : powertrainCAN(can), gpios(gpios),
-                                                       mutex((char*)"MCuC Mutex", true),
+                                                       mutex((char*) "MCuC Mutex", true),
                                                        Initializable("MCuC"),
-                                                       accessoryCanDataUnsafeBuffer(), accessoryCanDataSafeBuffer(){
+                                                       accessoryCanDataUnsafeBuffer(), accessoryCanDataSafeBuffer() {
     model.initialize();
 }
 
@@ -23,7 +23,6 @@ rtos::TXError MCuC::init(rtos::BytePoolBase& pool) {
         return powertrainCAN.init(pool);
     }
 }
-
 
 CO_OBJ_T* MCuC::getObjectDictionary() {
     return &objectDictionary[0];
@@ -79,13 +78,12 @@ void MCuC::sendInputDataToSafeBuffer() {
     mutex.put();
 }
 
-
 void MCuC::process() {
-    #ifdef EVT_CORE_LOG_ENABLE
-        uint32_t halstart, halstep, halstepEnd, halpowerTrainCAN = 0, halmotorControllerCan, halend;
+#ifdef EVT_CORE_LOG_ENABLE
+    uint32_t halstart, halstep, halstepEnd, halpowerTrainCAN = 0, halmotorControllerCan, halend;
 
-        halstart = core::time::millis();
-    #endif
+    halstart = core::time::millis();
+#endif
 
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     // update Accessory Can Safe buffer
@@ -113,16 +111,15 @@ void MCuC::process() {
     modelInputs.MC_DC_State_CAN = mcDischarge;
     modelInputs.Throttle_CAN = throttle;
 
-    #ifdef EVT_CORE_LOG_ENABLE
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "EStop: %d, Ignition %d", eStop, ignitionOn);
-    #endif
-
+#ifdef EVT_CORE_LOG_ENABLE
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "EStop: %d, Ignition %d", eStop, ignitionOn);
+#endif
 
     mutex.put();
 
-    #ifdef EVT_CORE_LOG_ENABLE
-        halstep = core::time::millis();
-    #endif
+#ifdef EVT_CORE_LOG_ENABLE
+    halstep = core::time::millis();
+#endif
 
     model.setExternalInputs(&modelInputs);
 
@@ -134,9 +131,9 @@ void MCuC::process() {
     modelOutputs = model.getExternalOutputs();
     //save outputs
 
-    #ifdef EVT_CORE_LOG_ENABLE
-        halstepEnd = core::time::millis();
-    #endif
+#ifdef EVT_CORE_LOG_ENABLE
+    halstepEnd = core::time::millis();
+#endif
 
     mutex.get(rtos::TXW_WAIT_FOREVER);
     lvssEnable = modelOutputs.LVSS_EN_uC;
@@ -149,10 +146,9 @@ void MCuC::process() {
     torqueRequest = modelOutputs.Torque_Request_CAN;
     mcSelfTestOut = modelOutputs.Self_Test;
 
-    #ifdef EVT_CORE_LOG_ENABLE
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MC State Machine State: %d", ucState.stateEnum);
-    #endif
-
+#ifdef EVT_CORE_LOG_ENABLE
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MC State Machine State: %d", ucState.stateEnum);
+#endif
 
     //use outputs
     gpios.lvssEnableGPIO.writePin(lvssEnable ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
@@ -177,9 +173,9 @@ void MCuC::process() {
     //Send the powertrainCanSelfTest message
 
     if (powertrainCanSelfTestOut) {
-        #ifdef EVT_CORE_LOG_ENABLE
-            halpowerTrainCAN = core::time::millis();
-        #endif
+#ifdef EVT_CORE_LOG_ENABLE
+        halpowerTrainCAN = core::time::millis();
+#endif
 
         powertrainCAN.sendUCSelfTestMessage();
     }
@@ -194,46 +190,46 @@ void MCuC::process() {
     powertrainCAN.setMCInverterDischarge(inverterDischarge);
     powertrainCAN.setMCTorque(torqueRequest);
 
-    #ifdef EVT_CORE_LOG_ENABLE
-        halmotorControllerCan = core::time::millis();
-    #endif
+#ifdef EVT_CORE_LOG_ENABLE
+    halmotorControllerCan = core::time::millis();
+#endif
 
     sendOutputDataToUnsafeBuffer();
     powertrainCAN.sendMCMessage();
     mutex.put();
 
-    #ifdef EVT_CORE_LOG_ENABLE
-        halend = core::time::millis();
+#ifdef EVT_CORE_LOG_ENABLE
+    halend = core::time::millis();
 
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MS Timing:");
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting: %d\n\r"
-                                                            "Stepping: %d\n\r"
-                                                            "Step Done: %d\n\r"
-                                                            "Sending PT Can: %d\n\r"
-                        , halstart, halstep, halstepEnd, halpowerTrainCAN);
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Sending Motor Can: %d\n\r"
-                                                            "Ended: %d\n\r", halend, halmotorControllerCan);
-    #endif
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MS Timing:");
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting: %d\n\r"
+                                                        "Stepping: %d\n\r"
+                                                        "Step Done: %d\n\r"
+                                                        "Sending PT Can: %d\n\r",
+                    halstart, halstep, halstepEnd, halpowerTrainCAN);
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Sending Motor Can: %d\n\r"
+                                                        "Ended: %d\n\r",
+                    halend, halmotorControllerCan);
+#endif
 }
 
 void MCuC::imagineNeuteredProcess() {
-        mutex.get(core::rtos::TXW_WAIT_FOREVER);
-        // both estop and ignition are active low
-        eStop = gpios.eStopGPIO.readPin() == io::GPIO::State::LOW;
-        ignitionOn = gpios.ignitionGPIO.readPin() == io::GPIO::State::LOW;
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Estop: %d, ignition: %d", eStop, ignitionOn);
+    mutex.get(core::rtos::TXW_WAIT_FOREVER);
+    // both estop and ignition are active low
+    eStop = gpios.eStopGPIO.readPin() == io::GPIO::State::LOW;
+    ignitionOn = gpios.ignitionGPIO.readPin() == io::GPIO::State::LOW;
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Estop: %d, ignition: %d", eStop, ignitionOn);
 
-        sendInputDataToSafeBuffer();
-        if (!eStop && ignitionOn) {
-            accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal = 63;
-            log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Telling LVSS to turn ON boards");
-        } else {
-            accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal = 0;
-            log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Telling LVSS to turn OFF boards");
-        }
-        sendOutputDataToUnsafeBuffer();
-        mutex.put();
+    sendInputDataToSafeBuffer();
+    if (!eStop && ignitionOn) {
+        accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal = 63;
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Telling LVSS to turn ON boards");
+    } else {
+        accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal = 0;
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Telling LVSS to turn OFF boards");
+    }
+    sendOutputDataToUnsafeBuffer();
+    mutex.put();
 }
-
 
 }// namespace vcu

@@ -5,7 +5,7 @@
 namespace vcu {
 
 Hardmon::Hardmon(HardmonGPIO gpio, io::CAN& ptCAN) : powertrainCAN(ptCAN), gpios(gpio),
-                                                     mutex((char*)"Hardmon Mutex", true),
+                                                     mutex((char*) "Hardmon Mutex", true),
                                                      Initializable("Hardmon") {
     model.initialize();
 }
@@ -100,8 +100,7 @@ void Hardmon::process() {
         discharge,
         modelGPIOInputs.watchdog,
         modelGPIOInputs.eStop3v3,
-        lvssEnableUC
-    };
+        lvssEnableUC};
 
     mutex.put();
     model.setExternalInputs(&modelInputs);

@@ -141,27 +141,27 @@ public:
      * Struct that contains all the data that AccessoryCan should read in.
      * Used for double buffering for threadsafety with CANOpen
      */
-     typedef struct AccessoryCanData_s {
-        uint16_t LVSS_out_EnableBoardSignal;        ///< LVSS (out) Determines which boards it will send power to
-        uint16_t LVSS_in_HVCurrent[2];              ///< LVSS (in)
-        uint16_t LVSS_in_PowerSwitchCurrents[4];    ///< LVSS (in)
-        uint16_t LVSS_in_Temperatures[2];           ///< LVSS (in)
-        uint16_t LVSS_in_PowerSwitchErrorStatus[3]; ///< LVSS (in)
-     } AccessoryCanData_t;
+    typedef struct AccessoryCanData_s {
+        uint16_t LVSS_out_EnableBoardSignal;       ///< LVSS (out) Determines which boards it will send power to
+        uint16_t LVSS_in_HVCurrent[2];             ///< LVSS (in)
+        uint16_t LVSS_in_PowerSwitchCurrents[4];   ///< LVSS (in)
+        uint16_t LVSS_in_Temperatures[2];          ///< LVSS (in)
+        uint16_t LVSS_in_PowerSwitchErrorStatus[3];///< LVSS (in)
+    } AccessoryCanData_t;
 
-     /**
+    /**
      * Union that represents the state of the microcontroller
      */
-     union UCState {
+    union UCState {
         struct {
-            int16_t padding:12;
-            int16_t stateBit0:1;
-            int16_t stateBit1:1;
-            int16_t stateBit2:1;
-            int16_t stateBit3:1;
+            int16_t padding : 12;
+            int16_t stateBit0 : 1;
+            int16_t stateBit1 : 1;
+            int16_t stateBit2 : 1;
+            int16_t stateBit3 : 1;
         };
         UC_State stateEnum;
-     };
+    };
 
     /**
      * Constructor for MCuC object
@@ -236,12 +236,10 @@ private:
      */
     AccessoryCanData_t accessoryCanDataSafeBuffer;
 
-
     ///the gpios
     MCuC_GPIO gpios;
 
     //TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
-
 
     //Model input data
     bool brakeOn;                ///< CAN (HIB): Whether or not the brake is on.
@@ -289,7 +287,7 @@ private:
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 64; //TODO: CANopen set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 64;//TODO: CANopen set size of object dictionary
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -328,8 +326,6 @@ private:
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x02, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x03, PDO_MAPPING_UNSIGNED16),
 
-
-
         // Actual TPDO
         TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 500),
         TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x00, 0x01),
@@ -352,7 +348,6 @@ private:
         DATA_LINK_21XX(0x01, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[2]),
         DATA_LINK_21XX(0x01, 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[3]),
 
-
         // Power Switch Currents Data
         DATA_LINK_START_KEY_21XX(0x02, 0x02),
         DATA_LINK_21XX(0x02, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures[0]),
@@ -364,17 +359,16 @@ private:
         DATA_LINK_21XX(0x03, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus),
         DATA_LINK_21XX(0x03, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus),
 
-
         //Transmit DATA
-        {                                                               \
-            .Key  = CO_KEY(0x2200 + 0x00, 0x00, CO_OBJ_D___R_),      \
-            .Type = CO_TUNSIGNED8,                                      \
-            .Data = (CO_DATA) 0x01,                    \
+        {
+            .Key = CO_KEY(0x2200 + 0x00, 0x00, CO_OBJ_D___R_),
+            .Type = CO_TUNSIGNED8,
+            .Data = (CO_DATA) 0x01,
         },
-        {                                                                  \
-            .Key  = CO_KEY(0x2200 + 0x00, 0x01, CO_OBJ____PRW), \
-            .Type = CO_TUNSIGNED16,                                             \
-            .Data = (CO_DATA) &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal,                                \
+        {
+            .Key = CO_KEY(0x2200 + 0x00, 0x01, CO_OBJ____PRW),
+            .Type = CO_TUNSIGNED16,
+            .Data = (CO_DATA) &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal,
         },
         // End of dictionary marker
         CO_OBJ_DICT_ENDMARK,

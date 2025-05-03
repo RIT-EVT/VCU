@@ -135,13 +135,12 @@ public:
      * Used for double buffering for threadsafety with CANOpen
      */
     struct AccessoryCanData_s {
-        uint16_t LVSS_out_EnableBoardSignal;     ///< Signal sent to LVSS that determines which boards it will send power to
-        uint16_t LVSS_in_HVCurrent;              ///< Signal received from LVSS
-        uint16_t LVSS_in_PowerSwitchErrorStatus; ///< Signal received from LVSS
-        uint16_t LVSS_in_PowerSwitchCurrents;    ///< Signal received from LVSS
-        uint16_t LVSS_in_Temperatures;           ///< Signal received from LVSS
+        uint16_t LVSS_out_EnableBoardSignal;    ///< Signal sent to LVSS that determines which boards it will send power to
+        uint16_t LVSS_in_HVCurrent;             ///< Signal received from LVSS
+        uint16_t LVSS_in_PowerSwitchErrorStatus;///< Signal received from LVSS
+        uint16_t LVSS_in_PowerSwitchCurrents;   ///< Signal received from LVSS
+        uint16_t LVSS_in_Temperatures;          ///< Signal received from LVSS
     } AccessoryCanData_t;
-
 
     /**
      * Constructor for Hardmon object
@@ -186,7 +185,6 @@ public:
 
     void sendInputDataToSafeBuffer();
 
-
 private:
     /**
      * Mutex that protects internal access to the Hardmon
@@ -197,7 +195,6 @@ private:
      * Safe (mutexed) Buffer Data that comes in or is sent out over Accessory CAN.
      */
     AccessoryCanData_s accessoryCanDataSafeBuffer;
-
 
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
@@ -258,9 +255,9 @@ private:
      * Lets us index into it like an array
      */
     UC_State ucState;
-    bool lvssEnableUC;     ///< GPIO: whether or not the MCuC is telling the LVSS to be enabled (calculated from ucState)
-    MC_DC_State discharge; ///< CAN (MC): current state of the Motor Controller's discharge state machine
-    bool forwardEnable;    ///< CAN (HIB): handlebar forward enable
+    bool lvssEnableUC;    ///< GPIO: whether or not the MCuC is telling the LVSS to be enabled (calculated from ucState)
+    MC_DC_State discharge;///< CAN (MC): current state of the Motor Controller's discharge state machine
+    bool forwardEnable;   ///< CAN (HIB): handlebar forward enable
 
     //Model output data
     ModelOutputs_t modelOutputs;
@@ -268,7 +265,7 @@ private:
     /**
      * The node ID used to identify the device on the CAN network.
      */
-    static constexpr uint8_t NODE_ID = 0;               //TODO set node ID
+    static constexpr uint8_t NODE_ID = 0;//TODO set node ID
 
     /**
      * The size of the Object Dictionary
