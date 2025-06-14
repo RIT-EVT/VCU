@@ -105,7 +105,6 @@ typedef struct {
  */
 typedef struct {
     vcu::Hardmon* hardmon;
-    //todo: once threadsafe canopen is implemented, this should take an instance of that.
     CO_NODE* accessoryCanNode;
 } accessoryCanReceiveThreadArgs_t;
 
@@ -137,29 +136,25 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag);
 void canOpenInterrupt(io::CANMessage& message, void* priv) {
     auto* queue = (rtos::Queue*) priv;
     if (queue != nullptr) {
-        //todo: determine if WaitForever is what we want to do in the interrupt- could be bad
+        //TODO: determine if WaitForever is what we want to do in the interrupt- could be bad
         queue->send(static_cast<void*>(&message), rtos::TXWait::TXW_WAIT_FOREVER);
     }
 }
 
 /**
  * Interrupt handler to get CAN messages from the powertrain CAN line.
- * @param message[in] the passed in in CAN message that was read.
+ * @param message[in] the passed in CAN message that was read.
  * @param priv[in] the passed in Queue to add the message to. Must be an rtos::Queue*
  */
 void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
     auto* queue = (rtos::Queue*) priv;
     if (queue != nullptr) {
-        //todo: determine if WaitForever is what we want to do in the interrupt- could be bad
+        //TODO: determine if WaitForever is what we want to do in the interrupt- could be bad
         queue->send(static_cast<void*>(&message), rtos::TXWait::TXW_WAIT_FOREVER);
     }
 }
 
 int main() {
-    // loop for testing
-    while (true) {
-        // :3
-    }
 
     // Initialize system
     core::platform::init();

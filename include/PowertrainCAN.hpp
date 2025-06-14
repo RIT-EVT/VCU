@@ -22,7 +22,7 @@ public:
      * An enumeration of the Powertrain CAN message ids that are relevant to the MCuC and Hardmon.
      */
     enum MessageIDs {
-        // motor controller recieve message ids
+        // motor controller receive message ids
         MC_TEMPS_1_ID = (uint32_t) 0xA0,
         MC_TEMPS_2_ID = (uint32_t) 0xA1,
         MC_TEMPS_3_ID = (uint32_t) 0xA2,
