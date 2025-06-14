@@ -74,7 +74,7 @@ void MCuC::sendOutputDataToUnsafeBuffer() {
 
 void MCuC::sendInputDataToSafeBuffer() {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    std::memcpy(&accessoryCanDataSafeBuffer, &accessoryCanDataUnsafeBuffer, sizeof(AccessoryCanData_t));
+    memcpy(&accessoryCanDataSafeBuffer, &accessoryCanDataUnsafeBuffer, sizeof(AccessoryCanData_t));
     mutex.put();
 }
 

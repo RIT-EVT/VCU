@@ -8,7 +8,6 @@
 #include <core/utils/types/FixedQueue.hpp>
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 
 #define POWERTRAIN_QUEUE_SIZE 64
 

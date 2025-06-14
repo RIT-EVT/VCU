@@ -49,7 +49,7 @@ void PowertrainCAN::setMCTorque(int16_t torqueRequest) {
 void PowertrainCAN::sendMCMessage() {
     //gotta be a uint8_t array, so we memcpy into it.
     uint8_t payload[8];
-    std::memcpy(payload, &mcCommandPayload, 8u);
+    memcpy(payload, &mcCommandPayload, 8u);
     //make the message
     io::CANMessage message = io::CANMessage(PowertrainCAN::MessageIDs::MC_COMMAND_ID, 8u, payload, false);
     //send the message
