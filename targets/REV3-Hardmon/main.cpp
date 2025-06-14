@@ -400,6 +400,8 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 [[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory Can Thread Started.");
     rtos::TXError error;
+    //todo: Hardmon CANOpen dictionary is incomplete so trying to process the CAN will break it. This needs to be fixed.
+
     //    while(true) {
     //        //process accessory CAN
     //        io::processCANopenNode(args->accessoryCanNode);
