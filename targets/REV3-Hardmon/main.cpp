@@ -386,7 +386,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     rtos::TXError error;
     while (true) {
         log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Triggered.");
-        //do healththread stuff
+        //do healthThread stuff
         error = rtos::sleep(MS_TO_TICKS(50));
         log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Sleep Code %d", error);
     }

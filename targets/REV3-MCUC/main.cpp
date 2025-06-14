@@ -142,9 +142,9 @@ void accessoryCANOpenInterrupt(io::CANMessage& message, void* priv) {
 }
 
 /**
- * Interrupt handler to get CAN messages from the powertrain CAN line.
- * @param message[in] the passed in in CAN message that was read.
- * @param priv[in] the private data this mesasge requires. Should be the mcuc instance we want to update.
+ * Interrupt handler to get CAN messages from the Powertrain CAN line.
+ * @param message[in] the passed in CAN message that was read.
+ * @param priv[in] the private data this message requires. Should be the MCuC instance we want to update.
  */
 void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
     auto* queue = (core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, io::CANMessage>*) priv;
