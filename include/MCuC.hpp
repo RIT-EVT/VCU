@@ -7,7 +7,6 @@
 #include <core/io/GPIO.hpp>
 #include <core/io/pin.hpp>
 #include <core/io/types/CANMessage.hpp>
-#include <core/utils/types/FixedQueue.hpp>
 #include <models/MCuC_Model.hpp>
 
 #include <core/rtos/Initializable.hpp>
@@ -19,7 +18,17 @@ namespace rtos = core::rtos;
 namespace vcu {
 
 /**
- * Driver for the VCU device
+ * The MCuC (Motor Controller microController) is one of two microcontrollers on the VCU board.
+ * It receives a variety of input over CAN and CANOpen and processes those signals to control the state of the bike as a whole.
+ * The raw CAN line, called the PowertrainCAN, includes the motor controller, HIB, and other critical peripherals.
+ * The CANOpen line, called the AccessoryCAN, includes accessory devices that are generally not as necessary for
+ * the bike functioning (with exception of the LVSS, which enables every other board).
+ *
+ * Given all of this input, the MCuC then runs the MCuC Model, which is a Simulink Model compiled to C++ code.
+ * The MCuC Model determines what outputs must be sent out to other devices on the bike in order to control their functioning.
+ *
+ * The Hardmon (the other microcontroller on the VCU board), monitors the MCuC to ensure that it is functional and operating safely.
+ * It has the ability to override the MCuC and even nReset if it determines that the MCuC is operating unsafely.
  */
 class MCuC : public CANDevice, public rtos::Initializable {
 public:

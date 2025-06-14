@@ -7,10 +7,10 @@ namespace log = core::log;
 
 namespace vcu {
 
-MCuC::MCuC(vcu::MCuC::MCuC_GPIO gpios, io::CAN& can) : powertrainCAN(can), gpios(gpios),
+MCuC::MCuC(vcu::MCuC::MCuC_GPIO gpios, io::CAN& can) : Initializable((char*) "MCuC"), accessoryCanDataUnsafeBuffer(),
                                                        mutex((char*) "MCuC Mutex", true),
-                                                       Initializable("MCuC"),
-                                                       accessoryCanDataUnsafeBuffer(), accessoryCanDataSafeBuffer() {
+                                                       powertrainCAN(can),
+                                                       accessoryCanDataSafeBuffer(), gpios(gpios) {
     model.initialize();
 }
 
