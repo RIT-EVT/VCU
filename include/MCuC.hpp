@@ -26,6 +26,7 @@ namespace vcu {
  *
  * Given all of this input, the MCuC then runs the MCuC Model, which is a Simulink Model compiled to C++ code.
  * The MCuC Model determines what outputs must be sent out to other devices on the bike in order to control their functioning.
+* It is designed to be run as one thread of a process, and thus has built in mutual exclusion properties.
  *
  * The Hardmon (the other microcontroller on the VCU board), monitors the MCuC to ensure that it is functional and operating safely.
  * It has the ability to override the MCuC and even nReset if it determines that the MCuC is operating unsafely.

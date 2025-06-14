@@ -20,7 +20,13 @@ namespace rtos = core::rtos;
 namespace vcu {
 
 /**
- * Driver for the Hardware Monitor
+ * The Hardmon (Hardware Monitor) is one of two microcontrollers on the VCU board.
+ * It monitors the MCuC in order to determine whether or not it is operating safely and logically.
+ * If it determines that the MCuC is not operating correctly, it can override the MCuC's control over the CAN lines
+ * and reset the MCuC in order to hopefully fix the issue.
+ *
+ * The Hardmon also primarily feeds input data into the Hardmon Model, which is a Simulink model compiled to C++ code.
+ * It is designed to be run as one thread of a process, and thus has built in mutual exclusion properties.
  */
 class Hardmon : public CANDevice, public rtos::Initializable {
 public:
