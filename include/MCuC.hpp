@@ -126,12 +126,9 @@ public:
             //model input GPIOs
             io::GPIO& eStopGPIO;
             io::GPIO& ignitionGPIO;
-            io::GPIO& hmFaultGPIO;
-            io::GPIO& lvssStatusGPIO;
             io::GPIO& mcStatusGPIO;
 
             //model output GPIOs
-            io::GPIO& ucFaultGPIO;
             io::GPIO& lvssEnableGPIO;
             io::GPIO& watchdogGPIO;
 
@@ -143,13 +140,11 @@ public:
             io::GPIO& mcToggleNegativeGPIO;
             io::GPIO& mcTogglePositiveGPIO;
             io::GPIO& mcSelfTestGPIO;
-            io::GPIO& estopSelfTestGPIO;
-            io::GPIO& ignitionSelfTestGPIO;
 
             //Set based off of ucState.
             io::GPIO& canSelfTestGPIO;
 
-            //New Pins
+            //TODO New Pins fix this (integrate into current structure)
             io::GPIO& faultLEDGPIO;
             io::GPIO& superFaultLEDGPIO;
             io::GPIO& lsSelfTestOutGPIO;
@@ -160,8 +155,10 @@ public:
             io::GPIO& interlockGPIO;
         };
         struct {
-            io::GPIO* inputArr[5];
-            io::GPIO* outputArr[12];
+            io::GPIO* inputArr[3];
+            io::GPIO* outputArr[9];
+            //TODO fix this
+            io::GPIO* newPinArr[8];
         };
     };
 

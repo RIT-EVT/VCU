@@ -179,13 +179,10 @@ int main() {
     // Initialize MCuC and Powertrain CAN
 
     vcu::MCuC::MCuC_GPIO gpios = {
-        {io::getGPIO<vcu::MCuC::ESTOP_PIN>(io::GPIO::Direction::INPUT, io::GPIO::Pull::PULL_UP),
-         io::getGPIO<vcu::MCuC::IGNITION_PIN>(io::GPIO::Direction::INPUT, io::GPIO::Pull::PULL_UP),
-         io::getGPIO<vcu::MCuC::HM_FAULT_PIN>(io::GPIO::Direction::INPUT),
-         io::getGPIO<vcu::MCuC::LVSS_STATUS_PIN>(io::GPIO::Direction::INPUT),
+        {io::getGPIO<vcu::MCuC::ESTOP_A_PIN>(io::GPIO::Direction::INPUT, io::GPIO::Pull::PULL_UP),
+         io::getGPIO<vcu::MCuC::IGNITION_A_PIN>(io::GPIO::Direction::INPUT, io::GPIO::Pull::PULL_UP),
          io::getGPIO<vcu::MCuC::MC_STATUS_PIN>(io::GPIO::Direction::INPUT),
 
-         io::getGPIO<vcu::MCuC::UC_FAULT_PIN>(io::GPIO::Direction::OUTPUT),
          io::getGPIO<vcu::MCuC::LVSS_ENABLE_PIN>(io::GPIO::Direction::OUTPUT),
          io::getGPIO<vcu::MCuC::WATCHDOG_PIN>(io::GPIO::Direction::OUTPUT),
 
@@ -197,9 +194,19 @@ int main() {
          io::getGPIO<vcu::MCuC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT),
          io::getGPIO<vcu::MCuC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT),
          io::getGPIO<vcu::MCuC::MC_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::MCuC::ESTOP_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::MCuC::IGNITION_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::MCuC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT)}};
+         io::getGPIO<vcu::MCuC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
+
+            //TODO new stuff fix it
+             io::getGPIO<vcu::MCuC::FAULT_LED_PIN>(io::GPIO::Direction::OUTPUT),
+            io::getGPIO<vcu::MCuC::SUPER_FAULT_LED_PIN>(io::GPIO::Direction::OUTPUT),
+            io::getGPIO<vcu::MCuC::LS_SELF_TEST_OUT_PIN>(io::GPIO::Direction::OUTPUT),
+            io::getGPIO<vcu::MCuC::LS_SELF_TEST_IN_A_PIN>(io::GPIO::Direction::INPUT),
+            io::getGPIO<vcu::MCuC::LS_SELF_TEST_IN_B_PIN>(io::GPIO::Direction::INPUT),
+            io::getGPIO<vcu::MCuC::ESTOP_B_PIN>(io::GPIO::Direction::OUTPUT),
+            io::getGPIO<vcu::MCuC::IGNITION_B_PIN>(io::GPIO::Direction::OUTPUT),
+            io::getGPIO<vcu::MCuC::INTERLOCK_PIN>(io::GPIO::Direction::OUTPUT),
+        }
+    };
 
     ///////////////////////////////////////////////////////////
     // Setup the POWERTRAIN CAN configurations- this is RAW can
