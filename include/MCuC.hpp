@@ -150,8 +150,8 @@ public:
             io::GPIO& lsSelfTestOutGPIO;
             io::GPIO& lsSelfTestInAGPIO;
             io::GPIO& lsSelfTestInBGPIO;
-            io::GPIO& estopBGPIO; //Also an "A" estop pin, but didn't want to change existing setup
-            io::GPIO& ignitionBGPIO; //Same thing with ignition as with estop
+            io::GPIO& estopBGPIO;   //Also an "A" estop pin, but didn't want to change existing setup
+            io::GPIO& ignitionBGPIO;//Same thing with ignition as with estop
             io::GPIO& interlockGPIO;
         };
         struct {
