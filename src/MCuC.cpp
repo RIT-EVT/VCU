@@ -93,9 +93,9 @@ void MCuC::process() {
     eStop = gpios.eStopGPIO.readPin() == io::GPIO::State::HIGH;
     //forwardEnable, startPressed, mcStateMachine, discharge updated over CAN
     ignitionOn = gpios.ignitionGPIO.readPin() == io::GPIO::State::HIGH;
-    hmFault = gpios.hmFaultGPIO.readPin() == io::GPIO::State::HIGH;
+    //hmFault = gpios.hmFaultGPIO.readPin() == io::GPIO::State::HIGH;
     //throttle updated over CAN
-    lvssOn = gpios.lvssStatusGPIO.readPin() == io::GPIO::State::HIGH;
+    //lvssOn = gpios.lvssStatusGPIO.readPin() == io::GPIO::State::HIGH;
     mcOn = gpios.mcStatusGPIO.readPin() == io::GPIO::State::HIGH;
 
     //set the inputs and step the model
@@ -153,7 +153,7 @@ void MCuC::process() {
     //use outputs
     gpios.lvssEnableGPIO.writePin(lvssEnable ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     //set inverterEnable before we send the message
-    gpios.ucFaultGPIO.writePin(ucFault ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    //gpios.ucFaultGPIO.writePin(ucFault ? io::GPIO::State::HIGH : io::GPIO::State::LOW); (gone)
     gpios.watchdogGPIO.writePin(watchdog ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ucStateZeroGPIO.writePin(ucState.stateBit0 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ucStateOneGPIO.writePin(ucState.stateBit1 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
@@ -167,8 +167,8 @@ void MCuC::process() {
     //set torqueRequest before we send the message
     gpios.mcSelfTestGPIO.writePin(mcSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     // Setting one of these might have fried the board...
-    gpios.estopSelfTestGPIO.writePin(estopSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    gpios.ignitionSelfTestGPIO.writePin(ignitionSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    //gpios.estopSelfTestGPIO.writePin(estopSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW); (gone)
+    //gpios.ignitionSelfTestGPIO.writePin(ignitionSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW); (gone)
     //We will send accessory CAN SelfTest message over CANopen
     //Send the powertrainCanSelfTest message
 
