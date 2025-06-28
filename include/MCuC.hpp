@@ -39,11 +39,13 @@ public:
 
     /** LED Pins */
 
-    static constexpr io::Pin LED_THREE_PIN = io::Pin::PA_0;
-    static constexpr io::Pin LED_TWO_PIN = io::Pin::PA_1;
-    static constexpr io::Pin LED_ONE_PIN = io::Pin::PA_2;
+    static constexpr io::Pin LED_THREE_PIN = io::Pin::PC_12;
+    static constexpr io::Pin LED_TWO_PIN = io::Pin::PC_11;
+    static constexpr io::Pin LED_ONE_PIN = io::Pin::PC_10;
     /** Self Test Led Pin */
-    static constexpr io::Pin SELF_TEST_LED_PIN = io::Pin::PC_5;
+    //static constexpr io::Pin SELF_TEST_LED_PIN = io::Pin::PC_5; (Gone)
+    static constexpr io::Pin FAULT_LED_PIN = io::Pin::PB_4;
+    static constexpr io::Pin SUPER_FAULT_LED_PIN = io::Pin::PB_5;
 
     /** CAN Pins */
 
@@ -61,25 +63,28 @@ public:
     /** Watchdog pin */
     static constexpr io::Pin WATCHDOG_PIN = io::Pin::PA_15;
     /** Microcontroller State Pins */
-    static constexpr io::Pin UC_STATE_ZERO_PIN = io::Pin::PB_5;
-    static constexpr io::Pin UC_STATE_ONE_PIN = io::Pin::PB_4;
-    static constexpr io::Pin UC_STATE_TWO_PIN = io::Pin::PB_15;
-    static constexpr io::Pin UC_STATE_THREE_PIN = io::Pin::PD_2;
+    static constexpr io::Pin UC_STATE_ZERO_PIN = io::Pin::PC_6;
+    static constexpr io::Pin UC_STATE_ONE_PIN = io::Pin::PC_7;
+    static constexpr io::Pin UC_STATE_TWO_PIN = io::Pin::PC_8;
+    static constexpr io::Pin UC_STATE_THREE_PIN = io::Pin::PC_9;
     /** Hardware Monitor Fault Pin */
-    static constexpr io::Pin HM_FAULT_PIN = io::Pin::PC_8;
+    //static constexpr io::Pin HM_FAULT_PIN = io::Pin::PC_8; (Gone)
     /** Microcontroller Fault Pin */
-    static constexpr io::Pin UC_FAULT_PIN = io::Pin::PC_9;
+    //static constexpr io::Pin UC_FAULT_PIN = io::Pin::PC_9; (Gone)
 
     /** Self Test Pins */
 
     /** CAN Self Test Pin */
-    static constexpr io::Pin CAN_SELF_TEST_PIN = io::Pin::PB_8;
+    static constexpr io::Pin CAN_SELF_TEST_PIN = io::Pin::PB_14;
     /** Ignition Self Test Pin */
-    static constexpr io::Pin IGNITION_SELF_TEST_PIN = io::Pin::PC_2;
+    //static constexpr io::Pin IGNITION_SELF_TEST_PIN = io::Pin::PC_2; (Gone)
     /** ESTOP Self Test Pin */
-    static constexpr io::Pin ESTOP_SELF_TEST_PIN = io::Pin::PC_3;
+    //static constexpr io::Pin ESTOP_SELF_TEST_PIN = io::Pin::PC_3; (Gone)
     /** Motor Controller Self Test Pin */
-    static constexpr io::Pin MC_SELF_TEST_PIN = io::Pin::PC_4;
+    static constexpr io::Pin MC_SELF_TEST_PIN = io::Pin::PC_3;
+    static constexpr io::Pin LS_SELF_TEST_OUT_PIN = io::Pin::PA_4;
+    static constexpr io::Pin LS_SELF_TEST_IN_A_PIN = io::Pin::PA_5;
+    static constexpr io::Pin LS_SELF_TEST_IN_B_PIN = io::Pin::PA_6;
 
     /** Motor Controller Pins */
 
@@ -87,28 +92,31 @@ public:
     static constexpr io::Pin MC_TOGGLE_POSITIVE_PIN = io::Pin::PC_1;
     static constexpr io::Pin MC_TOGGLE_NEGATIVE_PIN = io::Pin::PC_0;
     /** Motor Controller Enable Pins */
-    static constexpr io::Pin MC_ENABLE_POSITIVE_PIN = io::Pin::PB_6;
-    static constexpr io::Pin MC_ENABLE_NEGATIVE_PIN = io::Pin::PB_7;
+    //static constexpr io::Pin MC_ENABLE_POSITIVE_PIN = io::Pin::PB_6; (Gone)
+    //static constexpr io::Pin MC_ENABLE_NEGATIVE_PIN = io::Pin::PB_7; (Gone)
     /** Motor Controller Status Pin */
-    static constexpr io::Pin MC_STATUS_PIN = io::Pin::PB_9;
+    static constexpr io::Pin MC_STATUS_PIN = io::Pin::PC_2;
 
     /** UART Pins */
 
     /** UART TX Pin */
-    static constexpr io::Pin UART_TX = io::Pin::PC_6;
+    static constexpr io::Pin UART_TX = io::Pin::PA_8;
     /** UART RX Pin */
-    static constexpr io::Pin UART_RX = io::Pin::PC_7;
+    static constexpr io::Pin UART_RX = io::Pin::PA_9;
 
     /** Component Communication Pins */
 
     /** ESTOP Pin */
-    static constexpr io::Pin ESTOP_PIN = io::Pin::PC_10;
+    static constexpr io::Pin ESTOP_A_PIN = io::Pin::PA_0;
+    static constexpr io::Pin ESTOP_B_PIN = io::Pin::PA_1;
     /** Ignition Pin */
-    static constexpr io::Pin IGNITION_PIN = io::Pin::PC_11;
+    static constexpr io::Pin IGNITION_A_PIN = io::Pin::PA_2;
+    static constexpr io::Pin IGNITION_B_PIN = io::Pin::PA_3;
     /** LVSS Status Pin */
-    static constexpr io::Pin LVSS_STATUS_PIN = io::Pin::PC_12;
+    //static constexpr io::Pin LVSS_STATUS_PIN = io::Pin::PC_12; (Gone)
+    static constexpr io::Pin INTERLOCK_PIN = io::Pin::PA_7;
     /** LVSS Enable Pin */
-    static constexpr io::Pin LVSS_ENABLE_PIN = io::Pin::PC_13;
+    static constexpr io::Pin LVSS_ENABLE_PIN = io::Pin::PC_4;
 
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
@@ -140,6 +148,16 @@ public:
 
             //Set based off of ucState.
             io::GPIO& canSelfTestGPIO;
+
+            //New Pins
+            io::GPIO& faultLEDGPIO;
+            io::GPIO& superFaultLEDGPIO;
+            io::GPIO& lsSelfTestOutGPIO;
+            io::GPIO& lsSelfTestInAGPIO;
+            io::GPIO& lsSelfTestInBGPIO;
+            io::GPIO& estopBGPIO; //Also an "A" estop pin, but didn't want to change existing setup
+            io::GPIO& ignitionBGPIO; //Same thing with ignition as with estop
+            io::GPIO& interlockGPIO;
         };
         struct {
             io::GPIO* inputArr[5];
