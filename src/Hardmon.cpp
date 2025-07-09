@@ -4,9 +4,8 @@
 
 namespace vcu {
 
-Hardmon::Hardmon(HardmonGPIO gpio, io::CAN& ptCAN) : powertrainCAN(ptCAN), gpios(gpio),
-                                                     mutex((char*) "Hardmon Mutex", true),
-                                                     Initializable("Hardmon") {
+Hardmon::Hardmon(HardmonGPIO gpio, io::CAN& ptCAN)
+    : powertrainCAN(ptCAN), gpios(gpio), mutex((char*) "Hardmon Mutex", true), Initializable("Hardmon") {
     model.initialize();
 }
 
@@ -43,7 +42,7 @@ void Hardmon::handlePowertrainCanMessage(io::CANMessage& message) {
         powertrainCAN.sendHardmonSelfTestResponse();
         break;
     default:
-        //we don't care about this message lol
+        // we don't care about this message lol
         break;
     }
 }
@@ -60,17 +59,18 @@ void Hardmon::sendOutputDataToUnsafeBuffer() {
 
 void Hardmon::sendInputDataToSafeBuffer() {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    accessoryCanDataSafeBuffer.LVSS_in_HVCurrent = accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent;
+    accessoryCanDataSafeBuffer.LVSS_in_HVCurrent           = accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent;
     accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents = accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents;
-    accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchErrorStatus = accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus;
+    accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchErrorStatus =
+        accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus;
     mutex.put();
 }
 
 void Hardmon::process() {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    //update inputs
-    //forwardEnable has been updated over CAN
-    //update the gpio inputs in a loop using the unions
+    // update inputs
+    // forwardEnable has been updated over CAN
+    // update the gpio inputs in a loop using the unions
     for (int i = 0; i < 11; i++) {
         modelGPIOInputs.arr[i] = gpios.inputArr[i]->readPin() == io::GPIO::State::HIGH;
     }
@@ -87,40 +87,41 @@ void Hardmon::process() {
     state <<= 1;
     state += modelGPIOInputs.ucState[3];
     lvssEnableUC = (state >= 1 && state <= 5);
-    ucState = static_cast<UC_State>(state);
-    //step the model
-    const Hardmon_Model::ExtU_Hardmon_T modelInputs = {
-        forwardEnable,
-        modelGPIOInputs.ignitionCheck,
-        modelGPIOInputs.ignition3v3,
-        modelGPIOInputs.lvssStatus,
-        modelGPIOInputs.mcStatus,
-        ucState,
-        modelGPIOInputs.eStopCheck,
-        discharge,
-        modelGPIOInputs.watchdog,
-        modelGPIOInputs.eStop3v3,
-        lvssEnableUC};
+    ucState      = static_cast<UC_State>(state);
+    // step the model
+    const Hardmon_Model::ExtU_Hardmon_T modelInputs = {forwardEnable,
+                                                       modelGPIOInputs.ignitionCheck,
+                                                       modelGPIOInputs.ignition3v3,
+                                                       modelGPIOInputs.lvssStatus,
+                                                       modelGPIOInputs.mcStatus,
+                                                       ucState,
+                                                       modelGPIOInputs.eStopCheck,
+                                                       discharge,
+                                                       modelGPIOInputs.watchdog,
+                                                       modelGPIOInputs.eStop3v3,
+                                                       lvssEnableUC};
 
     mutex.put();
     model.setExternalInputs(&modelInputs);
     model.step();
 
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    //memcpy from the output of the model to our output struct
-    memcpy((void*) &modelOutputs.modelOutputStruct, (const void*) &model.getExternalOutputs(), sizeof(modelOutputs.modelOutputStruct));
-    //use outputs
+    // memcpy from the output of the model to our output struct
+    memcpy((void*) &modelOutputs.modelOutputStruct,
+           (const void*) &model.getExternalOutputs(),
+           sizeof(modelOutputs.modelOutputStruct));
+    // use outputs
     gpios.mcToggleOverrideGPIO.writePin(modelOutputs.mcSwitchEnable ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.lvssEnableOverrideGPIO.writePin(modelOutputs.lvssSwitchEnable ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    //inverter discharge will be handled over CAN
+    // inverter discharge will be handled over CAN
     gpios.mcToggleNegativeGPIO.writePin(modelOutputs.mcToggleNeg ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.mcTogglePositiveGPIO.writePin(modelOutputs.mcTogglePos ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ucResetGPIO.writePin(modelOutputs.ucReset ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.lvssEnableHardmonGPIO.writePin(modelOutputs.lvssEnableHardMon ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.hmFaultGPIO.writePin(modelOutputs.hmFault ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    //TODO: right now the message sets all values but inverter discharge to be 0. This might be REALLY BAD,
-    // discuss it more with the EES and maybe Matt. Also make sure that this is okay to send in terms of
-    // determining if the MCuC is untrustworthy.
+    // TODO: right now the message sets all values but inverter discharge to be 0. This might be REALLY BAD,
+    //  discuss it more with the EES and maybe Matt. Also make sure that this is okay to send in terms of
+    //  determining if the MCuC is untrustworthy.
     if (modelOutputs.inverterDischarge) {
         powertrainCAN.setMCInverterDischarge(true);
         powertrainCAN.sendMCMessage();
@@ -128,4 +129,4 @@ void Hardmon::process() {
     mutex.put();
 }
 
-}// namespace vcu
+} // namespace vcu

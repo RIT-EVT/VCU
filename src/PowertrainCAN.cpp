@@ -2,8 +2,9 @@
 
 namespace vcu::dev {
 
-PowertrainCAN::PowertrainCAN(io::CAN& can) : Initializable("Powertrain CAN"), can(can), queue("Powertrain Queue", sizeof(io::CANMessage), POWERTRAIN_QUEUE_SIZE) {
-}
+PowertrainCAN::PowertrainCAN(io::CAN& can)
+    : Initializable("Powertrain CAN"), can(can),
+      queue("Powertrain Queue", sizeof(io::CANMessage), POWERTRAIN_QUEUE_SIZE) {}
 
 uint8_t PowertrainCAN::parseMCState(io::CANMessage& message) {
     return (message.getPayload()[0]);
@@ -14,22 +15,22 @@ uint8_t PowertrainCAN::parseMCDischarge(io::CANMessage& message) {
 }
 
 int16_t PowertrainCAN::parseHIBThrottle(io::CANMessage& message) {
-    //TODO: HIB example implementation, update when HIB is completed
+    // TODO: HIB example implementation, update when HIB is completed
     uint8_t* message_payload = message.getPayload();
-    uint16_t throttle = (message_payload[0]);
+    uint16_t throttle        = (message_payload[0]);
     throttle <<= 8;
     throttle += (message_payload[1]);
     return throttle;
 }
 
 bool PowertrainCAN::parseHIBForwardEnable(io::CANMessage& message) {
-    //TODO: HIB example implementation, update when HIB is completed
+    // TODO: HIB example implementation, update when HIB is completed
     bool forwardEnable = (message.getPayload()[2] & 0b10000000) != 0;
     return forwardEnable;
 }
 
 bool PowertrainCAN::parseHIBStartPressed(io::CANMessage& message) {
-    //TODO: HIB example implementation, update when HIB is completed
+    // TODO: HIB example implementation, update when HIB is completed
     bool startPressed = (message.getPayload()[2] & 0b01000000) != 0;
     return startPressed;
 }
@@ -47,12 +48,12 @@ void PowertrainCAN::setMCTorque(int16_t torqueRequest) {
 }
 
 void PowertrainCAN::sendMCMessage() {
-    //gotta be a uint8_t array, so we memcpy into it.
+    // gotta be a uint8_t array, so we memcpy into it.
     uint8_t payload[8];
     memcpy(payload, &mcCommandPayload, 8u);
-    //make the message
+    // make the message
     io::CANMessage message = io::CANMessage(PowertrainCAN::MessageIDs::MC_COMMAND_ID, 8u, payload, false);
-    //send the message
+    // send the message
     can.transmit(message);
 }
 
@@ -68,4 +69,4 @@ core::rtos::TXError PowertrainCAN::init(rtos::BytePoolBase& pool) {
     return queue.init(pool);
 }
 
-}// namespace vcu::dev
+} // namespace vcu::dev

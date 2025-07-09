@@ -14,7 +14,7 @@
 #include <core/rtos/Initializable.hpp>
 #include <core/rtos/Mutex.hpp>
 
-namespace io = core::io;
+namespace io   = core::io;
 namespace rtos = core::rtos;
 
 namespace vcu {
@@ -49,9 +49,9 @@ public:
     static constexpr io::Pin LVSS_STATUS_3V3_Pin = io::Pin::PC_11;
 
     /** MicroController State Pins */
-    static constexpr io::Pin UC_STATE_ZERO_PIN = io::Pin::PA_9;
-    static constexpr io::Pin UC_STATE_ONE_PIN = io::Pin::PA_15;
-    static constexpr io::Pin UC_STATE_TWO_PIN = io::Pin::PC_2;
+    static constexpr io::Pin UC_STATE_ZERO_PIN  = io::Pin::PA_9;
+    static constexpr io::Pin UC_STATE_ONE_PIN   = io::Pin::PA_15;
+    static constexpr io::Pin UC_STATE_TWO_PIN   = io::Pin::PC_2;
     static constexpr io::Pin UC_STATE_THREE_PIN = io::Pin::PC_10;
     /** Microcontroller Fault Status Pin */
     static constexpr io::Pin UC_FAULT_PIN = io::Pin::PC_1;
@@ -100,11 +100,11 @@ public:
     /**
      * Union that primarily contains a struct that contains all the GPIOs that an instance of this class requires.
      * THE ORDER OF THIS MUST MATCH THE MODEL GPIO INPUTS.
-    */
+     */
     union HardmonGPIO {
         // allows specific named access to outputs and inputs
         struct {
-            //model input pins
+            // model input pins
             io::GPIO& ignitionCheckGPIO;
             io::GPIO& ignition3V3GPIO;
             io::GPIO& lvssStatus3V3GPIO;
@@ -119,7 +119,7 @@ public:
             io::GPIO& watchdogGPIO;
             io::GPIO& eStop3V3GPIO;
 
-            //model outputs pins
+            // model outputs pins
 
             io::GPIO& mcToggleOverrideGPIO;
             io::GPIO& lvssEnableOverrideGPIO;
@@ -141,11 +141,11 @@ public:
      * Used for double buffering for threadsafety with CANOpen
      */
     struct AccessoryCanData_s {
-        uint16_t LVSS_out_EnableBoardSignal;    ///< Signal sent to LVSS that determines which boards it will send power to
-        uint16_t LVSS_in_HVCurrent;             ///< Signal received from LVSS
-        uint16_t LVSS_in_PowerSwitchErrorStatus;///< Signal received from LVSS
-        uint16_t LVSS_in_PowerSwitchCurrents;   ///< Signal received from LVSS
-        uint16_t LVSS_in_Temperatures;          ///< Signal received from LVSS
+        uint16_t LVSS_out_EnableBoardSignal; ///< Signal sent to LVSS that determines which boards it will send power to
+        uint16_t LVSS_in_HVCurrent;          ///< Signal received from LVSS
+        uint16_t LVSS_in_PowerSwitchErrorStatus; ///< Signal received from LVSS
+        uint16_t LVSS_in_PowerSwitchCurrents;    ///< Signal received from LVSS
+        uint16_t LVSS_in_Temperatures;           ///< Signal received from LVSS
     } AccessoryCanData_t;
 
     /**
@@ -171,10 +171,10 @@ public:
      */
     void process();
 
-    //override methods from Initializable
+    // override methods from Initializable
     rtos::TXError init(rtos::BytePoolBase& pool) override;
 
-    //override methods from CANDevice
+    // override methods from CANDevice
 
     CO_OBJ_T* getObjectDictionary() override;
 
@@ -205,17 +205,17 @@ private:
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
      * THE ORDER OF THIS MUST MATCH THE HARDMON GPIO ORDER.
-    */
+     */
     union ModelGPIOInputs_t {
         struct {
-            bool ignitionCheck;///< GPIO: whether the ignition is on or off on 12v line
-            bool ignition3v3;  ///< GPIO: whether the ignition is on or off on 3.3v line
-            bool lvssStatus;   ///< GPIO: whether the lvss is on or not
-            bool mcStatus;     ///< GPIO: whether the Motor Controller is on or off
-            bool ucState[4];   ///< GPIO: what state the MCuC is in
-            bool eStopCheck;   ///< GPIO: whether the estop is on or off on 12v line
-            bool watchdog;     ///< GPIO: alternating on and off signal from the MCUC to the Hardmon
-            bool eStop3v3;     ///< GPIO: whether the estop is on or off on 3.3v line
+            bool ignitionCheck; ///< GPIO: whether the ignition is on or off on 12v line
+            bool ignition3v3;   ///< GPIO: whether the ignition is on or off on 3.3v line
+            bool lvssStatus;    ///< GPIO: whether the lvss is on or not
+            bool mcStatus;      ///< GPIO: whether the Motor Controller is on or off
+            bool ucState[4];    ///< GPIO: what state the MCuC is in
+            bool eStopCheck;    ///< GPIO: whether the estop is on or off on 12v line
+            bool watchdog;      ///< GPIO: alternating on and off signal from the MCUC to the Hardmon
+            bool eStop3v3;      ///< GPIO: whether the estop is on or off on 3.3v line
         };
         bool arr[11];
     };
@@ -227,12 +227,12 @@ private:
         struct {
             bool mcSwitchEnable;   ///< GPIO: whether or not the Hardmon is taking over mcEnable control from the MCUC
             bool lvssSwitchEnable; ///< GPIO: whether or not the Hardmon is taking over lvssEnable control from the MCUC
-            bool inverterDischarge;///< CAN (MC): whether or not the Motor Controller is commanded to discharge
-            bool mcToggleNeg;      ///< GPIO: Together with MCTogglePos commands the Motor Controller being on or not
-            bool mcTogglePos;      ///< GPIO: Together with MCToggleNeg commands the Motor Controller being on or not
-            bool ucReset;          ///< GPIO: Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)
-            bool lvssEnableHardMon;///< GPIO: Whether or not the Hardmon is commanding the LVSS to be enabled
-            bool hmFault;          ///< GPIO: Whether or not the Hardmon is commanding the MCUC to go into a fault state
+            bool inverterDischarge; ///< CAN (MC): whether or not the Motor Controller is commanded to discharge
+            bool mcToggleNeg;       ///< GPIO: Together with MCTogglePos commands the Motor Controller being on or not
+            bool mcTogglePos;       ///< GPIO: Together with MCToggleNeg commands the Motor Controller being on or not
+            bool ucReset;           ///< GPIO: Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)
+            bool lvssEnableHardMon; ///< GPIO: Whether or not the Hardmon is commanding the LVSS to be enabled
+            bool hmFault; ///< GPIO: Whether or not the Hardmon is commanding the MCUC to go into a fault state
         };
         Hardmon_Model::ExtY_Hardmon_T modelOutputStruct;
     };
@@ -248,12 +248,12 @@ private:
      */
     Hardmon_Model model;
 
-    ///The gpios (in a union)
+    /// The gpios (in a union)
     HardmonGPIO gpios;
 
-    //TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
+    // TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
 
-    //Model gpio input data
+    // Model gpio input data
     ModelGPIOInputs_t modelGPIOInputs;
 
     /**
@@ -261,22 +261,22 @@ private:
      * Lets us index into it like an array
      */
     UC_State ucState;
-    bool lvssEnableUC;    ///< GPIO: whether or not the MCuC is telling the LVSS to be enabled (calculated from ucState)
-    MC_DC_State discharge;///< CAN (MC): current state of the Motor Controller's discharge state machine
-    bool forwardEnable;   ///< CAN (HIB): handlebar forward enable
+    bool lvssEnableUC; ///< GPIO: whether or not the MCuC is telling the LVSS to be enabled (calculated from ucState)
+    MC_DC_State discharge; ///< CAN (MC): current state of the Motor Controller's discharge state machine
+    bool forwardEnable;    ///< CAN (HIB): handlebar forward enable
 
-    //Model output data
+    // Model output data
     ModelOutputs_t modelOutputs;
 
     /**
      * The node ID used to identify the device on the CAN network.
      */
-    static constexpr uint8_t NODE_ID = 0;//TODO set node ID
+    static constexpr uint8_t NODE_ID = 0; // TODO set node ID
 
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 51;//TODO set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 51; // TODO set size of object dictionary
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -294,6 +294,6 @@ private:
     };
 };
 
-}// namespace vcu
+} // namespace vcu
 
-#endif//VCU_HARDMON_HPP
+#endif // VCU_HARDMON_HPP

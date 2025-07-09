@@ -1,10 +1,10 @@
 /**
-* This is the main target for the Hardmon (the processor that monitors the MCUC).
-* It takes in CANopen messages and other inputs from the MCUC and accessory boards,
-* and checks if the MCUC is functioning correctly.
-*/
+ * This is the main target for the Hardmon (the processor that monitors the MCUC).
+ * It takes in CANopen messages and other inputs from the MCUC and accessory boards,
+ * and checks if the MCUC is functioning correctly.
+ */
 
-//CAN Interrupt Addons (needed so that CAN interrupts can do ThreadX Requests)
+// CAN Interrupt Addons (needed so that CAN interrupts can do ThreadX Requests)
 #define CAN_IRQ_PRE_INTERRUPT_ROUTINE _tx_thread_context_save()
 
 #define CAN_IRQ_POST_INTERRUPT_ROUTINE _tx_thread_context_restore()
@@ -34,13 +34,13 @@
 #include <Hardmon.hpp>
 
 namespace rtos = core::rtos;
-namespace io = core::io;
-namespace dev = core::dev;
+namespace io   = core::io;
+namespace dev  = core::dev;
 namespace time = core::time;
-namespace log = core::log;
+namespace log  = core::log;
 
 ///////////////////////////////////////////////////////////////////////////////
-//RTOS GLOBAlS SETUP
+// RTOS GLOBAlS SETUP
 ///////////////////////////////////////////////////////////////////////////////
 
 /// The size of the memory pool for the tx application
@@ -49,32 +49,32 @@ namespace log = core::log;
 #define MODEL_THREAD_TRIGGER_RATE S_TO_TICKS(5)
 
 // Model Thread Parameters
-#define MODEL_THREAD_STACK_SIZE 1024
-#define MODEL_THREAD_PRIORITY 1
+#define MODEL_THREAD_STACK_SIZE        1024
+#define MODEL_THREAD_PRIORITY          1
 #define MODEL_THREAD_PREEMPT_THRESHOLD 1
-#define MODEL_THREAD_TIME_SLICE MS_TO_TICKS(20)
-#define MODEL_THREAD_AUTOSTART true
+#define MODEL_THREAD_TIME_SLICE        MS_TO_TICKS(20)
+#define MODEL_THREAD_AUTOSTART         true
 
 // Powertrain CAN Receive Thread Parameters
-#define PT_CAN_RECEIVE_STACK_SIZE 1024
-#define PT_CAN_RECEIVE_PRIORITY 3
+#define PT_CAN_RECEIVE_STACK_SIZE        1024
+#define PT_CAN_RECEIVE_PRIORITY          3
 #define PT_CAN_RECEIVE_PREEMPT_THRESHOLD 3
-#define PT_CAN_RECEIVE_TIME_SLICE MS_TO_TICKS(10)
-#define PT_CAN_RECEIVE_AUTOSTART true
+#define PT_CAN_RECEIVE_TIME_SLICE        MS_TO_TICKS(10)
+#define PT_CAN_RECEIVE_AUTOSTART         true
 
 // Health Thread Parameters
-#define HEALTH_THREAD_STACK_SIZE 1024
-#define HEALTH_THREAD_PRIORITY 5
+#define HEALTH_THREAD_STACK_SIZE        1024
+#define HEALTH_THREAD_PRIORITY          5
 #define HEALTH_THREAD_PREEMPT_THRESHOLD 5
-#define HEALTH_THREAD_TIME_SLICE MS_TO_TICKS(10)
-#define HEALTH_THREAD_AUTOSTART true
+#define HEALTH_THREAD_TIME_SLICE        MS_TO_TICKS(10)
+#define HEALTH_THREAD_AUTOSTART         true
 
 // Accessory CAN Receive Thread Parameters
-#define ACC_CAN_RECEIVE_THREAD_STACK_SIZE 1024
-#define ACC_CAN_RECEIVE_THREAD_PRIORITY 4
+#define ACC_CAN_RECEIVE_THREAD_STACK_SIZE        1024
+#define ACC_CAN_RECEIVE_THREAD_PRIORITY          4
 #define ACC_CAN_RECEIVE_THREAD_PREEMPT_THRESHOLD 4
-#define ACC_CAN_RECEIVE_THREAD_TIME_SLICE MS_TO_TICKS(10)
-#define ACC_CAN_RECEIVE_THREAD_AUTOSTART true
+#define ACC_CAN_RECEIVE_THREAD_TIME_SLICE        MS_TO_TICKS(10)
+#define ACC_CAN_RECEIVE_THREAD_AUTOSTART         true
 
 // Thread Structs
 
@@ -108,7 +108,7 @@ typedef struct {
     CO_NODE* accessoryCanNode;
 } accessoryCanReceiveThreadArgs_t;
 
-//Timer expiration function
+// Timer expiration function
 void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag);
 
 // Thread Function Prototypes-- implementation below main.
@@ -123,20 +123,20 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag);
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
-* Interrupt handler to get CAN messages. A function pointer to this function
-* will be passed to the EVT-core CAN interface which will in turn call this
-* function each time a new CAN message comes in.
-*
-* NOTE: For this sample, every non-extended (so 11 bit CAN IDs) will be
-* assumed to be intended to be passed as a CANopen message.
-*
-* @param message[in] The passed in CAN message that was read.
-* @param priv[in] the passed in Queue to add the message to. Must be an rtos::Queue*.
-*/
+ * Interrupt handler to get CAN messages. A function pointer to this function
+ * will be passed to the EVT-core CAN interface which will in turn call this
+ * function each time a new CAN message comes in.
+ *
+ * NOTE: For this sample, every non-extended (so 11 bit CAN IDs) will be
+ * assumed to be intended to be passed as a CANopen message.
+ *
+ * @param message[in] The passed in CAN message that was read.
+ * @param priv[in] the passed in Queue to add the message to. Must be an rtos::Queue*.
+ */
 void canOpenInterrupt(io::CANMessage& message, void* priv) {
     auto* queue = (rtos::Queue*) priv;
     if (queue != nullptr) {
-        //TODO: determine if WaitForever is what we want to do in the interrupt- could be bad
+        // TODO: determine if WaitForever is what we want to do in the interrupt- could be bad
         queue->send(static_cast<void*>(&message), rtos::TXWait::TXW_WAIT_FOREVER);
     }
 }
@@ -149,7 +149,7 @@ void canOpenInterrupt(io::CANMessage& message, void* priv) {
 void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
     auto* queue = (rtos::Queue*) priv;
     if (queue != nullptr) {
-        //TODO: determine if WaitForever is what we want to do in the interrupt- could be bad
+        // TODO: determine if WaitForever is what we want to do in the interrupt- could be bad
         queue->send(static_cast<void*>(&message), rtos::TXWait::TXW_WAIT_FOREVER);
     }
 }
@@ -172,7 +172,7 @@ int main() {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MCuC Debug Logger Started.");
 
     //////////////////////////////
-    //Initialize Powertrain CAN //
+    // Initialize Powertrain CAN //
     //////////////////////////////
     vcu::Hardmon::HardmonGPIO hmGPIOS = {
         {io::getGPIO<vcu::Hardmon::IGNITION_CHECK_PIN>(io::GPIO::Direction::INPUT),
@@ -232,7 +232,7 @@ int main() {
     // Attempt to join the CAN network
     io::CAN::CANStatus result = can.connect();
 
-    //test that the board is connected to the can network
+    // test that the board is connected to the can network
     if (result != io::CAN::CANStatus::OK) {
         uart.printf("Failed to connect to CAN network\r\n");
         return 1;
@@ -249,25 +249,28 @@ int main() {
 
     time::wait(500);
 
-    //print any CANopen errors
+    // print any CANopen errors
     uart.printf("Error: %d\r\n", CONodeGetErr(&canNode));
     ////////////////////////
     // Initialize Threadx //
     ////////////////////////
 
-    //Initialize Bytepool
+    // Initialize Bytepool
 
     rtos::BytePool<TX_APP_MEM_POOL_SIZE> txPool((char*) "txBytePool");
 
     // Initialize Threads
 
-    //Model Thread
+    // Model Thread
     /// eventflag that triggers the model to run
     rtos::EventFlags modelTriggerFlag((char*) "Model Trigger Flag");
 
     /// timer that triggers the model eventflag (and thus steps the model)
-    rtos::Timer<rtos::EventFlags*> modelTriggerTimer((char*) "Model Trigger Timer", modelTimerExpiration,
-                                                     &modelTriggerFlag, MODEL_THREAD_TRIGGER_RATE, MODEL_THREAD_TRIGGER_RATE,
+    rtos::Timer<rtos::EventFlags*> modelTriggerTimer((char*) "Model Trigger Timer",
+                                                     modelTimerExpiration,
+                                                     &modelTriggerFlag,
+                                                     MODEL_THREAD_TRIGGER_RATE,
+                                                     MODEL_THREAD_TRIGGER_RATE,
                                                      true);
 
     /// Argument struct the modelThread takes in
@@ -277,48 +280,63 @@ int main() {
     };
 
     /// Thread that runs the model
-    rtos::Thread<modelThreadArgs_t*> modelThread((char*) "Model Thread", modelThreadEntry,
-                                                 &modelThreadArgs, MODEL_THREAD_STACK_SIZE,
-                                                 MODEL_THREAD_PRIORITY, MODEL_THREAD_PREEMPT_THRESHOLD,
-                                                 MODEL_THREAD_TIME_SLICE, MODEL_THREAD_AUTOSTART);
+    rtos::Thread<modelThreadArgs_t*> modelThread((char*) "Model Thread",
+                                                 modelThreadEntry,
+                                                 &modelThreadArgs,
+                                                 MODEL_THREAD_STACK_SIZE,
+                                                 MODEL_THREAD_PRIORITY,
+                                                 MODEL_THREAD_PREEMPT_THRESHOLD,
+                                                 MODEL_THREAD_TIME_SLICE,
+                                                 MODEL_THREAD_AUTOSTART);
 
-    //PowerTrain CAN input Thread
+    // PowerTrain CAN input Thread
     /// argument struct the thread takes in
-    powertrainCANReceiveThreadArgs_t powertrainCANReceiveThreadArgs = {
-        &hardmon};
+    powertrainCANReceiveThreadArgs_t powertrainCANReceiveThreadArgs = {&hardmon};
 
     /// Thread that processes the Powertrain CAN Receive queue
     rtos::Thread<powertrainCANReceiveThreadArgs_t*> powertrainCANReceiveThread((char*) "Powertrain CAN Receive Thread",
-                                                                               powertrainCANReceiveThreadEntry, &powertrainCANReceiveThreadArgs,
-                                                                               PT_CAN_RECEIVE_STACK_SIZE, PT_CAN_RECEIVE_PRIORITY,
-                                                                               PT_CAN_RECEIVE_PREEMPT_THRESHOLD, PT_CAN_RECEIVE_TIME_SLICE,
+                                                                               powertrainCANReceiveThreadEntry,
+                                                                               &powertrainCANReceiveThreadArgs,
+                                                                               PT_CAN_RECEIVE_STACK_SIZE,
+                                                                               PT_CAN_RECEIVE_PRIORITY,
+                                                                               PT_CAN_RECEIVE_PREEMPT_THRESHOLD,
+                                                                               PT_CAN_RECEIVE_TIME_SLICE,
                                                                                PT_CAN_RECEIVE_AUTOSTART);
 
-    ///Argument struct the healthThread takes in
-    healthThreadArgs_t healthThreadArgs{
-        &hardmon};
+    /// Argument struct the healthThread takes in
+    healthThreadArgs_t healthThreadArgs{&hardmon};
 
     /// Thread that checks the health of the other threads
     rtos::Thread<healthThreadArgs_t*> healthThread((char*) "Hardmon Health Monitoring Thread",
-                                                   healthThreadEntry, &healthThreadArgs,
-                                                   HEALTH_THREAD_STACK_SIZE, HEALTH_THREAD_PRIORITY,
-                                                   HEALTH_THREAD_PREEMPT_THRESHOLD, HEALTH_THREAD_TIME_SLICE,
+                                                   healthThreadEntry,
+                                                   &healthThreadArgs,
+                                                   HEALTH_THREAD_STACK_SIZE,
+                                                   HEALTH_THREAD_PRIORITY,
+                                                   HEALTH_THREAD_PREEMPT_THRESHOLD,
+                                                   HEALTH_THREAD_TIME_SLICE,
                                                    HEALTH_THREAD_AUTOSTART);
 
-    ///Argument struct the Accessory Can Receive takes in
-    accessoryCanReceiveThreadArgs_t accessoryCanReceiveThreadArgs{
-        &hardmon};
+    /// Argument struct the Accessory Can Receive takes in
+    accessoryCanReceiveThreadArgs_t accessoryCanReceiveThreadArgs{&hardmon};
 
     /// Thread that checks the health of the other threads
-    rtos::Thread<accessoryCanReceiveThreadArgs_t*> accessoryCanReceiveThread((char*) "Hardmon Accessory Can Recieve Thread",
-                                                                             accessoryCanReceiveThreadEntry, &accessoryCanReceiveThreadArgs,
-                                                                             ACC_CAN_RECEIVE_THREAD_STACK_SIZE, ACC_CAN_RECEIVE_THREAD_PRIORITY,
-                                                                             ACC_CAN_RECEIVE_THREAD_PREEMPT_THRESHOLD, ACC_CAN_RECEIVE_THREAD_TIME_SLICE,
-                                                                             ACC_CAN_RECEIVE_THREAD_AUTOSTART);
+    rtos::Thread<accessoryCanReceiveThreadArgs_t*> accessoryCanReceiveThread(
+        (char*) "Hardmon Accessory Can Recieve Thread",
+        accessoryCanReceiveThreadEntry,
+        &accessoryCanReceiveThreadArgs,
+        ACC_CAN_RECEIVE_THREAD_STACK_SIZE,
+        ACC_CAN_RECEIVE_THREAD_PRIORITY,
+        ACC_CAN_RECEIVE_THREAD_PREEMPT_THRESHOLD,
+        ACC_CAN_RECEIVE_THREAD_TIME_SLICE,
+        ACC_CAN_RECEIVE_THREAD_AUTOSTART);
 
-    rtos::Initializable* initArr[] = {
-        &hardmon, &modelThread, &modelTriggerFlag, &modelTriggerTimer,
-        &powertrainCANReceiveThread, &healthThread, &accessoryCanReceiveThread};
+    rtos::Initializable* initArr[] = {&hardmon,
+                                      &modelThread,
+                                      &modelTriggerFlag,
+                                      &modelTriggerTimer,
+                                      &powertrainCANReceiveThread,
+                                      &healthThread,
+                                      &accessoryCanReceiveThread};
 
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting Kernel.");
 
@@ -334,8 +352,8 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     uint32_t flags;
     modelTriggerFlag->getCurrentFlags(&flags);
     if ((flags & 0x01) == 0x1) {
-        //THE MODEL IS NOT RUNNING FAST ENOUGH THROW AN ERROR
-        //todo: determine what error to throw
+        // THE MODEL IS NOT RUNNING FAST ENOUGH THROW AN ERROR
+        // todo: determine what error to throw
         log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread not running fast enough.");
     }
     modelTriggerFlag->set(0x01);
@@ -369,7 +387,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     io::CANMessage message;
     rtos::Queue* queue = args->hardmon->getPowertrainQueue();
     while (true) {
-        //suspends if there are no messages to receive
+        // suspends if there are no messages to receive
         queue->receive(&message, rtos::TXWait::TXW_WAIT_FOREVER);
         args->hardmon->handlePowertrainCanMessage(message);
     }
@@ -386,7 +404,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     rtos::TXError error;
     while (true) {
         log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Triggered.");
-        //do healthThread stuff
+        // do healthThread stuff
         error = rtos::sleep(MS_TO_TICKS(50));
         log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Sleep Code %d", error);
     }
@@ -400,7 +418,8 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 [[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory Can Thread Started.");
     rtos::TXError error;
-    //todo: Hardmon CANOpen dictionary is incomplete so trying to process the CAN will break it. This needs to be fixed.
+    // todo: Hardmon CANOpen dictionary is incomplete so trying to process the CAN will break it. This needs to be
+    // fixed.
 
     //    while(true) {
     //        //process accessory CAN

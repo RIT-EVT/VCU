@@ -190,7 +190,7 @@ void MCuC_Model::MCuC_MC_Active(void) {
         // Transition: '<S10>:243'
         // Exit 'MC_Active': '<S10>:9'
         MCuC_Y.Torque_Request_CAN = 0;
-        MCuC_DW.is_Logic = MCuC_IN_MC_Ready;
+        MCuC_DW.is_Logic          = MCuC_IN_MC_Ready;
 
         // Update for Outport: '<Root>/uC_State'
         // Entry 'MC_Ready': '<S10>:436'
@@ -203,7 +203,7 @@ void MCuC_Model::MCuC_MC_Active(void) {
         // Transition: '<S10>:242'
         // Exit 'MC_Active': '<S10>:9'
         MCuC_Y.Torque_Request_CAN = 0;
-        MCuC_DW.is_Logic = MCuC_IN_Contactor_Open;
+        MCuC_DW.is_Logic          = MCuC_IN_Contactor_Open;
 
         // Outport: '<Root>/Inverter_EN_uC_CAN'
         // Entry 'Contactor_Open': '<S10>:7'
@@ -325,14 +325,14 @@ void MCuC_Model::MCuC_exit_internal_Logic(void) {
         // Outport: '<Root>/Fault_to_MC_CAN'
         // Exit 'Fault': '<S10>:3'
         MCuC_Y.Fault_to_MC_CAN = false;
-        MCuC_DW.is_Logic = 0;
+        MCuC_DW.is_Logic       = 0;
         break;
 
     case MCuC_IN_MC_Active:
         // Outport: '<Root>/Torque_Request_CAN'
         // Exit 'MC_Active': '<S10>:9'
         MCuC_Y.Torque_Request_CAN = 0;
-        MCuC_DW.is_Logic = 0;
+        MCuC_DW.is_Logic          = 0;
         break;
 
     case MCuC_IN_MC_Discharging:
@@ -341,7 +341,7 @@ void MCuC_Model::MCuC_exit_internal_Logic(void) {
 
         // Outport: '<Root>/Inverter_DC_uC_CAN'
         MCuC_Y.Inverter_DC_uC_CAN = false;
-        MCuC_DW.is_Logic = 0;
+        MCuC_DW.is_Logic          = 0;
         break;
 
     case MCuC_IN_Preset:
@@ -360,7 +360,7 @@ void MCuC_Model::MCuC_exit_internal_Logic(void) {
         break;
     }
 }
-}// namespace vcu
+} // namespace vcu
 
 namespace vcu {
 // Model step function
@@ -405,7 +405,8 @@ void MCuC_Model::step() {
     //   RelationalOperator: '<Root>/Relational Operator'
 
     for (i = 0; i < 5; i++) {
-        rtb_VectorConcatenate1[i] = ((MCuC_U.Heartbeats_CAN[i] <= MCuC_DW.Delay1_DSTATE[i]) && rtb_VectorConcatenate1[i]);
+        rtb_VectorConcatenate1[i] =
+            ((MCuC_U.Heartbeats_CAN[i] <= MCuC_DW.Delay1_DSTATE[i]) && rtb_VectorConcatenate1[i]);
     }
 
     // End of Logic: '<Root>/AND1'
@@ -424,7 +425,9 @@ void MCuC_Model::step() {
     //   UnitDelay: '<Root>/Unit Delay7'
     //   UnitDelay: '<Root>/Unit Delay8'
 
-    rtb_NOR1 = ((!MCuC_U.HIB_Comparison_Fault_CAN) && (MCuC_DW.UnitDelay4_DSTATE == MCuC_U.MC_ON) && ((!rtb_VectorConcatenate1[0]) && (!rtb_VectorConcatenate1[1]) && (!rtb_VectorConcatenate1[2]) && (!rtb_VectorConcatenate1[3]) && (!rtb_VectorConcatenate1[4]))
+    rtb_NOR1 = ((!MCuC_U.HIB_Comparison_Fault_CAN) && (MCuC_DW.UnitDelay4_DSTATE == MCuC_U.MC_ON)
+                && ((!rtb_VectorConcatenate1[0]) && (!rtb_VectorConcatenate1[1]) && (!rtb_VectorConcatenate1[2])
+                    && (!rtb_VectorConcatenate1[3]) && (!rtb_VectorConcatenate1[4]))
                 && ((MCuC_Y.MC_PS_Request_uC_CAN == MCuC_U.MC_PS_Present_CAN)
                     && (MCuC_Y.Batt_PS_Request_uC_CAN == MCuC_U.Batt_PS_Present_CAN)));
 
@@ -445,7 +448,12 @@ void MCuC_Model::step() {
     if (MCuC_DW.UnitDelay5_DSTATE == rtCP_Constant_Value) {
         tmp = rtCP_pooled2;
     } else {
-        tmp = static_cast<bool>(static_cast<int16_t>((MCuC_DW.UnitDelay5_DSTATE != BMS_Contactor_Command::Open_Contactor) != MCuC_U.BMS_Contactor_Closed_CAN ? 1 : 0) != 0);
+        tmp =
+            static_cast<bool>(static_cast<int16_t>((MCuC_DW.UnitDelay5_DSTATE != BMS_Contactor_Command::Open_Contactor)
+                                                           != MCuC_U.BMS_Contactor_Closed_CAN
+                                                       ? 1
+                                                       : 0)
+                              != 0);
     }
 
     // Logic: '<Root>/OR' incorporates:
@@ -463,7 +471,8 @@ void MCuC_Model::step() {
     //   Switch: '<Root>/Switch'
     //   UnitDelay: '<Root>/Unit Delay6'
 
-    OR = ((MCuC_U.GFDB_Isolation_State_CAN != rtCP_pooled4) || (!MCuC_U.Interlock) || tmp || ((MCuC_DW.UnitDelay6_DSTATE != rtCP_pooled1) && (MCuC_U.MC_VSM_State_CAN == rtCP_Constant_Value_j)));
+    OR = ((MCuC_U.GFDB_Isolation_State_CAN != rtCP_pooled4) || (!MCuC_U.Interlock) || tmp
+          || ((MCuC_DW.UnitDelay6_DSTATE != rtCP_pooled1) && (MCuC_U.MC_VSM_State_CAN == rtCP_Constant_Value_j)));
 
     // Chart: '<Root>/MCuC_Chart' incorporates:
     //   Constant: '<S8>/Constant'
@@ -493,16 +502,15 @@ void MCuC_Model::step() {
         MCuC_Y.uC_State = UC_State::Super_Fault;
 
         // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-        MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
-            Open_Contactor;
-        MCuC_DW.Super_Super_Fault = true;
+        MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::Open_Contactor;
+        MCuC_DW.Super_Super_Fault           = true;
     } else {
-        tmp = !MCuC_DW.MC_Uncharged;
+        tmp    = !MCuC_DW.MC_Uncharged;
         guard1 = false;
         if (OR && tmp && (!MCuC_DW.Activate_Super_Fault)) {
             // Transition: '<S10>:439'
             MCuC_DW.Activate_Super_Fault = true;
-            guard1 = true;
+            guard1                       = true;
         } else if (MCuC_U.ESTOP_LS_A && MCuC_DW.MC_Uncharged && (MCuC_Y.uC_State != UC_State::Preset)) {
             // Transition: '<S10>:200'
             MCuC_exit_internal_Logic();
@@ -513,16 +521,15 @@ void MCuC_Model::step() {
             MCuC_Y.uC_State = UC_State::Estop;
 
             // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-            MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
-                Open_Contactor;
+            MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::Open_Contactor;
 
             // Outport: '<Root>/LVSS_EN_uC'
-            MCuC_Y.LVSS_EN_uC = false;
+            MCuC_Y.LVSS_EN_uC      = false;
             MCuC_DW.Activate_ESTOP = false;
         } else if (MCuC_U.ESTOP_LS_A && tmp && (!MCuC_DW.Activate_ESTOP)) {
             // Transition: '<S10>:199'
             MCuC_DW.Activate_ESTOP = true;
-            guard1 = true;
+            guard1                 = true;
         } else {
             OR = !LogicalOperator;
             if (OR && MCuC_DW.MC_Uncharged) {
@@ -532,19 +539,18 @@ void MCuC_Model::step() {
 
                 // Outport: '<Root>/uC_State'
                 // Entry 'Fault': '<S10>:3'
-                MCuC_Y.uC_State = UC_State::Fault;
+                MCuC_Y.uC_State        = UC_State::Fault;
                 MCuC_DW.Activate_Fault = false;
 
                 // Outport: '<Root>/Fault_to_MC_CAN'
                 MCuC_Y.Fault_to_MC_CAN = true;
 
                 // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
-                    Stay;
+                MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::Stay;
             } else if (OR && tmp && (!MCuC_DW.Activate_Fault)) {
                 // Transition: '<S10>:400'
                 MCuC_DW.Activate_Fault = true;
-                guard1 = true;
+                guard1                 = true;
             } else {
                 switch (MCuC_DW.is_Logic) {
                 case MCuC_IN_Contactor_Closed:
@@ -592,8 +598,7 @@ void MCuC_Model::step() {
                     MCuC_Y.uC_State = UC_State::Estop;
 
                     // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                    MCuC_Y.BMS_Contactor_Command_uC_CAN =
-                        BMS_Contactor_Command::Open_Contactor;
+                    MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::Open_Contactor;
 
                     // Outport: '<Root>/LVSS_EN_uC'
                     MCuC_Y.LVSS_EN_uC = false;
@@ -608,8 +613,7 @@ void MCuC_Model::step() {
                         MCuC_Y.uC_State = UC_State::Key_Cycle;
 
                         // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                        MCuC_Y.BMS_Contactor_Command_uC_CAN =
-                            BMS_Contactor_Command::Close_Contactor;
+                        MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::Close_Contactor;
                     }
                     break;
 
@@ -618,8 +622,7 @@ void MCuC_Model::step() {
                     MCuC_Y.uC_State = UC_State::Fault;
 
                     // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                    MCuC_Y.BMS_Contactor_Command_uC_CAN =
-                        BMS_Contactor_Command::Stay;
+                    MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::Stay;
 
                     // During 'Fault': '<S10>:3'
                     if (LogicalOperator) {
@@ -627,15 +630,14 @@ void MCuC_Model::step() {
                         // Transition: '<S10>:387'
                         // Exit 'Fault': '<S10>:3'
                         MCuC_Y.Fault_to_MC_CAN = false;
-                        MCuC_DW.is_Logic = MCuC_IN_Key_Cycle;
+                        MCuC_DW.is_Logic       = MCuC_IN_Key_Cycle;
 
                         // Outport: '<Root>/uC_State'
                         // Entry 'Key_Cycle': '<S10>:372'
                         MCuC_Y.uC_State = UC_State::Key_Cycle;
 
                         // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                        MCuC_Y.BMS_Contactor_Command_uC_CAN =
-                            BMS_Contactor_Command::Close_Contactor;
+                        MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::Close_Contactor;
                     }
                     break;
 
@@ -644,8 +646,7 @@ void MCuC_Model::step() {
                     MCuC_Y.uC_State = UC_State::Key_Cycle;
 
                     // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                    MCuC_Y.BMS_Contactor_Command_uC_CAN =
-                        BMS_Contactor_Command::Close_Contactor;
+                    MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::Close_Contactor;
 
                     // During 'Key_Cycle': '<S10>:372'
                     if (!MCuC_U.Ignition_LS_A) {
@@ -660,7 +661,7 @@ void MCuC_Model::step() {
                         MCuC_Y.LVSS_EN_uC = false;
 
                         // Outport: '<Root>/uC_State'
-                        MCuC_Y.uC_State = UC_State::MC_Off;
+                        MCuC_Y.uC_State      = UC_State::MC_Off;
                         MCuC_DW.MC_Uncharged = true;
 
                         // Outport: '<Root>/Inverter_EN_uC_CAN'
@@ -685,7 +686,7 @@ void MCuC_Model::step() {
 
                         // Outport: '<Root>/uC_State'
                         // Entry 'MC_Off': '<S10>:1'
-                        MCuC_Y.uC_State = UC_State::MC_Off;
+                        MCuC_Y.uC_State      = UC_State::MC_Off;
                         MCuC_DW.MC_Uncharged = true;
 
                         // Outport: '<Root>/Inverter_EN_uC_CAN'
@@ -748,7 +749,7 @@ void MCuC_Model::step() {
 
                         // Outport: '<Root>/Inverter_DC_uC_CAN'
                         MCuC_Y.Inverter_DC_uC_CAN = false;
-                        MCuC_DW.is_Logic = MCuC_IN_LVSS_MC_Shutdown;
+                        MCuC_DW.is_Logic          = MCuC_IN_LVSS_MC_Shutdown;
 
                         // Outport: '<Root>/uC_State'
                         // Entry 'LVSS_MC_Shutdown': '<S10>:353'
@@ -827,8 +828,7 @@ void MCuC_Model::step() {
                     MCuC_Y.uC_State = UC_State::Preset;
 
                     // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                    MCuC_Y.BMS_Contactor_Command_uC_CAN =
-                        BMS_Contactor_Command::Open_Contactor;
+                    MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::Open_Contactor;
 
                     // During 'Preset': '<S10>:302'
                     if ((!MCuC_U.LVSS_ON_CAN) && (!MCuC_U.MC_ON) && (!MCuC_U.BMS_Contactor_Closed_CAN)) {
@@ -847,8 +847,7 @@ void MCuC_Model::step() {
                         MCuC_Y.uC_State = UC_State::Key_Cycle;
 
                         // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                        MCuC_Y.BMS_Contactor_Command_uC_CAN =
-                            BMS_Contactor_Command::Close_Contactor;
+                        MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::Close_Contactor;
 
                         // During 'MC_ST': '<S10>:361'
                     } else if (static_cast<uint16_t>(MCuC_DW.is_MC_ST) == MCuC_IN_MC_EN_OFF) {
@@ -877,8 +876,7 @@ void MCuC_Model::step() {
                     MCuC_Y.uC_State = UC_State::Super_Fault;
 
                     // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                    MCuC_Y.BMS_Contactor_Command_uC_CAN =
-                        BMS_Contactor_Command::Open_Contactor;
+                    MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::Open_Contactor;
 
                     // During 'Super_Fault': '<S10>:388'
                     break;
@@ -980,7 +978,8 @@ void MCuC_Model::step() {
     // Outport: '<Root>/Watchdog' incorporates:
     //   DiscretePulseGenerator: '<Root>/Discrete Pulse Generator'
 
-    MCuC_Y.Watchdog = ((MCuC_DW.clockTickCounter < rtCP_DiscretePulseGenerator_Dut) && (MCuC_DW.clockTickCounter >= 0L) && rtCP_pooled3);
+    MCuC_Y.Watchdog = ((MCuC_DW.clockTickCounter < rtCP_DiscretePulseGenerator_Dut) && (MCuC_DW.clockTickCounter >= 0L)
+                       && rtCP_pooled3);
 
     // DiscretePulseGenerator: '<Root>/Discrete Pulse Generator'
     if (MCuC_DW.clockTickCounter >= static_cast<int32_t>(rtCP_DiscretePulseGenerator_Per - 1L)) {
@@ -1022,8 +1021,7 @@ void MCuC_Model::step() {
     }
 
     for (i = 0; i < 5; i++) {
-        MCuC_DW.Delay1_DSTATE[static_cast<int16_t>(i + 45)] =
-            MCuC_U.Heartbeats_CAN[i];
+        MCuC_DW.Delay1_DSTATE[static_cast<int16_t>(i + 45)] = MCuC_U.Heartbeats_CAN[i];
     }
 
     // End of Update for Delay: '<Root>/Delay1'
@@ -1115,10 +1113,7 @@ void MCuC_Model::terminate() {
 }
 
 // Constructor
-MCuC_Model::MCuC_Model() : MCuC_U(),
-                           MCuC_Y(),
-                           MCuC_DW(),
-                           MCuC_M() {
+MCuC_Model::MCuC_Model() : MCuC_U(), MCuC_Y(), MCuC_DW(), MCuC_M() {
     // Currently there is no constructor body generated.
 }
 
@@ -1130,7 +1125,7 @@ MCuC_Model::~MCuC_Model() = default;
 MCuC_Model::RT_MODEL_MCuC_T* MCuC_Model::getRTM() {
     return (&MCuC_M);
 }
-}// namespace vcu
+} // namespace vcu
 
 //
 // File trailer for generated code.
