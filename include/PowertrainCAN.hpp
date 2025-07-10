@@ -1,13 +1,13 @@
 #ifndef VCU_POWERTRAINCAN_HPP
 #define VCU_POWERTRAINCAN_HPP
 
+#include <cstddef>
+#include <cstdint>
+
 #include <core/io/CAN.hpp>
 #include <core/io/types/CANMessage.hpp>
 #include <core/rtos/Initializable.hpp>
 #include <core/rtos/Queue.hpp>
-#include <core/utils/types/FixedQueue.hpp>
-#include <cstddef>
-#include <cstdint>
 
 #define POWERTRAIN_QUEUE_SIZE 64
 
