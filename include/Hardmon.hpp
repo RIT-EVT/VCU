@@ -7,7 +7,6 @@
 #include <core/io/GPIO.hpp>
 #include <core/io/pin.hpp>
 #include <core/io/types/CANMessage.hpp>
-#include <core/utils/types/FixedQueue.hpp>
 #include <core/rtos/Initializable.hpp>
 #include <core/rtos/Mutex.hpp>
 

@@ -5,7 +5,7 @@
 namespace vcu {
 
 Hardmon::Hardmon(HardmonGPIO gpio, io::CAN& ptCAN)
-    : powertrainCAN(ptCAN), gpios(gpio), mutex((char*) "Hardmon Mutex", true), Initializable("Hardmon") {
+    : Initializable("Hardmon"), mutex((char*) "Hardmon Mutex", true), powertrainCAN(ptCAN), gpios(gpio) {
     model.initialize();
 }
 
@@ -79,7 +79,7 @@ void Hardmon::process() {
     for (int i = 0; i < 11; i++) {
         modelGPIOInputs.arr[i] = gpios.inputArr[i]->readPin() == io::GPIO::State::HIGH;
     }
-    // lvssEnableUC should be a pin, but electrical forgot to add it
+    // lvssEnableUC should be a pin, but electrical forgot to add it,
     // so instead we are calculating it based on the microcontroller state.
     // ucStates 1 through 5 should make this true
 

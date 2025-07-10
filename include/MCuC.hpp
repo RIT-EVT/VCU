@@ -1,16 +1,16 @@
 #ifndef VCU_HPP
 #define VCU_HPP
 
-#include <PowertrainCAN.hpp>
 #include <core/io/CANDevice.hpp>
 #include <core/io/CANOpenMacros.hpp>
 #include <core/io/GPIO.hpp>
 #include <core/io/pin.hpp>
 #include <core/io/types/CANMessage.hpp>
-#include <models/MCuC_Model.hpp>
-
 #include <core/rtos/Initializable.hpp>
 #include <core/rtos/Mutex.hpp>
+
+#include <PowertrainCAN.hpp>
+#include <models/MCuC_Model.hpp>
 
 namespace io   = core::io;
 namespace rtos = core::rtos;
