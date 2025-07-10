@@ -37,7 +37,7 @@ public:
         MC_PARAMETER_COMMAND_ID = 0x0C1,
 
         // HIB message
-        HIB_MESSAGE_ID          = 0x0D0,
+        HIB_MESSAGE_ID = 0x0D0,
 
         // self test message ids
         HARDMON_SELF_TEST_MESSAGE_ID = 0x044, // TODO: This is not the correct ID, will not work!
