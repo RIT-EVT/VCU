@@ -21,28 +21,27 @@ public:
     /**
      * An enumeration of the Powertrain CAN message ids that are relevant to the MCuC and Hardmon.
      */
-    enum MessageIDs {
+    enum MessageIDs : uint32_t {
         // motor controller receive message ids
-        MC_TEMPS_1_ID            = (uint32_t) 0xA0,
-        MC_TEMPS_2_ID            = (uint32_t) 0xA1,
-        MC_TEMPS_3_ID            = (uint32_t) 0xA2,
-        MC_INTERNAL_STATES_ID    = (uint32_t) 0x0AA,
-        MC_FAULT_CODES_ID        = (uint32_t) 0x0AB,
-        MC_HIGH_SPEED_ID         = (uint32_t) 0x0B0,
-        MC_PARAMETER_RESPONSE_ID = (uint32_t) 0x0C2,
-        MC_INTERNAL_VOLTAGES_ID  = (uint32_t) 0x0A9,
+        MC_TEMPS_1_ID            = 0xA0,
+        MC_TEMPS_2_ID            = 0xA1,
+        MC_TEMPS_3_ID            = 0xA2,
+        MC_INTERNAL_STATES_ID    = 0x0AA,
+        MC_FAULT_CODES_ID        = 0x0AB,
+        MC_HIGH_SPEED_ID         = 0x0B0,
+        MC_PARAMETER_RESPONSE_ID = 0x0C2,
+        MC_INTERNAL_VOLTAGES_ID  = 0x0A9,
 
         // motor controller send message ids
         MC_COMMAND_ID           = 0x0C0,
         MC_PARAMETER_COMMAND_ID = 0x0C1,
 
         // HIB message
-        HIB_MESSAGE_ID = (uint32_t) 0x0D0,
+        HIB_MESSAGE_ID          = 0x0D0,
 
         // self test message ids
-
-        HARDMON_SELF_TEST_MESSAGE_ID = (uint32_t) 0x044, // TODO: This is not the correct ID, will not work!
-        UC_SELF_TEST_MESSAGE_ID      = (uint32_t) 0x045  // TODO: This is not the correct ID, will not work!
+        HARDMON_SELF_TEST_MESSAGE_ID = 0x044, // TODO: This is not the correct ID, will not work!
+        UC_SELF_TEST_MESSAGE_ID      = 0x045  // TODO: This is not the correct ID, will not work!
     };
 
     /**
@@ -172,13 +171,13 @@ private:
     /// In the future, could be replaced by a more meaningful payload
     uint8_t UCSelfTestPayload = 4;
     /// the uc self test message
-    io::CANMessage UCSelfTestMessage = io::CANMessage(UC_SELF_TEST_MESSAGE_ID, 1, &UCSelfTestPayload, false);
+    const io::CANMessage UCSelfTestMessage = io::CANMessage(UC_SELF_TEST_MESSAGE_ID, 1, &UCSelfTestPayload, false);
 
     /// Example payload for the Hardmon selfTest Response Message.
     /// In the future, could be replaced by a more meaningful payload
     uint8_t HardmonSelfTestResponsePayload = 3;
     /// the hardmon self test message
-    io::CANMessage HardmonSelfTestResponse =
+    const io::CANMessage HardmonSelfTestResponse =
         io::CANMessage(HARDMON_SELF_TEST_MESSAGE_ID, 1, &HardmonSelfTestResponsePayload, false);
 };
 
