@@ -9,6 +9,7 @@
 #include <core/io/types/CANMessage.hpp>
 #include <core/rtos/Initializable.hpp>
 #include <core/rtos/Mutex.hpp>
+#include <core/utils/types/FixedQueue.hpp>
 
 #include <PowertrainCAN.hpp>
 #include <models/Hardmon_Model.hpp>
@@ -140,8 +141,8 @@ public:
      * Used for double buffering for threadsafety with CANOpen
      */
     struct AccessoryCanData_s {
-        uint16_t LVSS_out_EnableBoardSignal;     ///< Signal sent to LVSS that determines which boards it will send power to
-        uint16_t LVSS_in_HVCurrent;              ///< Signal received from LVSS
+        uint16_t LVSS_out_EnableBoardSignal; ///< Signal sent to LVSS that determines which boards it will send power to
+        uint16_t LVSS_in_HVCurrent;          ///< Signal received from LVSS
         uint16_t LVSS_in_PowerSwitchErrorStatus; ///< Signal received from LVSS
         uint16_t LVSS_in_PowerSwitchCurrents;    ///< Signal received from LVSS
         uint16_t LVSS_in_Temperatures;           ///< Signal received from LVSS
@@ -178,7 +179,6 @@ public:
      * @return The first error found by the function or TXE_SUCCESS if there was no error
      */
     rtos::TXError recieveFromPowertrainQueue(io::CANMessage* destination, uint32_t waitOption);
-
 
     /**
      * Runs one step of the Hardmon model, including processing and handling inputs and outputs of the model.
