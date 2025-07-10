@@ -142,14 +142,16 @@ void accessoryCANOpenInterrupt(io::CANMessage& message, void* priv) {
 }
 
 /**
- * Interrupt handler to get CAN messages from the Powertrain CAN line.
+ * Interrupt handler to get CAN messages from the powertrain CAN line.
  * @param message[in] the passed in CAN message that was read.
- * @param priv[in] the private data this message requires. Should be the MCuC instance we want to update.
+ * @param priv[in] The MCuC instance that contains the queue the message is to be added to. Must be an vcu::MCuC*
  */
 void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
-    auto* queue = (core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, io::CANMessage>*) priv;
-    if (queue != nullptr)
-        queue->append(message);
+    auto* mcuc = (vcu::MCuC*) priv;
+    if (mcuc != nullptr) {
+        // TODO: determine if WaitForever is what we want to do in the interrupt- could be bad
+        mcuc->sendToPowertrainQueue(&message, rtos::TXWait::TXW_WAIT_FOREVER);
+    }
 }
 
 int main() {
@@ -210,13 +212,13 @@ int main() {
     ///////////////////////////////////////////////////////////
     // Setup the POWERTRAIN CAN configurations- this is RAW can
     // so it is simpler than the CANopen setup.
-    //////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////
 
     io::CAN& ptCAN = io::getCAN<vcu::MCuC::POWERTRAIN_CAN_TX_PIN, vcu::MCuC::POWERTRAIN_CAN_RX_PIN>();
 
     vcu::MCuC mcuc(gpios, ptCAN);
 
-    ptCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(mcuc.getPowertrainQueue()));
+    ptCAN.addIRQHandler(reinterpret_cast<void (*)(io::CANMessage&, void*)>(powertrainCANInterrupt), &mcuc);
 
     // TODO: CANopen uncomment when we add in Accessory CAN configuration
 
@@ -235,7 +237,6 @@ int main() {
 
     // Actual CAN init
     io::CAN& accessoryCAN = io::getCAN<vcu::MCuC::ACCESSORY_CAN_TX_PIN, vcu::MCuC::ACCESSORY_CAN_RX_PIN>();
-
     accessoryCAN.addIRQHandler(accessoryCANOpenInterrupt, reinterpret_cast<void*>(&canOpenQueue));
 
     // Reserved memory for CANopen stack usage
@@ -414,11 +415,10 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 [[noreturn]] void powertrainCANReceiveThreadEntry(powertrainCANReceiveThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Powertrain CAN Receive Thread started");
     io::CANMessage message;
-    rtos::Queue* queue = args->mcuc->getPowertrainQueue();
     while (true) {
         //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Powertrain CAN Receive Thread Triggered");
         // suspends if there are no messages to receive
-        queue->receive(&message, rtos::TXWait::TXW_WAIT_FOREVER);
+        args->mcuc->recieveFromPowertrainQueue(&message, rtos::TXWait::TXW_WAIT_FOREVER);
         args->mcuc->handlePowertrainCanMessage(message);
     }
 }

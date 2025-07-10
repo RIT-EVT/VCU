@@ -131,26 +131,26 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag);
  * assumed to be intended to be passed as a CANopen message.
  *
  * @param message[in] The passed in CAN message that was read.
- * @param priv[in] the passed in Queue to add the message to. Must be an rtos::Queue*.
+ * @param priv[in] the passed in Queue to add the message to. Must be a FixedQueue*.
  */
 void canOpenInterrupt(io::CANMessage& message, void* priv) {
-    auto* queue = (rtos::Queue*) priv;
+    auto* queue = (core::types::FixedQueue<CANOPEN_QUEUE_SIZE, io::CANMessage>*) priv;
     if (queue != nullptr) {
         // TODO: determine if WaitForever is what we want to do in the interrupt- could be bad
-        queue->send(static_cast<void*>(&message), rtos::TXWait::TXW_WAIT_FOREVER);
+        queue->append(message);
     }
 }
 
 /**
  * Interrupt handler to get CAN messages from the powertrain CAN line.
  * @param message[in] the passed in CAN message that was read.
- * @param priv[in] the passed in Queue to add the message to. Must be an rtos::Queue*
+ * @param priv[in] the Hardmon instance that will handle the message.
  */
 void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
-    auto* queue = (rtos::Queue*) priv;
-    if (queue != nullptr) {
+    auto* hardmon = (vcu::Hardmon*) priv;
+    if (hardmon != nullptr) {
         // TODO: determine if WaitForever is what we want to do in the interrupt- could be bad
-        queue->send(static_cast<void*>(&message), rtos::TXWait::TXW_WAIT_FOREVER);
+        hardmon->sendToPowertrainQueue(&message, rtos::TXWait::TXW_WAIT_FOREVER);
     }
 }
 
@@ -200,7 +200,7 @@ int main() {
     io::CAN& ptCAN = io::getCAN<vcu::Hardmon::POWERTRAIN_CAN_TX_PIN, vcu::Hardmon::POWERTRAIN_CAN_RX_PIN>();
 
     vcu::Hardmon hardmon(hmGPIOS, ptCAN);
-    ptCAN.addIRQHandler(powertrainCANInterrupt, reinterpret_cast<void*>(hardmon.getPowertrainQueue()));
+    ptCAN.addIRQHandler(powertrainCANInterrupt, &hardmon);
 
     ///////////////////////////////////////////////////////////////////////////
     // Setup CAN configuration, this handles making drivers, applying settings.
@@ -385,10 +385,9 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 [[noreturn]] void powertrainCANReceiveThreadEntry(powertrainCANReceiveThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Powertrain CAN Thread Started.");
     io::CANMessage message;
-    rtos::Queue* queue = args->hardmon->getPowertrainQueue();
     while (true) {
         // suspends if there are no messages to receive
-        queue->receive(&message, rtos::TXWait::TXW_WAIT_FOREVER);
+        args->hardmon->recieveFromPowertrainQueue(&message, rtos::TXWait::TXW_WAIT_FOREVER);
         args->hardmon->handlePowertrainCanMessage(message);
     }
 }

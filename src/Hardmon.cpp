@@ -47,9 +47,14 @@ void Hardmon::handlePowertrainCanMessage(io::CANMessage& message) {
     }
 }
 
-rtos::Queue* Hardmon::getPowertrainQueue() {
-    return &powertrainCAN.queue;
+rtos::TXError Hardmon::sendToPowertrainQueue(io::CANMessage* messagePointer, uint32_t waitOption) {
+    return powertrainCAN.queue.send(messagePointer, waitOption);
 }
+
+rtos::TXError Hardmon::recieveFromPowertrainQueue(io::CANMessage* destination, uint32_t waitOption) {
+    return powertrainCAN.queue.receive(destination, waitOption);
+}
+
 
 void Hardmon::sendOutputDataToUnsafeBuffer() {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);

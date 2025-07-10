@@ -197,16 +197,30 @@ public:
     /**
      * Handles the passed in Powertrain CAN message.
      *
-     * @param message message to handle
+     * @param[in] message message to handle
      */
     void handlePowertrainCanMessage(io::CANMessage& message);
 
     /**
-     * Returns a pointer to the queue for Powertrain CANopen messages
+     * Sends the provided message to the Powertrain CAN's Queue. If the queue is full, the calling thread
+     * will suspend for waitOption ticks.
      *
-     * @return pointer to the fixed queue.
+     * @param[in] messagePointer the pointer to the passed in message
+     * @param[in] waitOption How long to wait (in ticks). use rtos::TXWait::TXWaitForever to wait forever
+     * @return The first error found by the function or TXE_SUCCESS if there was no error
      */
-    rtos::Queue* getPowertrainQueue();
+    rtos::TXError sendToPowertrainQueue(io::CANMessage* messagePointer, uint32_t waitOption);
+
+    /**
+     * Pops and copies the first message in the Powertrain CAN's Queue to the destination. If the queue is empty,
+     * the calling thread will suspend for waitOption ticks.
+     *
+     * @param[in] destination the pointer to the destination
+     * @param[in] waitOption How long to wait (in ticks). use rtos::TXWait::TXWaitForever to wait forever
+     * @return The first error found by the function or TXE_SUCCESS if there was no error
+     */
+    rtos::TXError recieveFromPowertrainQueue(io::CANMessage* destination, uint32_t waitOption);
+
 
     /**
      * Runs one step of the Hardmon model, including processing and handling inputs and outputs of the model.

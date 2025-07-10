@@ -61,8 +61,12 @@ void MCuC::handlePowertrainCanMessage(io::CANMessage& message) {
     }
 }
 
-rtos::Queue* MCuC::getPowertrainQueue() {
-    return &powertrainCAN.queue;
+rtos::TXError MCuC::sendToPowertrainQueue(io::CANMessage* messagePointer, uint32_t waitOption) {
+    return powertrainCAN.queue.send(messagePointer, waitOption);
+}
+
+rtos::TXError MCuC::recieveFromPowertrainQueue(io::CANMessage* destination, uint32_t waitOption) {
+    return powertrainCAN.queue.receive(destination, waitOption);
 }
 
 void MCuC::sendOutputDataToUnsafeBuffer() {
