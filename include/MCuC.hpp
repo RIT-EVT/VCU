@@ -221,7 +221,6 @@ public:
      */
     rtos::TXError recieveFromPowertrainQueue(io::CANMessage* destination, uint32_t waitOption);
 
-
     /**
      * Runs one step of the Hardmon model, including processing and handling inputs and outputs of the model.
      */

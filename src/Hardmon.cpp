@@ -55,7 +55,6 @@ rtos::TXError Hardmon::recieveFromPowertrainQueue(io::CANMessage* destination, u
     return powertrainCAN.queue.receive(destination, waitOption);
 }
 
-
 void Hardmon::sendOutputDataToUnsafeBuffer() {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal = accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal;
