@@ -171,13 +171,13 @@ private:
     /// In the future, could be replaced by a more meaningful payload
     uint8_t UCSelfTestPayload = 4;
     /// the uc self test message
-    const io::CANMessage UCSelfTestMessage = io::CANMessage(UC_SELF_TEST_MESSAGE_ID, 1, &UCSelfTestPayload, false);
+    io::CANMessage UCSelfTestMessage = io::CANMessage(UC_SELF_TEST_MESSAGE_ID, 1, &UCSelfTestPayload, false);
 
     /// Example payload for the Hardmon selfTest Response Message.
     /// In the future, could be replaced by a more meaningful payload
     uint8_t HardmonSelfTestResponsePayload = 3;
     /// the hardmon self test message
-    const io::CANMessage HardmonSelfTestResponse =
+    io::CANMessage HardmonSelfTestResponse =
         io::CANMessage(HARDMON_SELF_TEST_MESSAGE_ID, 1, &HardmonSelfTestResponsePayload, false);
 };
 
