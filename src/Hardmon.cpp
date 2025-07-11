@@ -1,5 +1,6 @@
 #include <Hardmon.hpp>
 
+#include <core/rtos/Threadx.hpp>
 #include <core/rtos/Enums.hpp>
 
 namespace vcu {
@@ -10,13 +11,8 @@ Hardmon::Hardmon(HardmonGPIO gpio, io::CAN& ptCAN)
 }
 
 rtos::TXError Hardmon::init(rtos::BytePoolBase& pool) {
-    rtos::TXError status = mutex.init(pool);
-    if (status != rtos::TXError::TXE_SUCCESS) {
-        // we failed the mutex initialization
-        return status;
-    } else {
-        return powertrainCAN.init(pool);
-    }
+    Initializable* initializables[2] = {&mutex,&powertrainCAN};
+    return core::rtos::bulkInitialize(initializables, 2, pool);
 }
 
 CO_OBJ_T* Hardmon::getObjectDictionary() {
@@ -63,10 +59,7 @@ void Hardmon::sendOutputDataToUnsafeBuffer() {
 
 void Hardmon::sendInputDataToSafeBuffer() {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    accessoryCanDataSafeBuffer.LVSS_in_HVCurrent           = accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent;
-    accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents = accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents;
-    accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchErrorStatus =
-        accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus;
+    memcpy(&accessoryCanDataSafeBuffer, &accessoryCanDataUnsafeBuffer, sizeof(AccessoryCanData_t));
     mutex.put();
 }
 

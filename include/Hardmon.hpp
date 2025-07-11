@@ -140,12 +140,12 @@ public:
      * Struct that contains all the data that AccessoryCan should read in.
      * Used for double buffering for threadsafety with CANOpen
      */
-    struct AccessoryCanData_s {
-        uint16_t LVSS_out_EnableBoardSignal; ///< Signal sent to LVSS that determines which boards it will send power to
-        uint16_t LVSS_in_HVCurrent;          ///< Signal received from LVSS
-        uint16_t LVSS_in_PowerSwitchErrorStatus; ///< Signal received from LVSS
-        uint16_t LVSS_in_PowerSwitchCurrents;    ///< Signal received from LVSS
-        uint16_t LVSS_in_Temperatures;           ///< Signal received from LVSS
+    typedef struct AccessoryCanData_s {
+        uint16_t LVSS_out_EnableBoardSignal;        ///< LVSS (out) Determines which boards it will send power to
+        uint16_t LVSS_in_HVCurrent[2];              ///< LVSS (in)
+        uint16_t LVSS_in_PowerSwitchCurrents[4];    ///< LVSS (in)
+        uint16_t LVSS_in_Temperatures[2];           ///< LVSS (in)
+        uint16_t LVSS_in_PowerSwitchErrorStatus[3]; ///< LVSS (in)
     } AccessoryCanData_t;
 
     /**

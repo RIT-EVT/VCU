@@ -1,7 +1,7 @@
 #include <MCuC.hpp>
 #include <core/utils/log.hpp>
 #include <core/utils/time.hpp>
-#include <tx_api.h>
+#include <core/rtos/Threadx.hpp>
 
 namespace log = core::log;
 
@@ -14,13 +14,8 @@ MCuC::MCuC(vcu::MCuC::MCuC_GPIO gpios, io::CAN& can)
 }
 
 rtos::TXError MCuC::init(rtos::BytePoolBase& pool) {
-    rtos::TXError status = mutex.init(pool);
-    if (status != rtos::TXError::TXE_SUCCESS) {
-        // we failed the mutex initialization
-        return status;
-    } else {
-        return powertrainCAN.init(pool);
-    }
+    Initializable* initializables[2] = {&mutex,&powertrainCAN};
+    return core::rtos::bulkInitialize(initializables, 2, pool);
 }
 
 CO_OBJ_T* MCuC::getObjectDictionary() {

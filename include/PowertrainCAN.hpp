@@ -16,7 +16,7 @@ namespace rtos = core::rtos;
 
 namespace vcu::dev {
 
-class PowertrainCAN : rtos::Initializable {
+class PowertrainCAN : public rtos::Initializable {
 public:
     /**
      * An enumeration of the Powertrain CAN message ids that are relevant to the MCuC and Hardmon.
