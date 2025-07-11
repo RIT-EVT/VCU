@@ -167,12 +167,6 @@ int main() {
     // UART for testing not on VCU
     //    io::UART& uart = io::getUART<io::Pin::UART_TX, io::Pin::UART_RX>(9600);
 
-    // thread safe UART instance
-    //     rtos::tsio::ThreadUART threadUART(uart, UART_THREAD_STACK_SIZE,
-    //                                       UART_THREAD_PRIORITY,
-    //                                       UART_THREAD_PREEMPT_THRESHOLD,
-    //                                       UART_THREAD_TIME_SLICE);
-
     log::LOGGER.setUART(&uart);
     log::LOGGER.setLogLevel(log::Logger::LogLevel::DEBUG);
 
