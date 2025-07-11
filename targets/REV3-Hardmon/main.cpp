@@ -387,7 +387,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     io::CANMessage message;
     while (true) {
         // suspends if there are no messages to receive
-        args->hardmon->recieveFromPowertrainQueue(&message, rtos::TXWait::TXW_WAIT_FOREVER);
+        args->hardmon->receiveFromPowertrainQueue(&message, rtos::TXWait::TXW_WAIT_FOREVER);
         args->hardmon->handlePowertrainCanMessage(message);
     }
 }

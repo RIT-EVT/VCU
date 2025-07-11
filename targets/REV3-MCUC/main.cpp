@@ -418,7 +418,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     while (true) {
         //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Powertrain CAN Receive Thread Triggered");
         // suspends if there are no messages to receive
-        args->mcuc->recieveFromPowertrainQueue(&message, rtos::TXWait::TXW_WAIT_FOREVER);
+        args->mcuc->receiveFromPowertrainQueue(&message, rtos::TXWait::TXW_WAIT_FOREVER);
         args->mcuc->handlePowertrainCanMessage(message);
     }
 }

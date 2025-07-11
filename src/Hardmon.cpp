@@ -28,11 +28,10 @@ uint8_t Hardmon::getNodeID() {
 }
 
 void Hardmon::handlePowertrainCanMessage(io::CANMessage& message) {
+    mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     switch (message.getId()) {
     case dev::PowertrainCAN::HIB_MESSAGE_ID:
-        mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
         forwardEnable = powertrainCAN.parseHIBForwardEnable(message);
-        mutex.put();
         break;
     case dev::PowertrainCAN::UC_SELF_TEST_MESSAGE_ID:
         powertrainCAN.sendHardmonSelfTestResponse();
@@ -41,25 +40,26 @@ void Hardmon::handlePowertrainCanMessage(io::CANMessage& message) {
         // we don't care about this message lol
         break;
     }
+    mutex.put();
 }
 
 rtos::TXError Hardmon::sendToPowertrainQueue(io::CANMessage* messagePointer, uint32_t waitOption) {
     return powertrainCAN.queue.send(messagePointer, waitOption);
 }
 
-rtos::TXError Hardmon::recieveFromPowertrainQueue(io::CANMessage* destination, uint32_t waitOption) {
+rtos::TXError Hardmon::receiveFromPowertrainQueue(io::CANMessage* destination, uint32_t waitOption) {
     return powertrainCAN.queue.receive(destination, waitOption);
 }
 
 void Hardmon::sendOutputDataToUnsafeBuffer() {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal = accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal;
+    memcpy(&accessoryCanDataUnsafeBuffer.outputs, &accessoryCanDataSafeBuffer.outputs, sizeof(AccessoryCanData_t::outputs));
     mutex.put();
 }
 
 void Hardmon::sendInputDataToSafeBuffer() {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    memcpy(&accessoryCanDataSafeBuffer, &accessoryCanDataUnsafeBuffer, sizeof(AccessoryCanData_t));
+    memcpy(&accessoryCanDataSafeBuffer.inputs, &accessoryCanDataUnsafeBuffer.inputs, sizeof(AccessoryCanData_t::inputs));
     mutex.put();
 }
 

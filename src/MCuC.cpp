@@ -31,48 +31,44 @@ uint8_t MCuC::getNodeID() {
 }
 
 void MCuC::handlePowertrainCanMessage(io::CANMessage& message) {
+    mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     switch (message.getId()) {
     case dev::PowertrainCAN::MC_INTERNAL_STATES_ID:
-        mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
         mcState     = static_cast<MC_VSM_State>(powertrainCAN.parseMCState(message));
         mcDischarge = static_cast<MC_DC_State>(powertrainCAN.parseMCDischarge(message));
-        mutex.put();
         break;
     case dev::PowertrainCAN::HIB_MESSAGE_ID:
-        mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
         throttle      = powertrainCAN.parseHIBThrottle(message);
         forwardEnable = powertrainCAN.parseHIBForwardEnable(message);
         startPressed  = powertrainCAN.parseHIBStartPressed(message);
-        mutex.put();
         break;
     case dev::PowertrainCAN::HARDMON_SELF_TEST_MESSAGE_ID:
-        mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
         powertrainCANSelfTestIn = true;
-        mutex.put();
         break;
     default:
         // do nothing, we don't care about this message
         break;
     }
+    mutex.put();
 }
 
 rtos::TXError MCuC::sendToPowertrainQueue(io::CANMessage* messagePointer, uint32_t waitOption) {
     return powertrainCAN.queue.send(messagePointer, waitOption);
 }
 
-rtos::TXError MCuC::recieveFromPowertrainQueue(io::CANMessage* destination, uint32_t waitOption) {
+rtos::TXError MCuC::receiveFromPowertrainQueue(io::CANMessage* destination, uint32_t waitOption) {
     return powertrainCAN.queue.receive(destination, waitOption);
 }
 
 void MCuC::sendOutputDataToUnsafeBuffer() {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal = accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal;
+    memcpy(&accessoryCanDataUnsafeBuffer.outputs, &accessoryCanDataSafeBuffer.outputs, sizeof(AccessoryCanData_t::outputs));
     mutex.put();
 }
 
 void MCuC::sendInputDataToSafeBuffer() {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    memcpy(&accessoryCanDataSafeBuffer, &accessoryCanDataUnsafeBuffer, sizeof(AccessoryCanData_t));
+    memcpy(&accessoryCanDataSafeBuffer.inputs, &accessoryCanDataUnsafeBuffer.inputs, sizeof(AccessoryCanData_t::inputs));
     mutex.put();
 }
 

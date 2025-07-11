@@ -137,15 +137,23 @@ public:
     };
 
     /**
-     * Struct that contains all the data that AccessoryCan should read in.
+     * Union that contains all the data that AccessoryCan should read in.
      * Used for double buffering for threadsafety with CANOpen
      */
-    typedef struct AccessoryCanData_s {
-        uint16_t LVSS_out_EnableBoardSignal;        ///< LVSS (out) Determines which boards it will send power to
-        uint16_t LVSS_in_HVCurrent[2];              ///< LVSS (in)
-        uint16_t LVSS_in_PowerSwitchCurrents[4];    ///< LVSS (in)
-        uint16_t LVSS_in_Temperatures[2];           ///< LVSS (in)
-        uint16_t LVSS_in_PowerSwitchErrorStatus[3]; ///< LVSS (in)
+    typedef union {
+        //named signals
+        struct {
+            uint16_t LVSS_out_EnableBoardSignal;        ///< LVSS (out) Determines which boards it will send power to
+            uint16_t LVSS_in_HVCurrent[2];              ///< LVSS (in)
+            uint16_t LVSS_in_PowerSwitchCurrents[4];    ///< LVSS (in)
+            uint16_t LVSS_in_Temperatures[2];           ///< LVSS (in)
+            uint16_t LVSS_in_PowerSwitchErrorStatus[3]; ///< LVSS (in)
+        };
+        //signal groups (for memcpy use)
+        struct {
+            uint16_t outputs[1];
+            uint16_t inputs[11];
+        };
     } AccessoryCanData_t;
 
     /**
@@ -178,7 +186,7 @@ public:
      * @param[in] waitOption How long to wait (in ticks). use rtos::TXWait::TXWaitForever to wait forever
      * @return The first error found by the function or TXE_SUCCESS if there was no error
      */
-    rtos::TXError recieveFromPowertrainQueue(io::CANMessage* destination, uint32_t waitOption);
+    rtos::TXError receiveFromPowertrainQueue(io::CANMessage* destination, uint32_t waitOption);
 
     /**
      * Runs one step of the Hardmon model, including processing and handling inputs and outputs of the model.
@@ -199,10 +207,16 @@ public:
     /**
      * Unsafe (non-mutexed) Buffer Data that comes in or is sent out over Accessory CAN.
      */
-    AccessoryCanData_s accessoryCanDataUnsafeBuffer;
+    AccessoryCanData_t accessoryCanDataUnsafeBuffer;
 
+    /**
+     * Copies the output data in the accessoryCANData Safe buffer to the Unsafe buffer.
+     */
     void sendOutputDataToUnsafeBuffer();
 
+    /**
+     * Copies the input data in the accessoryCANData Unsafe buffer to the Safe buffer.
+     */
     void sendInputDataToSafeBuffer();
 
 private:
@@ -214,7 +228,7 @@ private:
     /**
      * Safe (mutexed) Buffer Data that comes in or is sent out over Accessory CAN.
      */
-    AccessoryCanData_s accessoryCanDataSafeBuffer;
+    AccessoryCanData_t accessoryCanDataSafeBuffer;
 
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
