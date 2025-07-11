@@ -141,7 +141,7 @@ public:
      * Used for double buffering for threadsafety with CANOpen
      */
     typedef union {
-        //named signals
+        // named signals
         struct {
             uint16_t LVSS_out_EnableBoardSignal;        ///< LVSS (out) Determines which boards it will send power to
             uint16_t LVSS_in_HVCurrent[2];              ///< LVSS (in)
@@ -149,7 +149,7 @@ public:
             uint16_t LVSS_in_Temperatures[2];           ///< LVSS (in)
             uint16_t LVSS_in_PowerSwitchErrorStatus[3]; ///< LVSS (in)
         };
-        //signal groups (for memcpy use)
+        // signal groups (for memcpy use)
         struct {
             uint16_t outputs[1];
             uint16_t inputs[11];

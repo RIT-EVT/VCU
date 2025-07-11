@@ -62,13 +62,16 @@ rtos::TXError MCuC::receiveFromPowertrainQueue(io::CANMessage* destination, uint
 
 void MCuC::sendOutputDataToUnsafeBuffer() {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    memcpy(&accessoryCanDataUnsafeBuffer.outputs, &accessoryCanDataSafeBuffer.outputs, sizeof(AccessoryCanData_t::outputs));
+    memcpy(&accessoryCanDataUnsafeBuffer.outputs,
+           &accessoryCanDataSafeBuffer.outputs,
+           sizeof(AccessoryCanData_t::outputs));
     mutex.put();
 }
 
 void MCuC::sendInputDataToSafeBuffer() {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    memcpy(&accessoryCanDataSafeBuffer.inputs, &accessoryCanDataUnsafeBuffer.inputs, sizeof(AccessoryCanData_t::inputs));
+    memcpy(
+        &accessoryCanDataSafeBuffer.inputs, &accessoryCanDataUnsafeBuffer.inputs, sizeof(AccessoryCanData_t::inputs));
     mutex.put();
 }
 
