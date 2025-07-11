@@ -1,7 +1,7 @@
 #include <Hardmon.hpp>
 
-#include <core/rtos/Threadx.hpp>
 #include <core/rtos/Enums.hpp>
+#include <core/rtos/Threadx.hpp>
 
 namespace vcu {
 
@@ -11,7 +11,7 @@ Hardmon::Hardmon(HardmonGPIO gpio, io::CAN& ptCAN)
 }
 
 rtos::TXError Hardmon::init(rtos::BytePoolBase& pool) {
-    Initializable* initializables[2] = {&mutex,&powertrainCAN};
+    Initializable* initializables[2] = {&mutex, &powertrainCAN};
     return core::rtos::bulkInitialize(initializables, 2, pool);
 }
 

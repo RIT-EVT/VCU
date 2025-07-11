@@ -1,7 +1,7 @@
 #include <MCuC.hpp>
+#include <core/rtos/Threadx.hpp>
 #include <core/utils/log.hpp>
 #include <core/utils/time.hpp>
-#include <core/rtos/Threadx.hpp>
 
 namespace log = core::log;
 
@@ -14,7 +14,7 @@ MCuC::MCuC(vcu::MCuC::MCuC_GPIO gpios, io::CAN& can)
 }
 
 rtos::TXError MCuC::init(rtos::BytePoolBase& pool) {
-    Initializable* initializables[2] = {&mutex,&powertrainCAN};
+    Initializable* initializables[2] = {&mutex, &powertrainCAN};
     return core::rtos::bulkInitialize(initializables, 2, pool);
 }
 
