@@ -1,5 +1,7 @@
 #include <TrackMCuC.hpp>
 
+#include <core/utils/time.hpp>
+
 TrackMCuC::TrackMCuC(io::GPIO& greenLed, io::GPIO& yellowLed, io::GPIO& redLed, io::GPIO& faultLed,
                      io::GPIO& superFaultLed, io::GPIO& canSelfTest, io::GPIO& mcSelfTest, io::GPIO& mcToggleP,
                      io::GPIO& mcToggleN, io::GPIO& lvssEnable, io::GPIO& estop, io::GPIO& ignition,
@@ -44,9 +46,103 @@ void TrackMCuC::process() {
     }
 }
 
-void TrackMCuC::startState() {}
-void TrackMCuC::mcOffState() {}
-void TrackMCuC::mcActiveState() {}
-void TrackMCuC::mcDischargingState() {}
-void TrackMCuC::estopState() {}
-void TrackMCuC::faultState() {}
+void TrackMCuC::startState() {
+    if (stateChanged) {
+        // TODO: Checks on startup
+        if (estop.readPin() == ESTOP_ACTIVE) {
+            state = State::ESTOP;
+        } else {
+            state = State::MC_OFF;
+        }
+
+        // Don't need to change stateChanged because it's already true
+        //stateChanged = true;
+    } else {
+        // Should never get here
+        state = State::FAULT;
+        stateChanged = true;
+    }
+}
+
+void TrackMCuC::mcOffState() {
+    if (stateChanged) {
+        yellowLed.writePin(LED_ON);
+        stateChanged = false;
+    }
+
+    if (estop.readPin() == ESTOP_ACTIVE) {
+        state = State::ESTOP;
+        yellowLed.writePin(LED_OFF);
+        stateChanged = true;
+    } else if (ignition.readPin() == IGNITION_ACTIVE) {
+        state = State::MC_ACTIVE;
+        yellowLed.writePin(LED_OFF);
+        stateChanged = true;
+    }
+}
+
+void TrackMCuC::mcActiveState() {
+    if (stateChanged) {
+        greenLed.writePin(LED_ON);
+
+        // Enable MC and LVSS
+        //lvssEnable.writePin(io::GPIO::State::HIGH); TODO: Actually enable the LVSS
+        // TODO: Also tell  LVSS to turn on
+        mcToggleP.writePin(io::GPIO::State::HIGH);
+        core::time::wait(10);
+        mcToggleP.writePin(io::GPIO::State::LOW);
+
+        stateChanged = false;
+    }
+
+    if (estop.readPin() == ESTOP_ACTIVE || ignition.readPin() != IGNITION_ACTIVE) {
+        state = State::MC_DISCHARGING;
+        // TODO: Turn off LVSS
+        greenLed.writePin(LED_OFF);
+        stateChanged = true;
+    }
+}
+
+void TrackMCuC::mcDischargingState() {
+    if (stateChanged) {
+        // TODO: Tell MC to discharge
+
+        // Turn MC off
+        mcToggleN.writePin(io::GPIO::State::HIGH);
+        core::time::wait(10);
+        mcToggleN.writePin(io::GPIO::State::LOW);
+
+        if (estop.readPin() == ESTOP_ACTIVE) {
+            state = State::ESTOP;
+        } else {
+            state = State::MC_OFF;
+        }
+        // Don't need to change stateChanged because it's already true
+        //stateChanged = true;
+    } else {
+        // Should never get here
+        state = State::FAULT;
+        stateChanged = true;
+    }
+}
+
+void TrackMCuC::estopState() {
+    if (stateChanged) {
+        redLed.writePin(LED_ON);
+        stateChanged = false;
+    }
+
+    if (estop.readPin() != ESTOP_ACTIVE && ignition.readPin() != IGNITION_ACTIVE) {
+        state = State::MC_OFF;
+        redLed.writePin(LED_OFF);
+        stateChanged = true;
+    }
+}
+void TrackMCuC::faultState() {
+    if (stateChanged) {
+        redLed.writePin(LED_ON);
+        faultLed.writePin(LED_ON);
+        superFaultLed.writePin(LED_ON);
+        stateChanged = false;
+    }
+}
