@@ -5,8 +5,6 @@
  * - LJ Boone, 2023
  */
 
-#include <core/io/CAN.hpp>
-#include <core/io/UART.hpp>
 #include <core/io/types/CANMessage.hpp>
 #include <core/manager.hpp>
 #include <core/utils/time.hpp>
@@ -15,6 +13,8 @@
 #include <core/utils/log.hpp>
 
 #include <PowertrainCAN.hpp>
+
+#include <TrackMCuC.hpp>
 
 
 namespace io   = core::io;
@@ -41,4 +41,30 @@ int main() {
     // Initialize system
     core::platform::init();
 
+    io::GPIO& greenLed = io::getGPIO<TrackMCuC::LED_ONE_PIN>();
+    io::GPIO& yellowLed = io::getGPIO<TrackMCuC::LED_TWO_PIN>();
+    io::GPIO& redLed = io::getGPIO<TrackMCuC::LED_THREE_PIN>();
+    io::GPIO& faultLed = io::getGPIO<TrackMCuC::FAULT_LED_PIN>();
+    io::GPIO& superFaultLed = io::getGPIO<TrackMCuC::SUPER_FAULT_LED_PIN>();
+
+    io::GPIO& canSelfTest = io::getGPIO<TrackMCuC::CAN_SELF_TEST_PIN>();
+    io::GPIO& mcSelfTest = io::getGPIO<TrackMCuC::MC_SELF_TEST_PIN>();
+
+    io::GPIO& mcToggleP = io::getGPIO<TrackMCuC::MC_TOGGLE_POSITIVE_PIN>();
+    io::GPIO& mcToggleN = io::getGPIO<TrackMCuC::MC_TOGGLE_NEGATIVE_PIN>();
+    io::GPIO& lvssEnable = io::getGPIO<TrackMCuC::LVSS_ENABLE_PIN>();
+
+    io::GPIO& estop = io::getGPIO<TrackMCuC::ESTOP_A_PIN>();
+    io::GPIO& ignition = io::getGPIO<TrackMCuC::IGNITION_A_PIN>();
+    io::GPIO& interlock = io::getGPIO<TrackMCuC::INTERLOCK_PIN>();
+
+    io::CAN& ptCan = io::getCAN<TrackMCuC::POWERTRAIN_CAN_TX_PIN, TrackMCuC::POWERTRAIN_CAN_RX_PIN>();
+
+    TrackMCuC mcuc(greenLed, yellowLed, redLed, faultLed, superFaultLed, canSelfTest, mcSelfTest,
+                              mcToggleP, mcToggleN, lvssEnable, estop, ignition, interlock, ptCan);
+
+
+    while(true) {
+        mcuc.process();
+    }
 }
