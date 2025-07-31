@@ -76,6 +76,33 @@ public:
     /** LVSS Enable Pin */
     static constexpr io::Pin LVSS_ENABLE_PIN = io::Pin::PC_4;
 
+    TrackMCuC(io::GPIO& greenLed,
+         io::GPIO& yellowLed,
+         io::GPIO& redLed,
+         io::GPIO& faultLed,
+         io::GPIO& superFaultLed,
+         io::GPIO& canSelfTest,
+         io::GPIO& mcSelfTest,
+         io::GPIO& mcToggleP,
+         io::GPIO& mcToggleN,
+         io::GPIO& lvssEnable,
+         io::GPIO& estop,
+         io::GPIO& ignition,
+         io::GPIO& interlock,
+         io::CAN& ptCan);
+
+    void process();
+
+private:
+    enum class State {
+        START = 0,
+        MC_OFF = 1,
+        MC_ACTIVE = 2,
+        MC_DISCHARGING = 3,
+        ESTOP = 4,
+        FAULT = 5,
+    };
+
     io::GPIO& greenLed;
     io::GPIO& yellowLed;
     io::GPIO& redLed;
@@ -95,22 +122,15 @@ public:
 
     io::CAN& ptCan;
 
-    TrackMCuC(io::GPIO& greenLed,
-         io::GPIO& yellowLed,
-         io::GPIO& redLed,
-         io::GPIO& faultLed,
-         io::GPIO& superFaultLed,
-         io::GPIO& canSelfTest,
-         io::GPIO& mcSelfTest,
-         io::GPIO& mcToggleP,
-         io::GPIO& mcToggleN,
-         io::GPIO& lvssEnable,
-         io::GPIO& estop,
-         io::GPIO& ignition,
-         io::GPIO& interlock,
-         io::CAN& ptCan);
+    State state = State::START;
+    bool stateChanged = true;
 
-    void process();
+    void startState();
+    void mcOffState();
+    void mcActiveState();
+    void mcDischargingState();
+    void estopState();
+    void faultState();
 };
 
 #endif // VCU_INCLUDE_TRACKMCUC_HPP
