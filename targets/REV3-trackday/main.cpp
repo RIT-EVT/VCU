@@ -9,10 +9,7 @@
 #include <core/manager.hpp>
 #include <core/utils/time.hpp>
 #include <core/utils/types/FixedQueue.hpp>
-
 #include <core/utils/log.hpp>
-
-#include <PowertrainCAN.hpp>
 
 #include <TrackMCuC.hpp>
 
@@ -63,8 +60,8 @@ int main() {
     TrackMCuC mcuc(greenLed, yellowLed, redLed, faultLed, superFaultLed, canSelfTest, mcSelfTest,
                               mcToggleP, mcToggleN, lvssEnable, estop, ignition, interlock, ptCan);
 
-
     while(true) {
         mcuc.process();
+        time::wait(1000);
     }
 }
