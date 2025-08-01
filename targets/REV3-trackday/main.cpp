@@ -54,9 +54,9 @@ int main() {
     io::GPIO& mcToggleN = io::getGPIO<TrackMCuC::MC_TOGGLE_NEGATIVE_PIN>();
     io::GPIO& lvssEnable = io::getGPIO<TrackMCuC::LVSS_ENABLE_PIN>();
 
-    io::GPIO& estop = io::getGPIO<TrackMCuC::ESTOP_A_PIN>();
-    io::GPIO& ignition = io::getGPIO<TrackMCuC::IGNITION_A_PIN>();
-    io::GPIO& interlock = io::getGPIO<TrackMCuC::INTERLOCK_PIN>();
+    io::GPIO& estop = io::getGPIO<TrackMCuC::ESTOP_A_PIN>(io::GPIO::Direction::INPUT);
+    io::GPIO& ignition = io::getGPIO<TrackMCuC::IGNITION_A_PIN>(io::GPIO::Direction::INPUT);
+    io::GPIO& interlock = io::getGPIO<TrackMCuC::INTERLOCK_PIN>(io::GPIO::Direction::INPUT);
 
     io::CAN& ptCan = io::getCAN<TrackMCuC::POWERTRAIN_CAN_TX_PIN, TrackMCuC::POWERTRAIN_CAN_RX_PIN>();
 

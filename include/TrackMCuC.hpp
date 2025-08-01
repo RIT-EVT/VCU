@@ -93,6 +93,12 @@ public:
 
     void process();
 
+    io::GPIO::State LED_OFF = io::GPIO::State::LOW;
+    io::GPIO::State LED_ON = io::GPIO::State::HIGH;
+
+    io::GPIO::State ESTOP_ACTIVE = io::GPIO::State::HIGH;
+    io::GPIO::State IGNITION_ACTIVE = io::GPIO::State::LOW;
+
 private:
     enum class State {
         START = 0,
@@ -125,12 +131,6 @@ private:
     State state = State::START;
     bool stateChanged = true;
     bool permanentFault = false;
-
-    io::GPIO::State LED_OFF = io::GPIO::State::LOW;
-    io::GPIO::State LED_ON = io::GPIO::State::HIGH;
-
-    io::GPIO::State ESTOP_ACTIVE = io::GPIO::State::LOW;
-    io::GPIO::State IGNITION_ACTIVE = io::GPIO::State::LOW;
 
     void startState();
     void mcOffState();

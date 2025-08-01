@@ -1,7 +1,5 @@
 #include <TrackMCuC.hpp>
 
-#include <core/utils/time.hpp>
-
 TrackMCuC::TrackMCuC(io::GPIO& greenLed, io::GPIO& yellowLed, io::GPIO& redLed, io::GPIO& faultLed,
                      io::GPIO& superFaultLed, io::GPIO& canSelfTest, io::GPIO& mcSelfTest, io::GPIO& mcToggleP,
                      io::GPIO& mcToggleN, io::GPIO& lvssEnable, io::GPIO& estop, io::GPIO& ignition,
@@ -89,8 +87,7 @@ void TrackMCuC::mcActiveState() {
         //lvssEnable.writePin(io::GPIO::State::HIGH); TODO: Actually enable the LVSS
         // TODO: Also tell  LVSS to turn on
         mcToggleP.writePin(io::GPIO::State::HIGH);
-        core::time::wait(10);
-        mcToggleP.writePin(io::GPIO::State::LOW);
+        mcToggleN.writePin(io::GPIO::State::LOW);
 
         stateChanged = false;
     }
@@ -108,9 +105,8 @@ void TrackMCuC::mcDischargingState() {
         // TODO: Tell MC to discharge
 
         // Turn MC off
+        mcToggleP.writePin(io::GPIO::State::LOW);
         mcToggleN.writePin(io::GPIO::State::HIGH);
-        core::time::wait(10);
-        mcToggleN.writePin(io::GPIO::State::LOW);
 
         if (estop.readPin() == ESTOP_ACTIVE) {
             state = State::ESTOP;
