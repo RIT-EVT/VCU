@@ -1,13 +1,14 @@
 #include <TrackMCuC.hpp>
 
+#include <core/utils/time.hpp>
+
 TrackMCuC::TrackMCuC(io::GPIO& greenLed, io::GPIO& yellowLed, io::GPIO& redLed, io::GPIO& faultLed,
                      io::GPIO& superFaultLed, io::GPIO& canSelfTest, io::GPIO& mcSelfTest, io::GPIO& mcToggleP,
                      io::GPIO& mcToggleN, io::GPIO& lvssEnable, io::GPIO& estop, io::GPIO& ignition,
-                     io::GPIO& interlock, io::CAN& ptCan) :
+                     io::GPIO& interlock, io::CAN& accCan) :
       greenLed(greenLed), yellowLed(yellowLed), redLed(redLed), faultLed(faultLed),
       superFaultLed(superFaultLed), canSelfTest(canSelfTest), mcSelfTest(mcSelfTest), mcToggleP(mcToggleP),
-      mcToggleN(mcToggleN), lvssEnable(lvssEnable), estop(estop), ignition(ignition), interlock(interlock),
-      ptCan(ptCan) {
+      mcToggleN(mcToggleN), lvssEnable(lvssEnable), estop(estop), ignition(ignition), interlock(interlock), accCan(accCan) {
     // Initialize all output GPIOs to low
     greenLed.writePin(io::GPIO::State::LOW);
     yellowLed.writePin(io::GPIO::State::LOW);
@@ -83,18 +84,24 @@ void TrackMCuC::mcActiveState() {
     if (stateChanged) {
         greenLed.writePin(LED_ON);
 
-        // Enable MC and LVSS
-        //lvssEnable.writePin(io::GPIO::State::HIGH); TODO: Actually enable the LVSS
-        // TODO: Also tell  LVSS to turn on
+        // Enable LVSS
+        lvssEnable.writePin(io::GPIO::State::HIGH);
+        uint8_t buf[] = {0xFF, 0xFF};
+        io::CANMessage txMessage(0x180, 2, buf, false);
+        core::time::wait(10); // TODO: Tune this wait
+        accCan.transmit(txMessage);
+
+        // Enable MC
         mcToggleP.writePin(io::GPIO::State::HIGH);
-        mcToggleN.writePin(io::GPIO::State::LOW);
+        core::time::wait(10);
+        mcToggleP.writePin(io::GPIO::State::LOW);
 
         stateChanged = false;
     }
 
     if (estop.readPin() == ESTOP_ACTIVE || ignition.readPin() != IGNITION_ACTIVE) {
         state = State::MC_DISCHARGING;
-        // TODO: Turn off LVSS
+        lvssEnable.writePin(io::GPIO::State::LOW);
         greenLed.writePin(LED_OFF);
         stateChanged = true;
     }
@@ -105,8 +112,9 @@ void TrackMCuC::mcDischargingState() {
         // TODO: Tell MC to discharge
 
         // Turn MC off
-        mcToggleP.writePin(io::GPIO::State::LOW);
         mcToggleN.writePin(io::GPIO::State::HIGH);
+        core::time::wait(10);
+        mcToggleN.writePin(io::GPIO::State::LOW);
 
         if (estop.readPin() == ESTOP_ACTIVE) {
             state = State::ESTOP;

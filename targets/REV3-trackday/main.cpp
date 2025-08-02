@@ -30,7 +30,7 @@ namespace log  = core::log;
  * @param message[in] the passed in CAN message that was read.
  * @param priv[in] The MCuC instance that contains the queue the message is to be added to. Must be an vcu::MCuC*
  */
-void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
+void accessoryCANInterrupt(io::CANMessage& message, void* priv) {
     //TODO
 }
 
@@ -55,13 +55,14 @@ int main() {
     io::GPIO& ignition = io::getGPIO<TrackMCuC::IGNITION_A_PIN>(io::GPIO::Direction::INPUT);
     io::GPIO& interlock = io::getGPIO<TrackMCuC::INTERLOCK_PIN>(io::GPIO::Direction::INPUT);
 
-    io::CAN& ptCan = io::getCAN<TrackMCuC::POWERTRAIN_CAN_TX_PIN, TrackMCuC::POWERTRAIN_CAN_RX_PIN>();
+    io::CAN& accCan = io::getCAN<TrackMCuC::ACCESSORY_CAN_TX_PIN, TrackMCuC::ACCESSORY_CAN_RX_PIN>();
+    accCan.addIRQHandler(accessoryCANInterrupt, nullptr);
+    accCan.connect();
 
     TrackMCuC mcuc(greenLed, yellowLed, redLed, faultLed, superFaultLed, canSelfTest, mcSelfTest,
-                              mcToggleP, mcToggleN, lvssEnable, estop, ignition, interlock, ptCan);
+                              mcToggleP, mcToggleN, lvssEnable, estop, ignition, interlock,accCan);
 
     while(true) {
         mcuc.process();
-        time::wait(1000);
     }
 }

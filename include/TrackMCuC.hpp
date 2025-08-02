@@ -126,7 +126,7 @@ private:
     io::GPIO& ignition;
     io::GPIO& interlock;
 
-    io::CAN& ptCan;
+    io::CAN& accCan;
 
     State state = State::START;
     bool stateChanged = true;
