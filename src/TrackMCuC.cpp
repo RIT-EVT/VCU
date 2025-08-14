@@ -88,12 +88,12 @@ void TrackMCuC::mcActiveState() {
         lvssEnable.writePin(io::GPIO::State::HIGH);
         uint8_t buf[] = {0xFF, 0xFF};
         io::CANMessage txMessage(0x180, 2, buf, false);
-        core::time::wait(10); // TODO: Tune this wait
+        core::time::wait(70);
         accCan.transmit(txMessage);
 
         // Enable MC
         mcToggleP.writePin(io::GPIO::State::HIGH);
-        core::time::wait(10);
+        core::time::wait(100);
         mcToggleP.writePin(io::GPIO::State::LOW);
 
         stateChanged = false;
@@ -113,7 +113,7 @@ void TrackMCuC::mcDischargingState() {
 
         // Turn MC off
         mcToggleN.writePin(io::GPIO::State::HIGH);
-        core::time::wait(10);
+        core::time::wait(100);
         mcToggleN.writePin(io::GPIO::State::LOW);
 
         if (estop.readPin() == ESTOP_ACTIVE) {
