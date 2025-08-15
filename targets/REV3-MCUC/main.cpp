@@ -146,7 +146,7 @@ void accessoryCANOpenInterrupt(io::CANMessage& message, void* priv) {
  * @param message[in] the passed in CAN message that was read.
  * @param priv[in] The MCuC instance that contains the queue the message is to be added to. Must be an vcu::MCuC*
  */
-void accessoryCANInterrupt(io::CANMessage& message, void* priv) {
+void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
     auto* mcuc = (vcu::MCuC*) priv;
     if (mcuc != nullptr) {
         // TODO: determine if WaitForever is what we want to do in the interrupt- could be bad
@@ -212,7 +212,7 @@ int main() {
 
     vcu::MCuC mcuc(gpios, ptCAN);
 
-    ptCAN.addIRQHandler(reinterpret_cast<void (*)(io::CANMessage&, void*)>(accessoryCANInterrupt), &mcuc);
+    ptCAN.addIRQHandler(accessoryCANInterrupt, &hardmon);
 
     // TODO: CANopen uncomment when we add in Accessory CAN configuration
 
