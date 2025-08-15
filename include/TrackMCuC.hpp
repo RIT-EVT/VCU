@@ -89,9 +89,13 @@ public:
          io::GPIO& estop,
          io::GPIO& ignition,
          io::GPIO& interlock,
-         io::CAN& ptCan);
+         io::CAN& accCan,
+         io::CAN& pwtCan);
 
     void process();
+
+    void receiveAccMessage(io::CANMessage& message);
+    void receivePwtMessage(io::CANMessage& message);
 
     io::GPIO::State LED_OFF = io::GPIO::State::LOW;
     io::GPIO::State LED_ON = io::GPIO::State::HIGH;
@@ -127,10 +131,19 @@ private:
     io::GPIO& interlock;
 
     io::CAN& accCan;
+    io::CAN& pwtCan;
 
     State state = State::START;
     bool stateChanged = true;
     bool permanentFault = false;
+
+    uint8_t highestCellTemp = 0;
+    uint16_t lowestCellVoltage = 3000;
+    uint16_t bmsMasterTemp = 0;
+
+    static constexpr uint8_t CELL_TEMP_MAX = 50;
+    static constexpr uint16_t CELL_VOLT_MIN = 2800;
+    static constexpr uint16_t BMS_TEMP_MAX = 4000;
 
     void startState();
     void mcOffState();

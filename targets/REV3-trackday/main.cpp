@@ -26,12 +26,29 @@ namespace log  = core::log;
 
 
 /**
- * Interrupt handler to get CAN messages from the powertrain CAN line.
- * @param message[in] the passed in CAN message that was read.
- * @param priv[in] The MCuC instance that contains the queue the message is to be added to. Must be an vcu::MCuC*
+ * Interrupt handler to get CAN messages from the accessory CAN line
+ *
+ * @param message[in] Received CAN message
+ * @param priv[in] MCuC instance
  */
 void accessoryCANInterrupt(io::CANMessage& message, void* priv) {
-    //TODO
+    auto* mcuc = (TrackMCuC*) priv;
+    if (mcuc != nullptr) {
+        mcuc->receiveAccMessage(message);
+    }
+}
+
+/**
+ * Interrupt handler to get CAN messages from the powertrain CAN line
+ *
+ * @param message[in] Received CAN message
+ * @param priv[in] MCuC instance
+ */
+void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
+    auto* mcuc = (TrackMCuC*) priv;
+    if (mcuc != nullptr) {
+        mcuc->receivePwtMessage(message);
+    }
 }
 
 int main() {
@@ -56,11 +73,15 @@ int main() {
     io::GPIO& interlock = io::getGPIO<TrackMCuC::INTERLOCK_PIN>(io::GPIO::Direction::INPUT);
 
     io::CAN& accCan = io::getCAN<TrackMCuC::ACCESSORY_CAN_TX_PIN, TrackMCuC::ACCESSORY_CAN_RX_PIN>();
-    accCan.addIRQHandler(accessoryCANInterrupt, nullptr);
-    accCan.connect();
+    io::CAN& pwtCan = io::getCAN<TrackMCuC::POWERTRAIN_CAN_TX_PIN, TrackMCuC::POWERTRAIN_CAN_RX_PIN>();
 
     TrackMCuC mcuc(greenLed, yellowLed, redLed, faultLed, superFaultLed, canSelfTest, mcSelfTest,
-                              mcToggleP, mcToggleN, lvssEnable, estop, ignition, interlock,accCan);
+                   mcToggleP, mcToggleN, lvssEnable, estop, ignition, interlock,accCan,pwtCan);
+
+    accCan.addIRQHandler(accessoryCANInterrupt, &mcuc);
+    accCan.connect();
+    pwtCan.addIRQHandler(powertrainCANInterrupt, &mcuc);
+    pwtCan.connect();
 
     while(true) {
         mcuc.process();

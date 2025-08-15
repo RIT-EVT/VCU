@@ -5,10 +5,11 @@
 TrackMCuC::TrackMCuC(io::GPIO& greenLed, io::GPIO& yellowLed, io::GPIO& redLed, io::GPIO& faultLed,
                      io::GPIO& superFaultLed, io::GPIO& canSelfTest, io::GPIO& mcSelfTest, io::GPIO& mcToggleP,
                      io::GPIO& mcToggleN, io::GPIO& lvssEnable, io::GPIO& estop, io::GPIO& ignition,
-                     io::GPIO& interlock, io::CAN& accCan) :
+                     io::GPIO& interlock, io::CAN& accCan, io::CAN& pwtCan) :
       greenLed(greenLed), yellowLed(yellowLed), redLed(redLed), faultLed(faultLed),
       superFaultLed(superFaultLed), canSelfTest(canSelfTest), mcSelfTest(mcSelfTest), mcToggleP(mcToggleP),
-      mcToggleN(mcToggleN), lvssEnable(lvssEnable), estop(estop), ignition(ignition), interlock(interlock), accCan(accCan) {
+      mcToggleN(mcToggleN), lvssEnable(lvssEnable), estop(estop), ignition(ignition), interlock(interlock),
+      accCan(accCan), pwtCan(pwtCan) {
     // Initialize all output GPIOs to low
     greenLed.writePin(io::GPIO::State::LOW);
     yellowLed.writePin(io::GPIO::State::LOW);
@@ -23,6 +24,16 @@ TrackMCuC::TrackMCuC(io::GPIO& greenLed, io::GPIO& yellowLed, io::GPIO& redLed, 
 }
 
 void TrackMCuC::process() {
+    if (
+        highestCellTemp > CELL_TEMP_MAX ||
+        lowestCellVoltage < CELL_VOLT_MIN ||
+        bmsMasterTemp > BMS_TEMP_MAX
+    ) {
+        // If the red LED is on at the same time as the green or blue LED, this is meant to indicate a warning
+        // This will give the rider time to stop the bike before something actually bad happens
+        redLed.writePin(LED_ON);
+    }
+
     switch (state) {
     case State::START:
         startState();
@@ -43,6 +54,27 @@ void TrackMCuC::process() {
         faultState();
         break;
     }
+}
+
+void TrackMCuC::receiveAccMessage(io::CANMessage& message) {
+    // No messages yet
+}
+
+void TrackMCuC::receivePwtMessage(io::CANMessage& message) {
+    uint8_t* payload = message.getPayload();
+    switch (message.getId()) {
+    case 0x2D0A:
+        highestCellTemp = payload[6];
+        lowestCellVoltage = (((uint16_t) payload[0]) << 8) + payload[1];
+        break;
+    case 0x2C0A:
+        bmsMasterTemp = (((uint16_t) payload[0]) << 8) + payload[1];
+        break;
+    default:
+        // Do nothing
+        break;
+    }
+
 }
 
 void TrackMCuC::startState() {
