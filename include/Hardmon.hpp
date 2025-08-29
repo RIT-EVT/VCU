@@ -21,7 +21,8 @@ namespace vcu {
 
 /**
  * The Hardmon (Hardware Monitor) is one of two microcontrollers on the VCU board.
-It monitors the MCuC (Motor Controller Microcontroller) in order to determine whether or not it is operating safely and logically.```
+It monitors the MCuC (Motor Controller Microcontroller) in order to determine whether or not it is operating safely and
+logically.```
  * If it determines that the MCuC is not operating correctly, it can override the MCuC's control over the CAN lines
  * and reset the MCuC in order to hopefully fix the issue.
  *
