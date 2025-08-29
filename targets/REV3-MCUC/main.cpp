@@ -212,7 +212,7 @@ int main() {
 
     vcu::MCuC mcuc(gpios, ptCAN);
 
-    ptCAN.addIRQHandler(reinterpret_cast<void (*)(io::CANMessage&, void*)>(powertrainCANInterrupt), &mcuc);
+    ptCAN.addIRQHandler(accessoryCANInterrupt, &hardmon);
 
     // TODO: CANopen uncomment when we add in Accessory CAN configuration
 

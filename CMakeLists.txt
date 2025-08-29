@@ -16,13 +16,6 @@ if(NOT TARGET_DEV)
     set(TARGET_DEV "STM32F446xx")
 endif()
 
-option(USE_RTOS "USE RTOS" 1)
-if(NOT USE_RTOS)
-    message(WARNING "RTOS enabled by default")
-    set(USE_RTOS 1)
-endif()
-
-
 if (TARGET_DEV STREQUAL "STM32F446xx")
     add_compile_definitions(STM32F446)
     add_compile_definitions(STM32F4xx)
@@ -71,11 +64,7 @@ add_library(${PROJECT_NAME} STATIC)
 
 # Add sources
 target_sources(${PROJECT_NAME} PRIVATE
-        src/PowertrainCAN.cpp
-        src/models/Hardmon_Model.cpp
-        src/models/MCuC_Model.cpp
-        src/MCuC.cpp
-        src/Hardmon.cpp
+        src/TrackMCuC.cpp
         )
 
 ###############################################################################

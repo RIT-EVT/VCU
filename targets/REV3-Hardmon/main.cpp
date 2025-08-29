@@ -146,7 +146,7 @@ void canOpenInterrupt(io::CANMessage& message, void* priv) {
  * @param message[in] the passed in CAN message that was read.
  * @param priv[in] the Hardmon instance that will handle the message.
  */
-void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
+void accessoryCANInterrupt(io::CANMessage& message, void* priv) {
     auto* hardmon = (vcu::Hardmon*) priv;
     if (hardmon != nullptr) {
         // TODO: determine if WaitForever is what we want to do in the interrupt- could be bad
@@ -200,7 +200,7 @@ int main() {
     io::CAN& ptCAN = io::getCAN<vcu::Hardmon::POWERTRAIN_CAN_TX_PIN, vcu::Hardmon::POWERTRAIN_CAN_RX_PIN>();
 
     vcu::Hardmon hardmon(hmGPIOS, ptCAN);
-    ptCAN.addIRQHandler(powertrainCANInterrupt, &hardmon);
+    ptCAN.addIRQHandler(accessoryCANInterrupt, &hardmon);
 
     ///////////////////////////////////////////////////////////////////////////
     // Setup CAN configuration, this handles making drivers, applying settings.
