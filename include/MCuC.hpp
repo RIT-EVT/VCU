@@ -101,9 +101,9 @@ public:
     /** UART Pins */
 
     /** UART TX Pin */
-    static constexpr io::Pin UART_TX = io::Pin::PA_8;
+    static constexpr io::Pin UART_TX = io::Pin::PB_6;
     /** UART RX Pin */
-    static constexpr io::Pin UART_RX = io::Pin::PA_9;
+    static constexpr io::Pin UART_RX = io::Pin::PB_7;
 
     /** Component Communication Pins */
 
