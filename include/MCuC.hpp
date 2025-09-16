@@ -108,11 +108,11 @@ public:
     /** Component Communication Pins */
 
     /** ESTOP Pin */
-    static constexpr io::Pin ESTOP_IN_PIN = io::Pin::PA_0;  // EStop A
+    static constexpr io::Pin ESTOP_IN_PIN  = io::Pin::PA_0; // EStop A
     static constexpr io::Pin ESTOP_OUT_PIN = io::Pin::PA_1; // EStop B
     /** Ignition Pin */
-    static constexpr io::Pin IGNITION_IN_PIN = io::Pin::PA_2;   // Ignition A
-    static constexpr io::Pin IGNITION_OUT_PIN = io::Pin::PA_3;  // Ignition B
+    static constexpr io::Pin IGNITION_IN_PIN  = io::Pin::PA_2; // Ignition A
+    static constexpr io::Pin IGNITION_OUT_PIN = io::Pin::PA_3; // Ignition B
     /** LVSS Status Pin */
     // static constexpr io::Pin LVSS_STATUS_PIN = io::Pin::PC_12; (Gone)
     static constexpr io::Pin INTERLOCK_PIN = io::Pin::PA_7;
@@ -125,8 +125,8 @@ public:
     union MCuC_GPIO {
         struct {
             // model input GPIOs
-            io::GPIO& eStopInGPIO;      // E-Stop A
-            io::GPIO& ignitionInGPIO;   // Ignition A
+            io::GPIO& eStopInGPIO;    // E-Stop A
+            io::GPIO& ignitionInGPIO; // Ignition A
             io::GPIO& mcStatusGPIO;
 
             io::GPIO& lsSelfTestInAGPIO;
@@ -151,8 +151,8 @@ public:
             io::GPIO& faultLEDGPIO;
             io::GPIO& superFaultLEDGPIO;
 
-            io::GPIO& estopOutGPIO;     // E-Stop B
-            io::GPIO& ignitionOutGPIO;  // Ignition B
+            io::GPIO& estopOutGPIO;    // E-Stop B
+            io::GPIO& ignitionOutGPIO; // Ignition B
 
             io::GPIO& lsSelfTestOutGPIO;
             io::GPIO& interlockGPIO;
