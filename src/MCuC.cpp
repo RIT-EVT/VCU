@@ -87,9 +87,9 @@ void MCuC::process() {
     sendInputDataToSafeBuffer();
 
     // brakeOn updated over CAN
-    eStop = gpios.eStopGPIO.readPin() == io::GPIO::State::HIGH;
+    eStop = gpios.eStopInGPIO.readPin() == io::GPIO::State::HIGH;
     // forwardEnable, startPressed, mcStateMachine, discharge updated over CAN
-    ignitionOn = gpios.ignitionGPIO.readPin() == io::GPIO::State::HIGH;
+    ignitionOn = gpios.ignitionInGPIO.readPin() == io::GPIO::State::HIGH;
     // hmFault = gpios.hmFaultGPIO.readPin() == io::GPIO::State::HIGH;
     // throttle updated over CAN
     // lvssOn = gpios.lvssStatusGPIO.readPin() == io::GPIO::State::HIGH;
@@ -134,6 +134,7 @@ void MCuC::process() {
 #endif
 
     mutex.get(rtos::TXW_WAIT_FOREVER);
+
     lvssEnable        = modelOutputs.LVSS_EN_uC;
     inverterEnable    = modelOutputs.Inverter_EN_uC_CAN;
     ucFault           = modelOutputs.Fault;
@@ -193,8 +194,8 @@ void MCuC::process() {
     halmotorControllerCan = core::time::millis();
 #endif
 
-    sendOutputDataToUnsafeBuffer();
     powertrainCAN.sendMCMessage();
+    sendOutputDataToUnsafeBuffer();
     mutex.put();
 
 #ifdef EVT_CORE_LOG_ENABLE
@@ -218,11 +219,12 @@ void MCuC::process() {
 #endif
 }
 
+// This is for showing off the VCU at RIT IMAGINE; and is not a necessary method
 void MCuC::imagineNeuteredProcess() {
     mutex.get(core::rtos::TXW_WAIT_FOREVER);
     // both estop and ignition are active low
-    eStop      = gpios.eStopGPIO.readPin() == io::GPIO::State::LOW;
-    ignitionOn = gpios.ignitionGPIO.readPin() == io::GPIO::State::LOW;
+    eStop      = gpios.eStopInGPIO.readPin() == io::GPIO::State::LOW;
+    ignitionOn = gpios.ignitionInGPIO.readPin() == io::GPIO::State::LOW;
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Estop: %d, ignition: %d", eStop, ignitionOn);
 
     sendInputDataToSafeBuffer();

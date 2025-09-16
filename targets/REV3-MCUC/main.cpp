@@ -175,9 +175,12 @@ int main() {
     // Initialize MCuC and Powertrain CAN
 
     vcu::MCuC::MCuC_GPIO gpios = {{
-        io::getGPIO<vcu::MCuC::ESTOP_A_PIN>(io::GPIO::Direction::INPUT, io::GPIO::Pull::PULL_UP),
-        io::getGPIO<vcu::MCuC::IGNITION_A_PIN>(io::GPIO::Direction::INPUT, io::GPIO::Pull::PULL_UP),
+        io::getGPIO<vcu::MCuC::ESTOP_IN_PIN>(io::GPIO::Direction::INPUT, io::GPIO::Pull::PULL_UP),
+        io::getGPIO<vcu::MCuC::IGNITION_IN_PIN>(io::GPIO::Direction::INPUT, io::GPIO::Pull::PULL_UP),
         io::getGPIO<vcu::MCuC::MC_STATUS_PIN>(io::GPIO::Direction::INPUT),
+
+        io::getGPIO<vcu::MCuC::LS_SELF_TEST_IN_A_PIN>(io::GPIO::Direction::INPUT),
+        io::getGPIO<vcu::MCuC::LS_SELF_TEST_IN_B_PIN>(io::GPIO::Direction::INPUT),
 
         io::getGPIO<vcu::MCuC::LVSS_ENABLE_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::WATCHDOG_PIN>(io::GPIO::Direction::OUTPUT),
@@ -192,14 +195,13 @@ int main() {
         io::getGPIO<vcu::MCuC::MC_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
 
-        // TODO new stuff fix it
         io::getGPIO<vcu::MCuC::FAULT_LED_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::SUPER_FAULT_LED_PIN>(io::GPIO::Direction::OUTPUT),
+
+        io::getGPIO<vcu::MCuC::ESTOP_OUT_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCuC::IGNITION_OUT_PIN>(io::GPIO::Direction::OUTPUT),
+
         io::getGPIO<vcu::MCuC::LS_SELF_TEST_OUT_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCuC::LS_SELF_TEST_IN_A_PIN>(io::GPIO::Direction::INPUT),
-        io::getGPIO<vcu::MCuC::LS_SELF_TEST_IN_B_PIN>(io::GPIO::Direction::INPUT),
-        io::getGPIO<vcu::MCuC::ESTOP_B_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCuC::IGNITION_B_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::INTERLOCK_PIN>(io::GPIO::Direction::OUTPUT),
     }};
 
@@ -394,8 +396,8 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Triggered");
         args->mcuc->process();
         // TODO: IMAGINE STUFF
-        //         bool ignition = args->IgnitionGPIO->readPin() == io::GPIO::State::LOW;
-        //         bool eStop = args->eStopGPIO->readPin() == io::GPIO::State::HIGH;
+        //         bool ignition = args->IgnitionInGPIO->readPin() == io::GPIO::State::LOW;
+        //         bool eStop = args->eStopInGPIO->readPin() == io::GPIO::State::HIGH;
         //         args->mcuc->imagineNeuteredProcess(eStop, ignition);
         log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Completed");
     }
@@ -441,7 +443,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 [[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Started");
     args->mcuc->sendOutputDataToUnsafeBuffer();
-    args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal = 63;
+    args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal = 63; // todo: temporary
     rtos::TXError error;
     while (true) {
         // process accessory CAN
