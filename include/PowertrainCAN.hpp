@@ -84,6 +84,8 @@ public:
      */
     int16_t parseHIBThrottle(io::CANMessage& message);
 
+    // TODO: Heller's point about moving all of this parsing to
+    //  separate board classes that takes in a CAN message from that respective board and extracts the relevant data
     /**
      * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
      * Parses the HIB forward enable value from the HIB message.
@@ -94,6 +96,7 @@ public:
      */
     bool parseHIBForwardEnable(io::CANMessage& message);
 
+    // TODO: All HIB parsing needs to be updated to match actual messages
     /**
      * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
      * Parses the HIB start pressed value from the HIB message.
