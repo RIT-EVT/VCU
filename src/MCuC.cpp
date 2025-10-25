@@ -131,6 +131,12 @@ inline const char* stateToString(UC_State state) {
 }
 
 void MCuC::process() {
+    // todo: debugging static vars for manually tricking simulink model into going through full state machine
+    static bool first = true;
+    static bool seenMCInit = false;
+    static bool forwardStatic = false;
+    static int16_t throttleStatic = 0;
+
 #ifdef EVT_CORE_LOG_ENABLE
     uint32_t halstart, halstep, halstepEnd, halpowerTrainCAN = 0, halmotorControllerCan, halend;
 
@@ -166,10 +172,87 @@ void MCuC::process() {
     modelInputs.MC_VSM_State_CAN = mcState;
     modelInputs.MC_DC_State_CAN  = mcDischarge;
     modelInputs.Throttle_CAN     = throttle;
+    modelInputs.Interlock        = interlock;
+
+
+    // Some of the model inputs that seemingly arent being set:
+    // HIB Comparison fault
+    // BMS Contactor Closed
+    // MC Cooling FR
+    // Any BMS stuff
+    // Any battery stuff
+    // Acc on
+    // the B's, so estop b, ignition b, etc.
+
+    // todo: test hardcoding
+    modelInputs.Interlock = true;
+    modelInputs.LVSS_ON_CAN = false;
+    modelInputs.MC_ON = false;
+    modelInputs.BMS_Contactor_Closed_CAN = false;
+    modelInputs.GFDB_Isolation_State_CAN = 0;
+    modelInputs.MC_VSM_State_CAN = MC_VSM_State::Start;
+    modelInputs.HIB_Comparison_Fault_CAN = false;
+
+    if (first) {
+        first = false;
+        for (int i = 0; i < HB_SIZE; i++) {
+            modelInputs.Heartbeats_CAN[i] = 0;
+        }
+    } else {
+        modelInputs.BMS_Contactor_Closed_CAN = static_cast<int>(modelOutputs.BMS_Contactor_Command_uC_CAN) != 0;
+        modelInputs.LVSS_ON_CAN = modelOutputs.LVSS_EN_uC;
+        modelInputs.MC_ON = modelOutputs.MC_EN_uC;
+    }
+
+    // Big ass code block to fake inputs to test simulink model
+    if (!first) {
+        for (int i = 0; i < HB_SIZE; i++) {
+            modelInputs.Heartbeats_CAN[i]++;
+        }
+
+        if (modelOutputs.uC_State == UC_State::MC_Init || seenMCInit) {
+            modelInputs.MC_VSM_State_CAN = MC_VSM_State::Ready;
+            seenMCInit = true;
+        }
+
+        if (modelOutputs.uC_State == UC_State::Contactor_Closed) {
+            modelInputs.Start_CAN = true;
+        }
+
+        if (modelOutputs.uC_State == UC_State::MC_Ready) {
+            modelInputs.Brake_CAN = true;
+            modelInputs.Throttle_CAN = 0;
+            forwardStatic = true;
+        }
+
+        modelInputs.Forward_EN_CAN = forwardStatic;
+
+        if (modelOutputs.uC_State == UC_State::MC_Active) {
+            modelInputs.Throttle_CAN = throttleStatic++;
+        }
+
+        if (modelOutputs.uC_State == UC_State::MC_Discharging) {
+            modelInputs.MC_DC_State_CAN = MC_DC_State::Complete;
+        }
+
+        if (modelOutputs.uC_State == UC_State::Contactor_Open) {
+            forwardStatic = false;
+            modelInputs.Forward_EN_CAN = false;
+            modelInputs.MC_VSM_State_CAN = MC_VSM_State::Start;
+            seenMCInit = false;
+        }
+    }
+
+    hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
+    for (int i = 0; i < HB_SIZE; i++) {
+//      modelInputs.Heartbeats_CAN[i] = heartbeatMessages[i]; // todo: untested, but should work when we actually connect other boards
+    }
 
 #ifdef EVT_CORE_LOG_ENABLE
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "heartbeats: %lu, %lu, %lu, %lu, %lu", modelInputs.Heartbeats_CAN[0], modelInputs.Heartbeats_CAN[1], modelInputs.Heartbeats_CAN[2], modelInputs.Heartbeats_CAN[3], modelInputs.Heartbeats_CAN[4]);
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "EStop: %d, Ignition %d", eStop, ignitionOn);
 #endif
+    hbMutex.put();
 
     bufferMutex.put();
 
