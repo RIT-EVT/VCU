@@ -38,86 +38,76 @@ public:
     ///              MCUC Pinout               ///
     //////////////////////////////////////////////
 
-    /** LED Pins */
+    /** ESTOP Level Shifter (LS) Pins */
+    static constexpr io::Pin ESTOP_A_PIN  = io::Pin::PA_0;
+    static constexpr io::Pin ESTOP_B_PIN = io::Pin::PA_1;
 
-    static constexpr io::Pin LED_THREE_PIN = io::Pin::PC_12;
-    static constexpr io::Pin LED_TWO_PIN   = io::Pin::PC_11;
-    static constexpr io::Pin LED_ONE_PIN   = io::Pin::PC_10;
-    /** Self Test Led Pin */
-    // static constexpr io::Pin SELF_TEST_LED_PIN = io::Pin::PC_5; (Gone)
-    static constexpr io::Pin FAULT_LED_PIN       = io::Pin::PB_4;
-    static constexpr io::Pin SUPER_FAULT_LED_PIN = io::Pin::PB_5;
+    /** Ignition Level Shifter (LS) Pins */
+    static constexpr io::Pin IGNITION_A_PIN  = io::Pin::PA_2;
+    static constexpr io::Pin IGNITION_B_PIN = io::Pin::PA_3;
 
-    /** CAN Pins */
-
-    /** Accessory CAN RX pin */
-    static constexpr io::Pin ACCESSORY_CAN_RX_PIN = io::Pin::PA_11;
-    /** Accessory CAN TX pin */
-    static constexpr io::Pin ACCESSORY_CAN_TX_PIN = io::Pin::PA_12;
-    /** Powertrain CAN RX Pin*/
-    static constexpr io::Pin POWERTRAIN_CAN_RX_PIN = io::Pin::PB_12;
-    /** Powertrain CAN TX Pin*/
-    static constexpr io::Pin POWERTRAIN_CAN_TX_PIN = io::Pin::PB_13;
-
-    /** Hardware Monitor Pins */
-
-    /** Watchdog pin */
-    static constexpr io::Pin WATCHDOG_PIN = io::Pin::PA_15;
-    /** Microcontroller State Pins */
-    static constexpr io::Pin UC_STATE_ZERO_PIN  = io::Pin::PC_6;
-    static constexpr io::Pin UC_STATE_ONE_PIN   = io::Pin::PC_7;
-    static constexpr io::Pin UC_STATE_TWO_PIN   = io::Pin::PC_8;
-    static constexpr io::Pin UC_STATE_THREE_PIN = io::Pin::PC_9;
-    /** Hardware Monitor Fault Pin */
-    // static constexpr io::Pin HM_FAULT_PIN = io::Pin::PC_8; (Gone)
-    /** Microcontroller Fault Pin */
-    // static constexpr io::Pin UC_FAULT_PIN = io::Pin::PC_9; (Gone)
-
-    /** Self Test Pins */
-
-    /** CAN Self Test Pin */
-    static constexpr io::Pin CAN_SELF_TEST_PIN = io::Pin::PB_14;
-    /** Ignition Self Test Pin */
-    // static constexpr io::Pin IGNITION_SELF_TEST_PIN = io::Pin::PC_2; (Gone)
-    /** ESTOP Self Test Pin */
-    // static constexpr io::Pin ESTOP_SELF_TEST_PIN = io::Pin::PC_3; (Gone)
     /** Motor Controller Self Test Pin */
-    static constexpr io::Pin MC_SELF_TEST_PIN      = io::Pin::PC_3;
-    static constexpr io::Pin LS_SELF_TEST_OUT_PIN  = io::Pin::PA_4;
-    static constexpr io::Pin LS_SELF_TEST_IN_A_PIN = io::Pin::PA_5;
-    static constexpr io::Pin LS_SELF_TEST_IN_B_PIN = io::Pin::PA_6;
+    static constexpr io::Pin LS_SELF_TEST_OUT_PIN   = io::Pin::PA_4;
+    static constexpr io::Pin LS_SELF_TEST_IN_A_PIN  = io::Pin::PA_5;
+    static constexpr io::Pin LS_SELF_TEST_IN_B_PIN  = io::Pin::PA_6;
 
-    /** Motor Controller Pins */
-
-    /** Motor Controller Toggle Pins */
-    static constexpr io::Pin MC_TOGGLE_POSITIVE_PIN = io::Pin::PC_1;
-    static constexpr io::Pin MC_TOGGLE_NEGATIVE_PIN = io::Pin::PC_0;
-    /** Motor Controller Enable Pins */
-    // static constexpr io::Pin MC_ENABLE_POSITIVE_PIN = io::Pin::PB_6; (Gone)
-    // static constexpr io::Pin MC_ENABLE_NEGATIVE_PIN = io::Pin::PB_7; (Gone)
-    /** Motor Controller Status Pin */
-    static constexpr io::Pin MC_STATUS_PIN = io::Pin::PC_2;
-
-    /** UART Pins */
+    /** Interlock Pin */
+    static constexpr io::Pin INTERLOCK_PIN = io::Pin::PA_7;
 
     /** UART TX Pin */
     static constexpr io::Pin UART_TX = io::Pin::PB_6;
     /** UART RX Pin */
     static constexpr io::Pin UART_RX = io::Pin::PB_7;
 
-    /** Component Communication Pins */
+    /** Accessory CAN RX pin */
+    static constexpr io::Pin ACCESSORY_CAN_RX_PIN = io::Pin::PA_11;
+    /** Accessory CAN TX pin */
+    static constexpr io::Pin ACCESSORY_CAN_TX_PIN = io::Pin::PA_12;
 
-    /** ESTOP Pin */
-    static constexpr io::Pin ESTOP_IN_PIN  = io::Pin::PA_0; // EStop A
-    static constexpr io::Pin ESTOP_OUT_PIN = io::Pin::PA_1; // EStop B
-    /** Ignition Pin */
-    static constexpr io::Pin IGNITION_IN_PIN  = io::Pin::PA_2; // Ignition A
-    static constexpr io::Pin IGNITION_OUT_PIN = io::Pin::PA_3; // Ignition B
-    /** LVSS Status Pin */
-    // static constexpr io::Pin LVSS_STATUS_PIN = io::Pin::PC_12; (Gone)
-    static constexpr io::Pin INTERLOCK_PIN = io::Pin::PA_7;
+    /** Watchdog pin */
+    static constexpr io::Pin WATCHDOG_PIN = io::Pin::PA_15;
+
+    /** LED Pins */
+    static constexpr io::Pin FAULT_LED_PIN       = io::Pin::PB_4;
+    static constexpr io::Pin SUPER_FAULT_LED_PIN = io::Pin::PB_5;
+
+    /** Powertrain CAN RX Pin*/
+    static constexpr io::Pin POWERTRAIN_CAN_RX_PIN = io::Pin::PB_12;
+    /** Powertrain CAN TX Pin*/
+    static constexpr io::Pin POWERTRAIN_CAN_TX_PIN = io::Pin::PB_13;
+
+    /** CAN Self Test Pin */
+    static constexpr io::Pin CAN_SELF_TEST_PIN = io::Pin::PB_14;
+
+    /** Motor Controller Toggle Pins */
+    static constexpr io::Pin MC_TOGGLE_NEGATIVE_PIN = io::Pin::PC_0;
+    static constexpr io::Pin MC_TOGGLE_POSITIVE_PIN = io::Pin::PC_1;
+
+    /** Motor Controller Status Pin */
+    static constexpr io::Pin MC_STATUS_PIN = io::Pin::PC_2;
+
+    /** Motor Controller Relay Self Test */
+    static constexpr io::Pin MC_RELAY_SELF_TEST_PIN = io::Pin::PC_3;
+
     /** LVSS Enable Pin */
     static constexpr io::Pin LVSS_ENABLE_PIN = io::Pin::PC_4;
+
+    /** Microcontroller State Pins */
+    static constexpr io::Pin UC_STATE_ZERO_PIN  = io::Pin::PC_6;
+    static constexpr io::Pin UC_STATE_ONE_PIN   = io::Pin::PC_7;
+    static constexpr io::Pin UC_STATE_TWO_PIN   = io::Pin::PC_8;
+    static constexpr io::Pin UC_STATE_THREE_PIN = io::Pin::PC_9;
+
+    /** LED Pins */
+    static constexpr io::Pin LED_ONE_PIN   = io::Pin::PC_10;
+    static constexpr io::Pin LED_TWO_PIN   = io::Pin::PC_11;
+    static constexpr io::Pin LED_THREE_PIN = io::Pin::PC_12;
+
+    /**
+     * Length of Heartbeat array (number of boards to listen for over CAN)
+     * Must match length of Heartbeats_CAN array in the MCuC model
+     */
+    static constexpr uint8_t HB_SIZE = 5;
 
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
@@ -125,44 +115,45 @@ public:
     union MCuC_GPIO {
         struct {
             // model input GPIOs
-            io::GPIO& eStopInGPIO;    // E-Stop A
-            io::GPIO& ignitionInGPIO; // Ignition A
+            io::GPIO& eStopAGPIO;
+            io::GPIO& eStopBGPIO;
+
+            io::GPIO& ignitionAGPIO;
+            io::GPIO& ignitionBGPIO;
+
+            io::GPIO& interlockGPIO;
             io::GPIO& mcStatusGPIO;
 
             io::GPIO& lsSelfTestInAGPIO;
             io::GPIO& lsSelfTestInBGPIO;
 
             // model output GPIOs
-            io::GPIO& lvssEnableGPIO;
+            io::GPIO& lsSelfTestOutGPIO;
             io::GPIO& watchdogGPIO;
 
-            io::GPIO& ucStateZeroGPIO;
-            io::GPIO& ucStateOneGPIO;
-            io::GPIO& ucStateTwoGPIO;
-            io::GPIO& ucStateThreeGPIO;
+            io::GPIO& faultLEDGPIO;
+            io::GPIO& superFaultLEDGPIO;
+
+            io::GPIO& canSelfTestGPIO;
 
             io::GPIO& mcToggleNegativeGPIO;
             io::GPIO& mcTogglePositiveGPIO;
             io::GPIO& mcSelfTestGPIO;
 
-            // Set based off of ucState.
-            io::GPIO& canSelfTestGPIO;
+            io::GPIO& lvssEnableGPIO;
 
-            io::GPIO& faultLEDGPIO;
-            io::GPIO& superFaultLEDGPIO;
-
-            io::GPIO& estopOutGPIO;    // E-Stop B
-            io::GPIO& ignitionOutGPIO; // Ignition B
-
-            io::GPIO& lsSelfTestOutGPIO;
-            io::GPIO& interlockGPIO;
+            io::GPIO& ucStateZeroGPIO;
+            io::GPIO& ucStateOneGPIO;
+            io::GPIO& ucStateTwoGPIO;
+            io::GPIO& ucStateThreeGPIO;
         };
         struct {
-            io::GPIO* inputArr[5];
-            io::GPIO* outputArr[16];
+            io::GPIO* inputArr[8];
+            io::GPIO* outputArr[13];
         };
     };
 
+    // todo: Havent even looked at CanOpen yet
     /**
      * Struct that contains all the data that AccessoryCan should read in.
      * Used for double buffering for threadsafety with CANOpen
@@ -232,13 +223,6 @@ public:
      */
     void process();
 
-    /**
-     * Process method for imagine- literally just
-     * reads estop and ignition and then sets the
-     * LVSS signal to 63 (all on) or 0 (all off)
-     */
-    void imagineNeuteredProcess();
-
     // override methods from Initializable
     rtos::TXError init(rtos::BytePoolBase& pool) override;
 
@@ -265,11 +249,22 @@ public:
      */
     void sendInputDataToSafeBuffer();
 
+    /**
+     * Updates the heartbeat array as a notice of receiving a message from a CAN node.
+     * @param nodeId the CAN ID of the node to accept heartbeat from
+     */
+    void updateNodeHeartbeat(uint32_t nodeId);
+
 private:
     /**
-     * Mutex that protects internal access to the MCuC
+     * Mutex that protects internal buffer access to the MCuC
      */
-    rtos::Mutex mutex;
+    rtos::Mutex bufferMutex;
+
+    /**
+     * Mutex that protects internal CAN heartbeat data access to the MCuC
+     */
+    rtos::Mutex hbMutex;
 
     /**
      * Local instance of PowertrainCan
@@ -290,22 +285,27 @@ private:
     /// the gpios
     MCuC_GPIO gpios;
 
-    // TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
-
-    // Model input data
-    bool brakeOn;            ///< CAN (HIB): Whether or not the brake is on.
-    bool eStop;              ///< GPIO: Whether or not the emergency stop is enabled.
-    bool forwardEnable;      ///< CAN (HIB): Whether or not the bike is commanded to go forward.
-    bool startPressed;       ///< CAN (HIB): Whether or not the bike is starting.
+    // Model input data // todo: add stuff for BMS, TMS, & GFDB
+    bool brakeOn = false;            ///< CAN (HIB): Whether or not the brake is on.
+    bool eStop = false;              ///< GPIO: Whether or not the emergency stop is enabled.
+    bool forwardEnable = false;      ///< CAN (HIB): Whether or not the bike is commanded to go forward.
+    bool startPressed = false;       ///< CAN (HIB): Whether or not the bike is starting.
     MC_VSM_State mcState;    ///< CAN (MC): What state the motor controller state machine is in. [0,14] range
     MC_DC_State mcDischarge; ///< CAN (MC): What state the motor controller discharger is in. [0,4] range
-    bool ignitionOn;         ///< GPIO: Whether or not the ignition is on.
-    bool hmFault;     ///< GPIO: Whether or not the hardware monitor is telling the MCUC to go into a fault state.
-    int16_t throttle; ///< CAN (HIB): Signal state of the throttle.
-    bool lvssOn;      ///< GPIO: Whether or not the LVSS is on.
-    bool mcOn;        ///< GPIO: Whether or not the motor controller is on.
-    bool powertrainCANSelfTestIn; ///< CAN (Hardmon): If the powertrain CAN network is working.
-    bool accessoryCANSelfTestIn;  ///< CAN (Hardmon): If the accessory CAN network is working.
+    bool ignitionOn = false;         ///< GPIO: Whether or not the ignition is on.
+    bool interlock = false;         ///< GPIO: if BFC is plugged in
+    bool hmFault = false;     ///< GPIO: Whether or not the hardware monitor is telling the MCUC to go into a fault state.
+    int16_t throttle = 0; ///< CAN (HIB): Signal state of the throttle.
+    bool lvssOn = false;      ///< GPIO: Whether or not the LVSS is on.
+    bool mcOn = false;        ///< GPIO: Whether or not the motor controller is on.
+    bool powertrainCANSelfTestIn = false; ///< CAN (Hardmon): If the powertrain CAN network is working.
+    bool accessoryCANSelfTestIn = false;  ///< CAN (Hardmon): If the accessory CAN network is working.
+
+    /**
+     * Array holding number of messages received from each of the other boards.
+     * Used to hold data before sending it to Simulink model for heartbeat checking.
+     */
+    uint32_t heartbeatMessages[HB_SIZE] = {0};
 
     // Model input data (struct)
     vcu::MCuC_Model::ExtU_MCuC_T modelInputs;
@@ -337,6 +337,7 @@ private:
      */
     static constexpr uint8_t NODE_ID      = 0;
     static constexpr uint8_t LVSS_NODE_ID = 1;
+    static constexpr uint8_t TMS_NODE_ID = 2;
     static constexpr uint8_t IMU_NODE_ID  = 9;
 
     /**

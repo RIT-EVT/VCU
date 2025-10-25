@@ -155,7 +155,6 @@ void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
 }
 
 int main() {
-
     // Initialize system
     core::platform::init();
 
@@ -171,32 +170,46 @@ int main() {
 
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MCuC Debug Logger Started.");
 
-    //////////////////////////////
+    ///////////////////////////////
     // Initialize Powertrain CAN //
-    //////////////////////////////
+    ///////////////////////////////
     vcu::Hardmon::HardmonGPIO hmGPIOS = {
-        {io::getGPIO<vcu::Hardmon::IGNITION_CHECK_PIN>(io::GPIO::Direction::INPUT),
-         io::getGPIO<vcu::Hardmon::IGNITION_3V3_PIN>(io::GPIO::Direction::INPUT),
-         io::getGPIO<vcu::Hardmon::LVSS_STATUS_3V3_Pin>(io::GPIO::Direction::INPUT),
-         io::getGPIO<vcu::Hardmon::MOTOR_CONTROLLER_STATUS_PIN>(io::GPIO::Direction::INPUT),
+        {
+            // Inputs
+            io::getGPIO<vcu::Hardmon::ESTOP_A_PIN>(io::GPIO::Direction::INPUT),
+            io::getGPIO<vcu::Hardmon::ESTOP_B_PIN>(io::GPIO::Direction::INPUT),
 
-         io::getGPIO<vcu::Hardmon::UC_STATE_ONE_PIN>(io::GPIO::Direction::INPUT),
-         io::getGPIO<vcu::Hardmon::UC_STATE_ONE_PIN>(io::GPIO::Direction::INPUT),
-         io::getGPIO<vcu::Hardmon::UC_STATE_TWO_PIN>(io::GPIO::Direction::INPUT),
-         io::getGPIO<vcu::Hardmon::UC_STATE_THREE_PIN>(io::GPIO::Direction::INPUT),
+            io::getGPIO<vcu::Hardmon::IGNITION_A_PIN>(io::GPIO::Direction::INPUT),
+            io::getGPIO<vcu::Hardmon::IGNITION_B_PIN>(io::GPIO::Direction::INPUT),
 
-         io::getGPIO<vcu::Hardmon::ESTOP_CHECK_PIN>(io::GPIO::Direction::INPUT),
-         io::getGPIO<vcu::Hardmon::WATCHDOG_PIN>(io::GPIO::Direction::INPUT),
-         io::getGPIO<vcu::Hardmon::ESTOP_3V3_PIN>(io::GPIO::Direction::INPUT),
+            io::getGPIO<vcu::Hardmon::UC_STATE_ONE_PIN>(io::GPIO::Direction::INPUT),
+            io::getGPIO<vcu::Hardmon::UC_STATE_ONE_PIN>(io::GPIO::Direction::INPUT),
+            io::getGPIO<vcu::Hardmon::UC_STATE_TWO_PIN>(io::GPIO::Direction::INPUT),
+            io::getGPIO<vcu::Hardmon::UC_STATE_THREE_PIN>(io::GPIO::Direction::INPUT),
 
-         io::getGPIO<vcu::Hardmon::MOTOR_CONTROLLER_TOGGLE_OVERRIDE_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::Hardmon::LVSS_EN_OVERRIDE_PIN>(),
-         io::getGPIO<vcu::Hardmon::MOTOR_CONTROLLER_TOGGLE_NEG_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::Hardmon::MOTOR_CONTROLLER_TOGGLE_POS_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::Hardmon::UC_RESET_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::Hardmon::LVSS_EN_PIN>(io::GPIO::Direction::OUTPUT),
-         io::getGPIO<vcu::Hardmon::HM_FAULT_PIN>(io::GPIO::Direction::OUTPUT)}};
+            io::getGPIO<vcu::Hardmon::MOTOR_CONTROLLER_STATUS_PIN>(io::GPIO::Direction::INPUT),
+            io::getGPIO<vcu::Hardmon::INTERLOCK_PIN>(io::GPIO::Direction::INPUT),
 
+            io::getGPIO<vcu::Hardmon::WATCHDOG_PIN>(io::GPIO::Direction::INPUT),
+
+            io::getGPIO<vcu::Hardmon::LS_SELF_TEST_A_PIN>(io::GPIO::Direction::INPUT),
+            io::getGPIO<vcu::Hardmon::LS_SELF_TEST_B_PIN>(io::GPIO::Direction::INPUT),
+
+            io::getGPIO<vcu::Hardmon::CAN_SELFTEST_PIN>(io::GPIO::Direction::INPUT),
+
+            // Outputs
+            io::getGPIO<vcu::Hardmon::MOTOR_CONTROLLER_TOGGLE_NEG_PIN>(io::GPIO::Direction::OUTPUT),
+            io::getGPIO<vcu::Hardmon::MOTOR_CONTROLLER_TOGGLE_POS_PIN>(io::GPIO::Direction::OUTPUT),
+            io::getGPIO<vcu::Hardmon::MOTOR_CONTROLLER_TOGGLE_OVERRIDE_PIN>(io::GPIO::Direction::OUTPUT),
+
+            io::getGPIO<vcu::Hardmon::LVSS_EN_OVERRIDE_PIN>(io::GPIO::Direction::OUTPUT),
+            io::getGPIO<vcu::Hardmon::LVSS_EN_PIN>(io::GPIO::Direction::OUTPUT),
+
+            io::getGPIO<vcu::Hardmon::N_RST_PIN>(io::GPIO::Direction::OUTPUT, io::GPIO::Pull::PULL_UP),
+            io::getGPIO<vcu::Hardmon::CAN_OVERRIDE_PIN>(io::GPIO::Direction::OUTPUT),
+        }};
+
+    io::getGPIO<vcu::Hardmon::N_RST_PIN>().writePin(io::GPIO::State::HIGH);
     io::CAN& ptCAN = io::getCAN<vcu::Hardmon::POWERTRAIN_CAN_TX_PIN, vcu::Hardmon::POWERTRAIN_CAN_RX_PIN>();
 
     vcu::Hardmon hardmon(hmGPIOS, ptCAN);
@@ -249,7 +262,7 @@ int main() {
 
     time::wait(500);
 
-    // print any CANopen errors
+    // print any CANopen errors // todo why are we doing this? just to clear the any potential error from the CAN node?
     uart.printf("Error: %d\r\n", CONodeGetErr(&canNode));
     ////////////////////////
     // Initialize Threadx //
@@ -340,6 +353,11 @@ int main() {
 
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting Kernel.");
 
+    // todo: as of right now, we just want to let the mcuc run to test that, no hardmon anything at the moment
+    while (true) {
+
+    }
+
     rtos::startKernel(initArr, sizeof(initArr) / sizeof(initArr[0]), txPool);
 }
 
@@ -420,8 +438,9 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     // todo: Hardmon CANOpen dictionary is incomplete so trying to process the CAN will break it. This needs to be
     // fixed.
 
-    //    while(true) {
+        while(true) {
     //        //process accessory CAN
     //        io::processCANopenNode(args->accessoryCanNode);
-    //    }
+            rtos::sleep(MS_TO_TICKS(500));
+        }
 }

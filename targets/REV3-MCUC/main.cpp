@@ -170,39 +170,40 @@ int main() {
     log::LOGGER.setUART(&uart);
     log::LOGGER.setLogLevel(log::Logger::LogLevel::DEBUG);
 
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MCuC Debug Logger Started.");
-
     // Initialize MCuC and Powertrain CAN
-
     vcu::MCuC::MCuC_GPIO gpios = {{
-        io::getGPIO<vcu::MCuC::ESTOP_IN_PIN>(io::GPIO::Direction::INPUT, io::GPIO::Pull::PULL_UP),
-        io::getGPIO<vcu::MCuC::IGNITION_IN_PIN>(io::GPIO::Direction::INPUT, io::GPIO::Pull::PULL_UP),
+        // Inputs
+        io::getGPIO<vcu::MCuC::ESTOP_A_PIN>(io::GPIO::Direction::INPUT),
+        io::getGPIO<vcu::MCuC::ESTOP_B_PIN>(io::GPIO::Direction::INPUT),
+
+        io::getGPIO<vcu::MCuC::IGNITION_A_PIN>(io::GPIO::Direction::INPUT),
+        io::getGPIO<vcu::MCuC::IGNITION_B_PIN>(io::GPIO::Direction::INPUT),
+
+        io::getGPIO<vcu::MCuC::INTERLOCK_PIN>(io::GPIO::Direction::INPUT),
         io::getGPIO<vcu::MCuC::MC_STATUS_PIN>(io::GPIO::Direction::INPUT),
 
         io::getGPIO<vcu::MCuC::LS_SELF_TEST_IN_A_PIN>(io::GPIO::Direction::INPUT),
         io::getGPIO<vcu::MCuC::LS_SELF_TEST_IN_B_PIN>(io::GPIO::Direction::INPUT),
 
-        io::getGPIO<vcu::MCuC::LVSS_ENABLE_PIN>(io::GPIO::Direction::OUTPUT),
+        // Outputs
+        io::getGPIO<vcu::MCuC::LS_SELF_TEST_OUT_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::WATCHDOG_PIN>(io::GPIO::Direction::OUTPUT),
+
+        io::getGPIO<vcu::MCuC::FAULT_LED_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCuC::SUPER_FAULT_LED_PIN>(io::GPIO::Direction::OUTPUT),
+
+        io::getGPIO<vcu::MCuC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
+
+        io::getGPIO<vcu::MCuC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCuC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCuC::MC_RELAY_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
+
+        io::getGPIO<vcu::MCuC::LVSS_ENABLE_PIN>(io::GPIO::Direction::OUTPUT),
 
         io::getGPIO<vcu::MCuC::UC_STATE_ZERO_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::UC_STATE_ONE_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::UC_STATE_TWO_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::UC_STATE_THREE_PIN>(io::GPIO::Direction::OUTPUT),
-
-        io::getGPIO<vcu::MCuC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCuC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCuC::MC_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCuC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
-
-        io::getGPIO<vcu::MCuC::FAULT_LED_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCuC::SUPER_FAULT_LED_PIN>(io::GPIO::Direction::OUTPUT),
-
-        io::getGPIO<vcu::MCuC::ESTOP_OUT_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCuC::IGNITION_OUT_PIN>(io::GPIO::Direction::OUTPUT),
-
-        io::getGPIO<vcu::MCuC::LS_SELF_TEST_OUT_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCuC::INTERLOCK_PIN>(io::GPIO::Direction::OUTPUT),
     }};
 
     ///////////////////////////////////////////////////////////
@@ -215,8 +216,6 @@ int main() {
     vcu::MCuC mcuc(gpios, ptCAN);
 
     ptCAN.addIRQHandler(reinterpret_cast<void (*)(io::CANMessage&, void*)>(powertrainCANInterrupt), &mcuc);
-
-    // TODO: CANopen uncomment when we add in Accessory CAN configuration
 
     ///////////////////////////////////////////////////////////////////////////
     // Setup ACCESSORY CAN configuration, this handles making drivers, applying settings.
@@ -283,7 +282,7 @@ int main() {
     // Initialize Threads
 
     /// eventflag that triggers the model to run
-    rtos::EventFlags modelTriggerFlag((char*) "Model Trigger Flag");
+    rtos::EventFlags modelTriggerFlag((char*) "Model Trigger Flag");    // todo: look into making flags useful for health thread among others
 
     /// timer that triggers the model eventflag (and thus steps the model)
     rtos::Timer<rtos::EventFlags*> modelTriggerTimer((char*) "Model Trigger Timer",
@@ -350,6 +349,7 @@ int main() {
         ACC_CAN_RECEIVE_THREAD_TIME_SLICE,
         ACC_CAN_RECEIVE_THREAD_AUTOSTART);
 
+
     // Start kernel
     rtos::Initializable* initArr[] = {
         &mcuc,
@@ -358,8 +358,9 @@ int main() {
         &modelTriggerTimer,
         &powertrainCANReceiveThread,
         &healthThread,
-        &accessoryCanReceiveThread, //&threadUART
+        &accessoryCanReceiveThread,
     };
+
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting Kernel");
     rtos::startKernel(initArr, sizeof(initArr) / sizeof(initArr[0]), txPool);
 }
@@ -373,7 +374,6 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     uint32_t flags;
     modelTriggerFlag->getCurrentFlags(&flags);
     if ((flags & 0x01) == 0x01) {
-
         // the model is not running fast enough- this is very bad!!!!
         // todo: determine what error to throw
         log::LOGGER.log(core::log::Logger::LogLevel::ERROR, "Model Thread Not Running Fast Enough!");
@@ -393,13 +393,9 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     while (true) {
         uint32_t flagOutput;
         args->triggerFlag->get(0x01, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Triggered");
+//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Triggered");
         args->mcuc->process();
-        // TODO: IMAGINE STUFF
-        //         bool ignition = args->IgnitionInGPIO->readPin() == io::GPIO::State::LOW;
-        //         bool eStop = args->eStopInGPIO->readPin() == io::GPIO::State::HIGH;
-        //         args->mcuc->imagineNeuteredProcess(eStop, ignition);
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Completed");
+//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Completed");
     }
 }
 
@@ -412,9 +408,13 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Powertrain CAN Receive Thread started");
     io::CANMessage message;
     while (true) {
-        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Powertrain CAN Receive Thread Triggered");
         // suspends if there are no messages to receive
         args->mcuc->receiveFromPowertrainQueue(&message, rtos::TXWait::TXW_WAIT_FOREVER);
+
+        // save that this node has sent a message
+        args->mcuc->updateNodeHeartbeat(message.getId());
+
+        // process the message
         args->mcuc->handlePowertrainCanMessage(message);
     }
 }
@@ -424,12 +424,10 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
  *
  * @param args the arguments for this thread
  */
-[[noreturn]] void healthThreadEntry(healthThreadArgs_t* args) {
+[[noreturn]] void healthThreadEntry(healthThreadArgs_t* args) { // todo: this currently doesnt do anything
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Started");
     rtos::TXError error;
     while (true) {
-        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Triggered");
-
         // do health thread stuff
         error = rtos::sleep(MS_TO_TICKS(120));
     }
@@ -447,25 +445,27 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     rtos::TXError error;
     while (true) {
         // process accessory CAN
-        //         log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Triggered");
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-                        "\tSending %d to LVSS",
-                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal);
+//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
+//                        "\tSending %d to LVSS",
+//                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal);
+
+        // Save that this node has sent a message
+        args->mcuc->updateNodeHeartbeat(args->accessoryCanNode->NodeId); // todo: idk if this var is the actual messages node id
 
         io::processCANopenNode(args->accessoryCanNode);
 
-        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-        //                        "Accessory Can Node Processed\n\r\t"
-        //                        "HV Current: %d\n\r\t"
-        //                        "Power Switch Error: %d",
-        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent,
-        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus);
-        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-        //                        "\n\r\tPower Switch Current: %d"
-        //                        "\n\r\tTemps: %d",
-        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents,
-        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures);
-        //
-        rtos::sleep(MS_TO_TICKS(400));
+//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
+//                        "Accessory Can Node Processed\n\r\t"
+//                        "HV Current: %d\n\r\t"
+//                        "Power Switch Error: %d",
+//                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent,
+//                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus);
+//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
+//                        "\n\r\tPower Switch Current: %d"
+//                        "\n\r\tTemps: %d",
+//                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents,
+//                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures);
+
+        rtos::sleep(MS_TO_TICKS(400));  // why are we waiting?
     }
 }
