@@ -39,9 +39,15 @@ public:
         // HIB message
         HIB_MESSAGE_ID = 0x0D0,
 
+        // BMS message
+        BMS_MESSAGE_ID               = 0x202,
+
+        // Ground Fault message
+        GFDB_MESSAGE_ID              = 0xA100100,
+
         // self test message ids
         HARDMON_SELF_TEST_MESSAGE_ID = 0x044, // TODO: This is not the correct ID, will not work!
-        UC_SELF_TEST_MESSAGE_ID      = 0x045  // TODO: This is not the correct ID, will not work!
+        UC_SELF_TEST_MESSAGE_ID      = 0x045, // TODO: This is not the correct ID, will not work!
     };
 
     /**
