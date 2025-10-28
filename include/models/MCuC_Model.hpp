@@ -7,9 +7,9 @@
 //
 // Code generated for Simulink model 'MCuC'.
 //
-// Model version                  : 1.174
+// Model version                  : 5.0
 // Simulink Coder version         : 25.2 (R2025b) 28-Jul-2025
-// C/C++ source code generated on : Sat Oct 25 11:11:11 2025
+// C/C++ source code generated on : Mon Oct 27 20:53:57 2025
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: STMicroelectronics->ST10/Super10

@@ -7,16 +7,16 @@
 //
 // Code generated for Simulink model 'MCuC'.
 //
-// Model version                  : 1.174
+// Model version                  : 5.0
 // Simulink Coder version         : 25.2 (R2025b) 28-Jul-2025
-// C/C++ source code generated on : Sat Oct 25 11:11:11 2025
+// C/C++ source code generated on : Mon Oct 27 20:53:57 2025
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: STMicroelectronics->ST10/Super10
 // Code generation objectives: Unspecified
 // Validation result: Not run
 //
-#include "Models/MCuC_Model.hpp"
+#include "models/MCuC_Model.hpp"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -381,30 +381,27 @@ namespace vcu
             Open_Contactor;
 
         // During 'Preset': '<S10>:302'
-        if (*NOR) {
-            // Transition: '<S10>:320'
-            // Exit Internal 'Preset': '<S10>:302'
-            // Exit Internal 'MC_ST': '<S10>:361'
-            MCuC_DW.is_MC_ST = 0;
-
-            // Exit 'Preset': '<S10>:302'
-            MCuC_DW.is_Logic = MCuC_IN_Key_Cycle;
-
-            // Update for Outport: '<Root>/uC_State'
-            // Entry 'Key_Cycle': '<S10>:372'
-            MCuC_Y.uC_State = UC_State::Key_Cycle;
-
-            // Update for Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-            MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
-                Close_Contactor;
-
-            // During 'MC_ST': '<S10>:361'
-        } else if (static_cast<uint16_t>(MCuC_DW.is_MC_ST) == MCuC_IN_MC_EN_OFF)
-        {
+        // During 'MC_ST': '<S10>:361'
+        if (static_cast<uint16_t>(MCuC_DW.is_MC_ST) == MCuC_IN_MC_EN_OFF) {
             // Update for Outport: '<Root>/MC_EN_uC'
             MCuC_Y.MC_EN_uC = false;
 
             // During 'MC_EN_OFF': '<S10>:366'
+            if (*NOR) {
+                // Transition: '<S10>:320'
+                MCuC_DW.is_MC_ST = 0;
+
+                // Exit 'Preset': '<S10>:302'
+                MCuC_DW.is_Logic = MCuC_IN_Key_Cycle;
+
+                // Update for Outport: '<Root>/uC_State'
+                // Entry 'Key_Cycle': '<S10>:372'
+                MCuC_Y.uC_State = UC_State::Key_Cycle;
+
+                // Update for Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
+                MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
+                    Close_Contactor;
+            }
         } else {
             // Update for Outport: '<Root>/MC_EN_uC'
             MCuC_Y.MC_EN_uC = true;
