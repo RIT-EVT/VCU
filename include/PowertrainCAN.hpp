@@ -139,7 +139,7 @@ public:
      * NOTE: sending the message DOES NOT reset the contents of the message;
      *  i.e. calling this function twice will send two identical messages.
      */
-    void sendMCMessage();
+    io::CAN::CANStatus sendMCMessage();
 
     /**
      * Sends a UC Self Test Message that the Hardmon will respond to.

@@ -47,14 +47,14 @@ void PowertrainCAN::setMCTorque(int16_t torqueRequest) {
     mcCommandPayload.torque = torqueRequest;
 }
 
-void PowertrainCAN::sendMCMessage() {
+io::CAN::CANStatus PowertrainCAN::sendMCMessage() {
     // gotta be a uint8_t array, so we memcpy into it.
     uint8_t payload[8];
     memcpy(payload, &mcCommandPayload, 8u);
     // make the message
     io::CANMessage message = io::CANMessage(PowertrainCAN::MessageIDs::MC_COMMAND_ID, 8u, payload, false);
     // send the message
-    can.transmit(message);
+    return can.transmit(message);
 }
 
 void PowertrainCAN::sendUCSelfTestMessage() {
