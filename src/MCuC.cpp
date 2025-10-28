@@ -131,7 +131,7 @@ inline const char* stateToString(UC_State state) {
 }
 
 void MCuC::process() {
-    static bool mcEnableLast = false;   // The mcEnable needs to do a blip every time it switches, so need to remember last state
+    static bool mcEnableLast = false;   // The mcEnable needs to do a pulse every time it switches, so need to remember last state
     // todo: debugging static vars for manually tricking simulink model into going through full state machine
     static bool firstStep = true;
     static bool seenMCInit = false;
@@ -145,8 +145,7 @@ void MCuC::process() {
 #endif
 
     bufferMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Start of process");    // todo: remove when done
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "STATE: %s", stateToString(modelOutputs.uC_State));
+
     // update Accessory Can Safe buffer
     sendInputDataToSafeBuffer();
 
@@ -154,7 +153,6 @@ void MCuC::process() {
     eStop = gpios.eStopAGPIO.readPin() == io::GPIO::State::LOW; // active low
     // forwardEnable, startPressed, mcStateMachine, discharge updated over CAN
     ignitionOn = gpios.ignitionAGPIO.readPin() == io::GPIO::State::LOW; // active low
-    // hmFault = gpios.hmFaultGPIO.readPin() == io::GPIO::State::HIGH;  // todo: why are these commented out
     // throttle updated over CAN
     // lvssOn = gpios.lvssStatusGPIO.readPin() == io::GPIO::State::HIGH;
     mcOn = gpios.mcStatusGPIO.readPin() == io::GPIO::State::HIGH;
@@ -172,15 +170,6 @@ void MCuC::process() {
     modelInputs.MC_DC_State_CAN  = mcDischarge;
     modelInputs.Throttle_CAN     = throttle;
     modelInputs.Interlock        = interlock;
-
-    // Some of the model inputs that seemingly arent being set:
-    // HIB Comparison fault
-    // BMS Contactor Closed
-    // MC Cooling FR
-    // Any BMS stuff
-    // Any battery stuff
-    // Acc on
-    // the B's, so estop b, ignition b, etc.
 
     // todo: test hardcoding
     modelInputs.Interlock = true;
@@ -289,9 +278,8 @@ void MCuC::process() {
 #ifdef EVT_CORE_LOG_ENABLE
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "STATE AFTER STEP: %s", stateToString(ucState.stateEnum));
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Step Length: %lu ms", (halstepEnd - halstep));
+    uint32_t halSection = core::time::millis(); // todo: remove when done debugging
 #endif
-
-    uint32_t halSection = core::time::millis();
 
     // use outputs
     gpios.lvssEnableGPIO.writePin(lvssEnable ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
@@ -324,7 +312,10 @@ void MCuC::process() {
     gpios.mcSelfTestGPIO.writePin(mcSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     // We will send accessory CAN SelfTest message over CANopen
     // Send the powertrainCanSelfTest message
-    uint32_t halSectionEnd = core::time::millis();
+
+#ifdef EVT_CORE_LOG_ENABLE
+    uint32_t halSectionEnd = core::time::millis();  // todo: remove when done debugging
+#endif
 
     if (powertrainCanSelfTestOut) {
 #ifdef EVT_CORE_LOG_ENABLE
@@ -347,14 +338,20 @@ void MCuC::process() {
     halmotorControllerCan = core::time::millis();
 #endif
 
-    powertrainCAN.sendMCMessage();
+    io::CAN::CANStatus mcMessageStatus = powertrainCAN.sendMCMessage();
+
+#ifdef EVT_CORE_LOG_ENABLE
+    if (mcMessageStatus != io::CAN::CANStatus::OK) {
+        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "Motor Controller Message Failed with error %d", mcMessageStatus);
+    }
+#endif
 
     sendOutputDataToUnsafeBuffer();
     bufferMutex.put();
 
 #ifdef EVT_CORE_LOG_ENABLE
     halend = core::time::millis();
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Section length: %lu ms", (halSectionEnd-halSection));
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Process length: %lu ms", (halend-halstart));
 
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MS Timing:");
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
