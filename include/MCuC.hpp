@@ -294,12 +294,10 @@ private:
     MC_DC_State mcDischarge; ///< CAN (MC): What state the motor controller discharger is in. [0,4] range
     bool ignitionOn = false;         ///< GPIO: Whether or not the ignition is on.
     bool interlock = false;         ///< GPIO: if BFC is plugged in
-    bool hmFault = false;     ///< GPIO: Whether or not the hardware monitor is telling the MCUC to go into a fault state.
     int16_t throttle = 0; ///< CAN (HIB): Signal state of the throttle.
     bool lvssOn = false;      ///< GPIO: Whether or not the LVSS is on.
     bool mcOn = false;        ///< GPIO: Whether or not the motor controller is on.
     bool powertrainCANSelfTestIn = false; ///< CAN (Hardmon): If the powertrain CAN network is working.
-    bool accessoryCANSelfTestIn = false;  ///< CAN (Hardmon): If the accessory CAN network is working.
 
     /**
      * Array holding number of messages received from each of the other boards.
