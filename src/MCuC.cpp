@@ -131,8 +131,9 @@ inline const char* stateToString(UC_State state) {
 }
 
 void MCuC::process() {
+    static bool mcEnableLast = false;   // The mcEnable needs to do a blip every time it switches, so need to remember last state
     // todo: debugging static vars for manually tricking simulink model into going through full state machine
-    static bool first = true;
+    static bool firstStep = true;
     static bool seenMCInit = false;
     static bool forwardStatic = false;
     static int16_t throttleStatic = 0;
@@ -159,11 +160,9 @@ void MCuC::process() {
     mcOn = gpios.mcStatusGPIO.readPin() == io::GPIO::State::HIGH;
     interlock = gpios.interlockGPIO.readPin() == io::GPIO::State::HIGH;
 
-
     // set the inputs and step the model
     modelInputs.Ignition_LS_A    = ignitionOn;
     modelInputs.ESTOP_LS_A       = eStop;
-//    modelInputs.HM_Fault         = hmFault;
     modelInputs.MC_ON            = mcOn;
     modelInputs.Start_CAN        = startPressed;
     modelInputs.LVSS_ON_CAN      = lvssOn;
@@ -173,7 +172,6 @@ void MCuC::process() {
     modelInputs.MC_DC_State_CAN  = mcDischarge;
     modelInputs.Throttle_CAN     = throttle;
     modelInputs.Interlock        = interlock;
-
 
     // Some of the model inputs that seemingly arent being set:
     // HIB Comparison fault
@@ -193,8 +191,8 @@ void MCuC::process() {
     modelInputs.MC_VSM_State_CAN = MC_VSM_State::Start;
     modelInputs.HIB_Comparison_Fault_CAN = false;
 
-    if (first) {
-        first = false;
+    if (firstStep) {
+        firstStep = false;
         for (int i = 0; i < HB_SIZE; i++) {
             modelInputs.Heartbeats_CAN[i] = 0;
         }
@@ -205,7 +203,7 @@ void MCuC::process() {
     }
 
     // Big ass code block to fake inputs to test simulink model
-    if (!first) {
+    if (!firstStep) {
         for (int i = 0; i < HB_SIZE; i++) {
             modelInputs.Heartbeats_CAN[i]++;
         }
@@ -290,8 +288,10 @@ void MCuC::process() {
 
 #ifdef EVT_CORE_LOG_ENABLE
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "STATE AFTER STEP: %s", stateToString(ucState.stateEnum));
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Step Length: %lu ms", (halstep - halstepEnd));
+//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Step Length: %lu ms", (halstepEnd - halstep));
 #endif
+
+    uint32_t halSection = core::time::millis();
 
     // use outputs
     gpios.lvssEnableGPIO.writePin(lvssEnable ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
@@ -303,15 +303,28 @@ void MCuC::process() {
     gpios.ucStateTwoGPIO.writePin(ucState.stateBit2 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ucStateThreeGPIO.writePin(ucState.stateBit3 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     // set inverterDisable before we send the message
-    //  set Motor Controller via the two gpios
-    //  If mcEnableUC is true, Positive should be High and Negative should be Low, otherwise they should be the
-    //  opposite.
-    gpios.mcTogglePositiveGPIO.writePin(mcEnableUC ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    gpios.mcToggleNegativeGPIO.writePin(mcEnableUC ? io::GPIO::State::LOW : io::GPIO::State::HIGH);
+    // set Motor Controller via the two gpios
+
+    // If mcEnableUC switches to true mcTogglePositive should pulse high, and
+    // if mcEnableUC switches to false mcToggleNegative should pulse high
+    if (mcEnableLast != mcEnableUC) {
+        if (mcEnableUC) {
+            gpios.mcTogglePositiveGPIO.writePin(io::GPIO::State::HIGH);
+            rtos::sleep(MS_TO_TICKS(10));
+            gpios.mcTogglePositiveGPIO.writePin(io::GPIO::State::LOW);
+        } else {
+            gpios.mcToggleNegativeGPIO.writePin(io::GPIO::State::HIGH);
+            rtos::sleep(MS_TO_TICKS(10));
+            gpios.mcToggleNegativeGPIO.writePin(io::GPIO::State::LOW);
+        }
+        mcEnableLast = mcEnableUC;
+    }
+
     // set torqueRequest before we send the message
     gpios.mcSelfTestGPIO.writePin(mcSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     // We will send accessory CAN SelfTest message over CANopen
     // Send the powertrainCanSelfTest message
+    uint32_t halSectionEnd = core::time::millis();
 
     if (powertrainCanSelfTestOut) {
 #ifdef EVT_CORE_LOG_ENABLE
@@ -335,12 +348,13 @@ void MCuC::process() {
 #endif
 
     powertrainCAN.sendMCMessage();
+
     sendOutputDataToUnsafeBuffer();
     bufferMutex.put();
 
 #ifdef EVT_CORE_LOG_ENABLE
     halend = core::time::millis();
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Full Process length: %lu ms", (halend - halstart));
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Section length: %lu ms", (halSectionEnd-halSection));
 
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MS Timing:");
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
