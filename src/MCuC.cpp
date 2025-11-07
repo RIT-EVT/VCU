@@ -102,7 +102,7 @@ void MCuC::updateNodeHeartbeat(uint32_t nodeId) {
             return;  // Should never get here; means we received a message from an unknown board
     }
 
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "HEARTBEAT: hb being increased");   // todo: remove when tested
+//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "HEARTBEAT: hb being increased");   // todo: remove when tested
 
     hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     heartbeatMessages[slot]++;
@@ -131,12 +131,17 @@ inline const char* stateToString(UC_State state) {
 }
 
 void MCuC::process() {
-    static bool mcEnableLast = false;   // The mcEnable needs to do a pulse every time it switches, so need to remember last state
+    // The mcEnable needs to do a pulse every time it switches, so need to remember last state
+    static bool mcEnableLast = false;
+    // rollingCounter is CAN message counter to alert it to repeat msgs; will be incremented from 0 to 15 and repeat
+    static int8_t rollingCounter = 0;
+
     // todo: debugging static vars for manually tricking simulink model into going through full state machine
     static bool firstStep = true;
     static bool seenMCInit = false;
     static bool forwardStatic = false;
     static int16_t throttleStatic = 0;
+    static uint32_t cycles = 0, total = 0;
 
 #ifdef EVT_CORE_LOG_ENABLE
     uint32_t halstart, halstep, halstepEnd, halpowerTrainCAN = 0, halmotorControllerCan, halend;
@@ -171,6 +176,7 @@ void MCuC::process() {
     modelInputs.Throttle_CAN     = throttle;
     modelInputs.Interlock        = interlock;
 
+
     // todo: test hardcoding
     modelInputs.Interlock = true;
     modelInputs.LVSS_ON_CAN = false;
@@ -181,6 +187,7 @@ void MCuC::process() {
     modelInputs.HIB_Comparison_Fault_CAN = false;
 
     if (firstStep) {
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Running steps");
         firstStep = false;
         for (int i = 0; i < HB_SIZE; i++) {
             modelInputs.Heartbeats_CAN[i] = 0;
@@ -236,7 +243,7 @@ void MCuC::process() {
     }
 
 #ifdef EVT_CORE_LOG_ENABLE
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "heartbeats: %lu, %lu, %lu, %lu, %lu", modelInputs.Heartbeats_CAN[0], modelInputs.Heartbeats_CAN[1], modelInputs.Heartbeats_CAN[2], modelInputs.Heartbeats_CAN[3], modelInputs.Heartbeats_CAN[4]);
+//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "heartbeats: %lu, %lu, %lu, %lu, %lu", modelInputs.Heartbeats_CAN[0], modelInputs.Heartbeats_CAN[1], modelInputs.Heartbeats_CAN[2], modelInputs.Heartbeats_CAN[3], modelInputs.Heartbeats_CAN[4]);
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "EStop: %d, Ignition %d", eStop, ignitionOn);
 #endif
     hbMutex.put();
@@ -244,7 +251,7 @@ void MCuC::process() {
     bufferMutex.put();
 
 #ifdef EVT_CORE_LOG_ENABLE
-    halstep = core::time::millis();
+//    halstep = core::time::millis();
 #endif
 
     model.setExternalInputs(&modelInputs);
@@ -252,55 +259,58 @@ void MCuC::process() {
     model.step();
 
     // TODO: in the future when the model is reworked so the inputs and outputs are in separate blocks of CAN & GPIO
-    // inputs
-    //  we can use unions for this and iterate through it.
+    //      inputs, we can use unions for this and iterate through it.
+
     // get outputs
     modelOutputs = model.getExternalOutputs();
     // save outputs
 
 #ifdef EVT_CORE_LOG_ENABLE
-    halstepEnd = core::time::millis();
+//    halstepEnd = core::time::millis();
 #endif
 
     bufferMutex.get(rtos::TXW_WAIT_FOREVER);
 
-    lvssEnable        = modelOutputs.LVSS_EN_uC;
-    inverterEnable    = modelOutputs.Inverter_EN_uC_CAN;
-    ucFault           = modelOutputs.Fault;
-    watchdog          = modelOutputs.Watchdog;
-    ucState.stateEnum = modelOutputs.uC_State;
-    inverterDischarge = modelOutputs.Inverter_DC_uC_CAN;
+    ucState.stateEnum = modelOutputs.uC_State;  // keep for the union
     mcEnableUC        = modelOutputs.MC_EN_uC;
-    torqueRequest     = modelOutputs.Torque_Request_CAN;
-    mcSelfTestOut     = modelOutputs.MC_Self_Test;
-
 
 #ifdef EVT_CORE_LOG_ENABLE
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "STATE AFTER STEP: %s", stateToString(ucState.stateEnum));
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "STATE: %s", stateToString(ucState.stateEnum));
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Step Length: %lu ms", (halstepEnd - halstep));
-    uint32_t halSection = core::time::millis(); // todo: remove when done debugging
 #endif
 
     // use outputs
-    gpios.lvssEnableGPIO.writePin(lvssEnable ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    // set inverterEnable before we send the message
-    // gpios.ucFaultGPIO.writePin(ucFault ? io::GPIO::State::HIGH : io::GPIO::State::LOW); (gone) // todo: check
-    gpios.watchdogGPIO.writePin(watchdog ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ucStateZeroGPIO.writePin(ucState.stateBit0 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ucStateOneGPIO.writePin(ucState.stateBit1 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ucStateTwoGPIO.writePin(ucState.stateBit2 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ucStateThreeGPIO.writePin(ucState.stateBit3 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    // set inverterDisable before we send the message
-    // set Motor Controller via the two gpios
 
-    // If mcEnableUC switches to true mcTogglePositive should pulse high, and
-    // if mcEnableUC switches to false mcToggleNegative should pulse high
+    gpios.lvssEnableGPIO.writePin(modelOutputs.LVSS_EN_uC ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.watchdogGPIO.writePin(modelOutputs.Watchdog ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+
+    gpios.canSelfTestGPIO.writePin(modelOutputs.CAN_Self_Test ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.lsSelfTestOutGPIO.writePin(modelOutputs.LS_Self_Test_Out ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.mcSelfTestGPIO.writePin(modelOutputs.MC_Self_Test ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+
+    // Fault LEDs
+    gpios.faultLEDGPIO.writePin(modelOutputs.Fault ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.superFaultLEDGPIO.writePin(modelOutputs.Super_Fault ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+
+    // HUDL LEDs
+    gpios.ledOneGPIO.writePin(modelOutputs.LED[0] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.ledTwoGPIO.writePin(modelOutputs.LED[1] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.ledThreeGPIO.writePin(modelOutputs.LED[2] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+
+    // set Motor Controller via the two gpios
     if (mcEnableLast != mcEnableUC) {
+        // If mcEnableUC switches to true mcTogglePositive should pulse high
         if (mcEnableUC) {
             gpios.mcTogglePositiveGPIO.writePin(io::GPIO::State::HIGH);
             rtos::sleep(MS_TO_TICKS(10));
             gpios.mcTogglePositiveGPIO.writePin(io::GPIO::State::LOW);
-        } else {
+        }
+        // if mcEnableUC switches to false mcToggleNegative should pulse high
+        else {
             gpios.mcToggleNegativeGPIO.writePin(io::GPIO::State::HIGH);
             rtos::sleep(MS_TO_TICKS(10));
             gpios.mcToggleNegativeGPIO.writePin(io::GPIO::State::LOW);
@@ -309,40 +319,49 @@ void MCuC::process() {
     }
 
     // set torqueRequest before we send the message
-    gpios.mcSelfTestGPIO.writePin(mcSelfTestOut ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     // We will send accessory CAN SelfTest message over CANopen
     // Send the powertrainCanSelfTest message
 
 #ifdef EVT_CORE_LOG_ENABLE
-    uint32_t halSectionEnd = core::time::millis();  // todo: remove when done debugging
+//    uint32_t halSectionEnd = core::time::millis();  // todo: remove when done debugging
 #endif
 
-    if (powertrainCanSelfTestOut) {
+    if (powertrainCanSelfTestOut) { // todo: this isn't an updated var
 #ifdef EVT_CORE_LOG_ENABLE
         halpowerTrainCAN = core::time::millis();
 #endif
         powertrainCAN.sendUCSelfTestMessage();
     }
+    log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "Inv EN %d", modelOutputs.Inverter_EN_uC_CAN);
 
-    // setting the CAN self test: only true when we are in ucState 10 (self test state)
-    // TODO: unknown if this self test is true or not yet
-    bool canSelfTest = ucState.stateEnum == UC_State::LVSS_MC_Shutdown;
-    gpios.canSelfTestGPIO.writePin(canSelfTest ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-
+    // todo: Look into speeding up cycle time by only sending powertrain CAN if something changes
     // Send the Motor Controller CAN message (set values first)
-    powertrainCAN.setMCInverterEnable(inverterEnable);
-    powertrainCAN.setMCInverterDischarge(inverterDischarge);
-    powertrainCAN.setMCTorque(torqueRequest);
+    powertrainCAN.setMCAll(modelOutputs.Torque_Request_CAN, modelOutputs.Speed_Command_uC_CAN,
+                           modelOutputs.Direction_Command_uC_CAN, modelOutputs.Inverter_EN_uC_CAN,
+                           modelOutputs.Inverter_DC_uC_CAN, modelOutputs.Speed_Mode_Enable_uC_CAN,
+                           rollingCounter, modelOutputs.Torque_Limit_Command_uC_CAN);
 
-#ifdef EVT_CORE_LOG_ENABLE
-    halmotorControllerCan = core::time::millis();
-#endif
+    rollingCounter++;
+
+    // Rolling Counter is stored in 4 bits, and is actually 0-15
+    if (rollingCounter == 16) {
+        rollingCounter = 0;
+    }
 
     io::CAN::CANStatus mcMessageStatus = powertrainCAN.sendMCMessage();
 
 #ifdef EVT_CORE_LOG_ENABLE
     if (mcMessageStatus != io::CAN::CANStatus::OK) {
-        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "Motor Controller Message Failed with error %d", mcMessageStatus);
+        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "MC Message Failed with error %d", mcMessageStatus);
+    }
+#endif
+
+    powertrainCAN.setBMSContactor(static_cast<int16_t>(modelOutputs.BMS_Contactor_Command_uC_CAN));
+    io::CAN::CANStatus bmsMessageStatus = powertrainCAN.sendBMSMessage();
+
+#ifdef EVT_CORE_LOG_ENABLE
+    if (bmsMessageStatus != io::CAN::CANStatus::OK) {
+        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "BMS Message Failed with error %d", bmsMessageStatus);
     }
 #endif
 
@@ -351,9 +370,14 @@ void MCuC::process() {
 
 #ifdef EVT_CORE_LOG_ENABLE
     halend = core::time::millis();
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Process length: %lu ms", (halend-halstart));
+    total += halend - halstart;
+    cycles++;
+    if (cycles >= 100) {
+        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "%lu ms", (total / cycles));
+        cycles = 0;
+        total = 0;
+    }
 
-//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MS Timing:");
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
 //                    "Starting: %d\n\r"
 //                    "Stepping: %d\n\r"

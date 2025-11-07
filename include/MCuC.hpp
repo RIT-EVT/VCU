@@ -146,10 +146,14 @@ public:
             io::GPIO& ucStateOneGPIO;
             io::GPIO& ucStateTwoGPIO;
             io::GPIO& ucStateThreeGPIO;
+
+            io::GPIO& ledOneGPIO;
+            io::GPIO& ledTwoGPIO;
+            io::GPIO& ledThreeGPIO;
         };
         struct {
             io::GPIO* inputArr[8];
-            io::GPIO* outputArr[13];
+            io::GPIO* outputArr[16];
         };
     };
 
@@ -290,7 +294,7 @@ private:
     bool eStop = false;              ///< GPIO: Whether or not the emergency stop is enabled.
     bool forwardEnable = false;      ///< CAN (HIB): Whether or not the bike is commanded to go forward.
     bool startPressed = false;       ///< CAN (HIB): Whether or not the bike is starting.
-    MC_VSM_State mcState;    ///< CAN (MC): What state the motor controller state machine is in. [0,14] range
+    MC_VSM_State mcState = MC_VSM_State::Start;    ///< CAN (MC): What state the motor controller state machine is in. [0,14] range
     MC_DC_State mcDischarge; ///< CAN (MC): What state the motor controller discharger is in. [0,4] range
     bool ignitionOn = false;         ///< GPIO: Whether or not the ignition is on.
     bool interlock = false;         ///< GPIO: if BFC is plugged in
@@ -308,24 +312,10 @@ private:
     // Model input data (struct)
     vcu::MCuC_Model::ExtU_MCuC_T modelInputs;
 
-    // Model output data
-    bool lvssEnable     = false; ///< GPIO: Whether or not the lvss should be on.
-    bool inverterEnable = false; ///< CAN (MC): Whether or not the inverter on the motor controller should be enabled.
-    bool ucFault        = false; ///< GPIO: Whether or not the MCUC is in a fault state
-    bool watchdog       = false; ///< GPIO: watchdog signal between the Hardmon and MCUC.
-    UCState ucState;             ///< GPIO: Current State of the MCUC;
-    bool inverterDischarge =
-        false; ///< CAN (MC): Whether or not the inverter on the motor controller should be discharging.
-    bool mcEnableUC =
-        false; ///< GPIO: controls mcTogglePositive and mcToggleNegative to enable or disable the motor controller
-    int16_t torqueRequest; ///< CAN (MC): How much torque the MCUC is requesting the motor controller to output
-    bool mcSelfTestOut       = false; ///< GPIO: Whether or not the motor controller should be self-testing.
-    bool estopSelfTestOut    = false; ///< GPIO: Whether or not the estop should be self-testing.
-    bool ignitionSelfTestOut = false; ///< GPIO: Whether or not ignition should be self-testing.
-    bool accessoryCanSelfTestOut =
-        false; ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over accessoryCAN
-    bool powertrainCanSelfTestOut =
-        false; ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over powertrainCAN
+    // Model output data (only the ones that need a var) some outputs are used directly; like writing to pin
+    UCState ucState;         ///< GPIO: Current State of the MCUC;
+    bool mcEnableUC = false; ///< GPIO: controls mcTogglePositive and mcToggleNegative to enable or disable the motor controller
+    bool powertrainCanSelfTestOut = false; ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over powertrainCAN
 
     // Model output data (struct)
     vcu::MCuC_Model::ExtY_MCuC_T modelOutputs;
@@ -413,6 +403,7 @@ private:
         DATA_LINK_21XX(0x03, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus),
         DATA_LINK_21XX(0x03, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus),
 
+        // todo: need to add CANOPEN transmits
         // Transmit DATA
         {
             .Key  = CO_KEY(0x2200 + 0x00, 0x00, CO_OBJ_D___R_),

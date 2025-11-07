@@ -25,7 +25,6 @@
 #include <core/rtos/BytePool.hpp>
 #include <core/rtos/Enums.hpp>
 #include <core/rtos/EventFlags.hpp>
-#include <core/rtos/Queue.hpp>
 #include <core/rtos/Semaphore.hpp>
 #include <core/rtos/Thread.hpp>
 #include <core/rtos/Timer.hpp>
@@ -43,7 +42,10 @@ namespace log  = core::log;
 /// The size of the memory pool for the tx application
 #define TX_APP_MEM_POOL_SIZE 65536
 /// How often the model should take 1 step.
-#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(500)
+#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(10)   // todo: needs to do 300 hz (every 3ms). rn anything below 10 and process() doesnt run
+
+/// How long until start the model trigger rates (give long enough to start
+#define MODEL_THREAD_TRIGGER_START MS_TO_TICKS(250)
 
 // Model Thread Parameters
 #define MODEL_THREAD_STACK_SIZE        1024
@@ -72,12 +74,6 @@ namespace log  = core::log;
 #define ACC_CAN_RECEIVE_THREAD_PREEMPT_THRESHOLD 5
 #define ACC_CAN_RECEIVE_THREAD_TIME_SLICE        MS_TO_TICKS(10)
 #define ACC_CAN_RECEIVE_THREAD_AUTOSTART         true
-
-// Threadsafe UART Thread parameters
-#define UART_THREAD_STACK_SIZE        1024
-#define UART_THREAD_PRIORITY          3
-#define UART_THREAD_PREEMPT_THRESHOLD 3
-#define UART_THREAD_TIME_SLICE        MS_TO_TICKS(15)
 
 // Thread Structs
 
@@ -204,6 +200,10 @@ int main() {
         io::getGPIO<vcu::MCuC::UC_STATE_ONE_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::UC_STATE_TWO_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::UC_STATE_THREE_PIN>(io::GPIO::Direction::OUTPUT),
+
+        io::getGPIO<vcu::MCuC::LED_ONE_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCuC::LED_TWO_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCuC::LED_THREE_PIN>(io::GPIO::Direction::OUTPUT),
     }};
 
     ///////////////////////////////////////////////////////////
@@ -216,6 +216,14 @@ int main() {
     vcu::MCuC mcuc(gpios, ptCAN);
 
     ptCAN.addIRQHandler(reinterpret_cast<void (*)(io::CANMessage&, void*)>(powertrainCANInterrupt), &mcuc);
+
+    io::CAN::CANStatus ptRes = ptCAN.connect(true);
+
+    // test that the board is connected to the can network
+    if (ptRes != io::CAN::CANStatus::OK) {
+        uart.printf("Failed to connect to Powertrain CAN network\r\n");
+        return 1;
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     // Setup ACCESSORY CAN configuration, this handles making drivers, applying settings.
@@ -248,7 +256,7 @@ int main() {
     CO_NODE canNode;
 
     // Attempt to join the CAN network
-    io::CAN::CANStatus result = accessoryCAN.connect();
+    io::CAN::CANStatus result = accessoryCAN.connect(true);
 
     // test that the board is connected to the can network
     if (result != io::CAN::CANStatus::OK) {
@@ -288,7 +296,7 @@ int main() {
     rtos::Timer<rtos::EventFlags*> modelTriggerTimer((char*) "Model Trigger Timer",
                                                      modelTimerExpiration,
                                                      &modelTriggerFlag,
-                                                     MODEL_THREAD_TRIGGER_RATE,
+                                                     MODEL_THREAD_TRIGGER_START,
                                                      MODEL_THREAD_TRIGGER_RATE,
                                                      true);
 
@@ -429,7 +437,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     rtos::TXError error;
     while (true) {
         // do health thread stuff
-        error = rtos::sleep(MS_TO_TICKS(120));
+        rtos::sleep(MS_TO_TICKS(120));
     }
 }
 
