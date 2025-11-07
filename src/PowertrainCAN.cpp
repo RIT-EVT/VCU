@@ -47,12 +47,38 @@ void PowertrainCAN::setMCTorque(int16_t torqueRequest) {
     mcCommandPayload.torque = torqueRequest;
 }
 
+void PowertrainCAN::setMCAll(int16_t torque, int16_t speed, int16_t direction, bool inverterEn,
+              bool inverterDC, int16_t speedModeEn, int8_t rollingCounter, int16_t torqueLimit) {
+    mcCommandPayload.torque = torque;
+    mcCommandPayload.speed = speed;
+    mcCommandPayload.direction = direction;
+    mcCommandPayload.inverterEnable = inverterEn;
+    mcCommandPayload.inverterDischarge = inverterDC;
+    mcCommandPayload.speedModeEnable = speedModeEn;
+    mcCommandPayload.rollingCounter = rollingCounter;
+    mcCommandPayload.CommandedTorqueLimit = torqueLimit;
+}
+
 io::CAN::CANStatus PowertrainCAN::sendMCMessage() {
     // gotta be a uint8_t array, so we memcpy into it.
     uint8_t payload[8];
     memcpy(payload, &mcCommandPayload, 8u);
     // make the message
     io::CANMessage message = io::CANMessage(PowertrainCAN::MessageIDs::MC_COMMAND_ID, 8u, payload, false);
+    // send the message
+    return can.transmit(message);
+}
+
+void PowertrainCAN::setBMSContactor(int16_t contactorCommand) {
+    bmsPayload.contactorCommand = contactorCommand;
+}
+
+io::CAN::CANStatus PowertrainCAN::sendBMSMessage() {
+    // gotta be a uint8_t array, so we memcpy into it.
+    uint8_t payload[8];
+    memcpy(payload, &bmsPayload, 8u);
+    // make the message
+    io::CANMessage message = io::CANMessage(PowertrainCAN::MessageIDs::BMS_MESSAGE_ID, 8u, payload, false);
     // send the message
     return can.transmit(message);
 }

@@ -37,13 +37,13 @@ public:
         MC_PARAMETER_COMMAND_ID = 0x0C1,
 
         // HIB message
-        HIB_MESSAGE_ID = 0x0D0,
+        HIB_MESSAGE_ID          = 0x0D0,
 
         // BMS message
-        BMS_MESSAGE_ID               = 0x202,
+        BMS_MESSAGE_ID          = 0x202,
 
         // Ground Fault message
-        GFDB_MESSAGE_ID              = 0xA100100,
+        GFDB_MESSAGE_ID         = 0xA100100,
 
         // self test message ids
         HARDMON_SELF_TEST_MESSAGE_ID = 0x044, // TODO: This is not the correct ID, will not work!
@@ -113,6 +113,27 @@ public:
      */
     bool parseHIBStartPressed(io::CANMessage& message);
 
+
+    /**
+     * Sets the Motor Controller Command message values.
+     * @param torque the value to set torque to.
+     * @param speed the value to set speed to.
+     * @param direction the value to set direction to.
+     * @param inverterEn the value to set inverterEn to.
+     * @param inverterDC the value to set interverDC to.
+     * @param speedModeEn the value to set speedModeEn to.
+     * @param rollingCounter the value to set rollingCounter to.
+     * @param torqueLimit the value to set torqueLimit to.
+     */
+    void setMCAll(int16_t torque, int16_t speed, int16_t direction, bool inverterEn,
+                  bool inverterDC, int16_t speedModeEn, int8_t rollingCounter, int16_t torqueLimit);
+
+    /**
+     * Sets the contactorCommand value for the BMS CAN message.
+     * @param contactorCommand the value to set contactorCommand to.
+     */
+    void setBMSContactor(int16_t contactorCommand);
+
     /**
      * Sets the inverterEnable value of the Motor Controller Command message.
      *
@@ -142,6 +163,13 @@ public:
     io::CAN::CANStatus sendMCMessage();
 
     /**
+     * Sends the BMS message.
+     * NOTE: sending the message DOES NOT reset the contents of the message;
+     *  i.e. calling this function twice will send two identical messages.
+     */
+    io::CAN::CANStatus sendBMSMessage();
+
+    /**
      * Sends a UC Self Test Message that the Hardmon will respond to.
      *  (Message is the same every time)
      */
@@ -166,12 +194,23 @@ private:
         uint8_t inverterEnable    : 1;
         uint8_t inverterDischarge : 1;
         uint8_t speedModeEnable   : 1;
-        uint8_t padding           : 5;
+        uint8_t padding           : 1;
+        uint8_t rollingCounter    : 4;
         int16_t CommandedTorqueLimit;
     } __attribute__((packed));
 
     /// Local instantiation of the command payload.
-    MCCommandPayload mcCommandPayload = {0, 0, 1, 0, 0, 0, 0, 0};
+    MCCommandPayload mcCommandPayload = {0, 0, 1, 0, 0, 0, 0, 0, 0};
+
+    /**
+     * Struct that represents the structure of the BMS Output Message.
+     */
+    struct BMSPayload {
+        int16_t contactorCommand;
+    } __attribute__((packed));
+
+    /// Local instantiation of the BMS payload.
+    BMSPayload bmsPayload = {0};
 
     /// Can Driver
     io::CAN& can;

@@ -3,21 +3,21 @@
 // course requirements at degree granting institutions only.  Not for
 // government, commercial, or other organizational use.
 //
-// File: MCuC.h
+// File: MCuC_Model.h
 //
 // Code generated for Simulink model 'MCuC'.
 //
-// Model version                  : 5.0
+// Model version                  : 5.3
 // Simulink Coder version         : 25.2 (R2025b) 28-Jul-2025
-// C/C++ source code generated on : Mon Oct 27 20:53:57 2025
+// C/C++ source code generated on : Mon Nov  3 19:58:40 2025
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: STMicroelectronics->ST10/Super10
 // Code generation objectives: Unspecified
 // Validation result: Not run
 //
-#ifndef MCuC_h_
-#define MCuC_h_
+#ifndef MCuC_Model_h_
+#define MCuC_Model_h_
 #include <stdbool.h>
 #include <stdint.h>
 #ifndef DEFINED_TYPEDEF_FOR_BMS_Contactor_Command_
@@ -251,9 +251,9 @@ namespace vcu
 
         // private member function(s) for subsystem '<Root>'
         void MCuC_Contactor_Closed(void);
-        void MCuC_LVSS_MC_Startup(void);
         void MCuC_MC_Active(void);
         void MCuC_MC_Init(void);
+        void MCuC_MC_Ready(const bool *AND);
         void MCuC_Preset(const bool *NOR);
         void MCuC_exit_internal_Logic(void);
 
@@ -294,7 +294,7 @@ namespace vcu
 //  '<S9>'   : 'MCuC/Cooling_Control_Chart'
 //  '<S10>'  : 'MCuC/MCuC_Chart'
 
-#endif                                 // MCuC_h_
+#endif                                 // MCuC_Model_h_
 
 //
 // File trailer for generated code.

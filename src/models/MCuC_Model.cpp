@@ -3,13 +3,13 @@
 // course requirements at degree granting institutions only.  Not for
 // government, commercial, or other organizational use.
 //
-// File: MCuC.cpp
+// File: MCuC_Model.cpp
 //
 // Code generated for Simulink model 'MCuC'.
 //
-// Model version                  : 5.0
+// Model version                  : 5.3
 // Simulink Coder version         : 25.2 (R2025b) 28-Jul-2025
-// C/C++ source code generated on : Mon Oct 27 20:53:57 2025
+// C/C++ source code generated on : Mon Nov  3 19:58:40 2025
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: STMicroelectronics->ST10/Super10
@@ -179,52 +179,6 @@ namespace vcu
     }
 
     // Function for Chart: '<Root>/MCuC_Chart'
-    void MCuC_Model::MCuC_LVSS_MC_Startup(void)
-    {
-        // Update for Outport: '<Root>/uC_State'
-        MCuC_Y.uC_State = UC_State::LVSS_MC_Startup;
-
-        // Outport: '<Root>/LVSS_EN_uC'
-        MCuC_Y.LVSS_EN_uC = true;
-
-        // Update for Outport: '<Root>/MC_EN_uC'
-        MCuC_Y.MC_EN_uC = true;
-
-        // Inport: '<Root>/MC_ON' incorporates:
-        //   Inport: '<Root>/LVSS_ON_CAN'
-
-        // During 'LVSS_MC_Startup': '<S10>:350'
-        if (MCuC_U.MC_ON && MCuC_U.LVSS_ON_CAN) {
-            // Transition: '<S10>:351'
-            MCuC_DW.is_Logic = MCuC_IN_MC_Init;
-
-            // Update for Outport: '<Root>/uC_State'
-            // Entry 'MC_Init': '<S10>:6'
-            MCuC_Y.uC_State = UC_State::MC_Init;
-
-            // Outport: '<Root>/Batt_12V_EN_uC_CAN'
-            MCuC_Y.Batt_12V_EN_uC_CAN = true;
-
-            // Outport: '<Root>/TMS_EN_uC_CAN'
-            MCuC_Y.TMS_EN_uC_CAN = true;
-
-            // Outport: '<Root>/HIB_EN_uC_CAN'
-            MCuC_Y.HIB_EN_uC_CAN = true;
-
-            // Outport: '<Root>/HUDL_EN_uC_CAN'
-            MCuC_Y.HUDL_EN_uC_CAN = true;
-
-            // Outport: '<Root>/GUB_EN_uC_CAN'
-            MCuC_Y.GUB_EN_uC_CAN = true;
-
-            // Outport: '<Root>/Acc_EN_uC_CAN'
-            MCuC_Y.Acc_EN_uC_CAN = true;
-        }
-
-        // End of Inport: '<Root>/MC_ON'
-    }
-
-    // Function for Chart: '<Root>/MCuC_Chart'
     void MCuC_Model::MCuC_MC_Active(void)
     {
         // Outport: '<Root>/Inverter_EN_uC_CAN'
@@ -371,6 +325,65 @@ namespace vcu
     }
 
     // Function for Chart: '<Root>/MCuC_Chart'
+    void MCuC_Model::MCuC_MC_Ready(const bool *AND)
+    {
+        // Update for Outport: '<Root>/uC_State'
+        MCuC_Y.uC_State = UC_State::MC_Ready;
+
+        // Outport: '<Root>/Inverter_EN_uC_CAN'
+        MCuC_Y.Inverter_EN_uC_CAN = false;
+
+        // Inport: '<Root>/Ignition_LS_A'
+        // During 'MC_Ready': '<S10>:436'
+        if (!MCuC_U.Ignition_LS_A) {
+            // Transition: '<S10>:452'
+            MCuC_DW.is_Logic = MCuC_IN_Contactor_Open;
+
+            // Outport: '<Root>/Inverter_DC_uC_CAN'
+            // Entry 'Contactor_Open': '<S10>:7'
+            MCuC_Y.Inverter_DC_uC_CAN = true;
+
+            // Update for Outport: '<Root>/uC_State'
+            MCuC_Y.uC_State = UC_State::Contactor_Open;
+
+            // Outport: '<Root>/Acc_EN_uC_CAN'
+            MCuC_Y.Acc_EN_uC_CAN = false;
+
+            // Outport: '<Root>/GUB_EN_uC_CAN'
+            MCuC_Y.GUB_EN_uC_CAN = false;
+
+            // Outport: '<Root>/HUDL_EN_uC_CAN'
+            MCuC_Y.HUDL_EN_uC_CAN = false;
+
+            // Outport: '<Root>/HIB_EN_uC_CAN'
+            MCuC_Y.HIB_EN_uC_CAN = false;
+
+            // Outport: '<Root>/TMS_EN_uC_CAN'
+            MCuC_Y.TMS_EN_uC_CAN = false;
+
+            // Outport: '<Root>/Batt_12V_EN_uC_CAN'
+            MCuC_Y.Batt_12V_EN_uC_CAN = false;
+        } else if (*AND) {
+            // Transition: '<S10>:17'
+            MCuC_DW.is_Logic = MCuC_IN_MC_Active;
+
+            // Outport: '<Root>/Inverter_EN_uC_CAN'
+            // Entry 'MC_Active': '<S10>:9'
+            MCuC_Y.Inverter_EN_uC_CAN = true;
+
+            // Update for Outport: '<Root>/uC_State'
+            MCuC_Y.uC_State = UC_State::MC_Active;
+
+            // Outport: '<Root>/Torque_Request_CAN'
+            MCuC_Y.Torque_Request_CAN = 0;
+        } else {
+            // no actions
+        }
+
+        // End of Inport: '<Root>/Ignition_LS_A'
+    }
+
+    // Function for Chart: '<Root>/MCuC_Chart'
     void MCuC_Model::MCuC_Preset(const bool *NOR)
     {
         // Update for Outport: '<Root>/uC_State'
@@ -472,6 +485,7 @@ namespace vcu
     {
         int16_t i;
         bool rtb_VectorConcatenate1[5];
+        bool AND;
         bool LogicalOperator;
         bool NOR;
         bool NOR_tmp;
@@ -597,16 +611,22 @@ namespace vcu
                 rtCP_pooled1) && (MCuC_U.MC_VSM_State_CAN ==
                 rtCP_Constant_Value_j)));
 
-        // Chart: '<Root>/MCuC_Chart' incorporates:
+        // Logic: '<Root>/AND' incorporates:
         //   Constant: '<S8>/Constant'
         //   Inport: '<Root>/Brake_CAN'
-        //   Inport: '<Root>/ESTOP_LS_A'
         //   Inport: '<Root>/Forward_EN_CAN'
-        //   Inport: '<Root>/Ignition_LS_A'
-        //   Inport: '<Root>/MC_DC_State_CAN'
         //   Inport: '<Root>/Throttle_CAN'
-        //   Logic: '<Root>/AND'
         //   RelationalOperator: '<S8>/Compare'
+
+        AND = (MCuC_U.Brake_CAN && MCuC_U.Forward_EN_CAN && (MCuC_U.Throttle_CAN
+                == rtCP_Constant_Value_c));
+
+        // Chart: '<Root>/MCuC_Chart' incorporates:
+        //   Inport: '<Root>/ESTOP_LS_A'
+        //   Inport: '<Root>/Ignition_LS_A'
+        //   Inport: '<Root>/LVSS_ON_CAN'
+        //   Inport: '<Root>/MC_DC_State_CAN'
+        //   Inport: '<Root>/MC_ON'
 
         // Gateway: MCuC_Chart
         // During: MCuC_Chart
@@ -823,7 +843,42 @@ namespace vcu
                         break;
 
                       case MCuC_IN_LVSS_MC_Startup:
-                        MCuC_LVSS_MC_Startup();
+                        // Outport: '<Root>/uC_State'
+                        MCuC_Y.uC_State = UC_State::LVSS_MC_Startup;
+
+                        // Outport: '<Root>/LVSS_EN_uC'
+                        MCuC_Y.LVSS_EN_uC = true;
+
+                        // Outport: '<Root>/MC_EN_uC'
+                        MCuC_Y.MC_EN_uC = true;
+
+                        // During 'LVSS_MC_Startup': '<S10>:350'
+                        if (MCuC_U.MC_ON && MCuC_U.LVSS_ON_CAN) {
+                            // Transition: '<S10>:351'
+                            MCuC_DW.is_Logic = MCuC_IN_MC_Init;
+
+                            // Outport: '<Root>/uC_State'
+                            // Entry 'MC_Init': '<S10>:6'
+                            MCuC_Y.uC_State = UC_State::MC_Init;
+
+                            // Outport: '<Root>/Batt_12V_EN_uC_CAN'
+                            MCuC_Y.Batt_12V_EN_uC_CAN = true;
+
+                            // Outport: '<Root>/TMS_EN_uC_CAN'
+                            MCuC_Y.TMS_EN_uC_CAN = true;
+
+                            // Outport: '<Root>/HIB_EN_uC_CAN'
+                            MCuC_Y.HIB_EN_uC_CAN = true;
+
+                            // Outport: '<Root>/HUDL_EN_uC_CAN'
+                            MCuC_Y.HUDL_EN_uC_CAN = true;
+
+                            // Outport: '<Root>/GUB_EN_uC_CAN'
+                            MCuC_Y.GUB_EN_uC_CAN = true;
+
+                            // Outport: '<Root>/Acc_EN_uC_CAN'
+                            MCuC_Y.Acc_EN_uC_CAN = true;
+                        }
                         break;
 
                       case MCuC_IN_MC_Active:
@@ -893,29 +948,7 @@ namespace vcu
                         break;
 
                       case MCuC_IN_MC_Ready:
-                        // Outport: '<Root>/uC_State'
-                        MCuC_Y.uC_State = UC_State::MC_Ready;
-
-                        // Outport: '<Root>/Inverter_EN_uC_CAN'
-                        MCuC_Y.Inverter_EN_uC_CAN = false;
-
-                        // During 'MC_Ready': '<S10>:436'
-                        if (MCuC_U.Brake_CAN && MCuC_U.Forward_EN_CAN &&
-                                (MCuC_U.Throttle_CAN == rtCP_Constant_Value_c))
-                        {
-                            // Transition: '<S10>:17'
-                            MCuC_DW.is_Logic = MCuC_IN_MC_Active;
-
-                            // Outport: '<Root>/Inverter_EN_uC_CAN'
-                            // Entry 'MC_Active': '<S10>:9'
-                            MCuC_Y.Inverter_EN_uC_CAN = true;
-
-                            // Outport: '<Root>/uC_State'
-                            MCuC_Y.uC_State = UC_State::MC_Active;
-
-                            // Outport: '<Root>/Torque_Request_CAN'
-                            MCuC_Y.Torque_Request_CAN = 0;
-                        }
+                        MCuC_MC_Ready(&AND);
                         break;
 
                       case MCuC_IN_Preset:
