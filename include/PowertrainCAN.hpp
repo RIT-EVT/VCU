@@ -37,13 +37,13 @@ public:
         MC_PARAMETER_COMMAND_ID = 0x0C1,
 
         // HIB message
-        HIB_MESSAGE_ID          = 0x0D0,
+        HIB_MESSAGE_ID = 0x0D0,
 
         // BMS message
-        BMS_MESSAGE_ID          = 0x202,
+        BMS_MESSAGE_ID = 0x202,
 
         // Ground Fault message
-        GFDB_MESSAGE_ID         = 0xA100100,
+        GFDB_MESSAGE_ID = 0xA100100,
 
         // self test message ids
         HARDMON_SELF_TEST_MESSAGE_ID = 0x044, // TODO: This is not the correct ID, will not work!
@@ -113,7 +113,6 @@ public:
      */
     bool parseHIBStartPressed(io::CANMessage& message);
 
-
     /**
      * Sets the Motor Controller Command message values.
      * @param torque the value to set torque to.
@@ -125,8 +124,8 @@ public:
      * @param rollingCounter the value to set rollingCounter to.
      * @param torqueLimit the value to set torqueLimit to.
      */
-    void setMCAll(int16_t torque, int16_t speed, int16_t direction, bool inverterEn,
-                  bool inverterDC, int16_t speedModeEn, int8_t rollingCounter, int16_t torqueLimit);
+    void setMCAll(int16_t torque, int16_t speed, int16_t direction, bool inverterEn, bool inverterDC,
+                  int16_t speedModeEn, int8_t rollingCounter, int16_t torqueLimit);
 
     /**
      * Sets the contactorCommand value for the BMS CAN message.

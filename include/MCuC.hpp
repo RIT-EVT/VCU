@@ -39,17 +39,17 @@ public:
     //////////////////////////////////////////////
 
     /** ESTOP Level Shifter (LS) Pins */
-    static constexpr io::Pin ESTOP_A_PIN  = io::Pin::PA_0;
+    static constexpr io::Pin ESTOP_A_PIN = io::Pin::PA_0;
     static constexpr io::Pin ESTOP_B_PIN = io::Pin::PA_1;
 
     /** Ignition Level Shifter (LS) Pins */
-    static constexpr io::Pin IGNITION_A_PIN  = io::Pin::PA_2;
+    static constexpr io::Pin IGNITION_A_PIN = io::Pin::PA_2;
     static constexpr io::Pin IGNITION_B_PIN = io::Pin::PA_3;
 
     /** Motor Controller Self Test Pin */
-    static constexpr io::Pin LS_SELF_TEST_OUT_PIN   = io::Pin::PA_4;
-    static constexpr io::Pin LS_SELF_TEST_IN_A_PIN  = io::Pin::PA_5;
-    static constexpr io::Pin LS_SELF_TEST_IN_B_PIN  = io::Pin::PA_6;
+    static constexpr io::Pin LS_SELF_TEST_OUT_PIN  = io::Pin::PA_4;
+    static constexpr io::Pin LS_SELF_TEST_IN_A_PIN = io::Pin::PA_5;
+    static constexpr io::Pin LS_SELF_TEST_IN_B_PIN = io::Pin::PA_6;
 
     /** Interlock Pin */
     static constexpr io::Pin INTERLOCK_PIN = io::Pin::PA_7;
@@ -289,19 +289,40 @@ private:
     /// the gpios
     MCuC_GPIO gpios;
 
-    // Model input data // todo: add stuff for BMS, TMS, & GFDB
-    bool brakeOn = false;            ///< CAN (HIB): Whether or not the brake is on.
-    bool eStop = false;              ///< GPIO: Whether or not the emergency stop is enabled.
-    bool forwardEnable = false;      ///< CAN (HIB): Whether or not the bike is commanded to go forward.
-    bool startPressed = false;       ///< CAN (HIB): Whether or not the bike is starting.
-    MC_VSM_State mcState = MC_VSM_State::Start;    ///< CAN (MC): What state the motor controller state machine is in. [0,14] range
-    MC_DC_State mcDischarge; ///< CAN (MC): What state the motor controller discharger is in. [0,4] range
-    bool ignitionOn = false;         ///< GPIO: Whether or not the ignition is on.
-    bool interlock = false;         ///< GPIO: if BFC is plugged in
-    int16_t throttle = 0; ///< CAN (HIB): Signal state of the throttle.
-    bool lvssOn = false;      ///< GPIO: Whether or not the LVSS is on.
-    bool mcOn = false;        ///< GPIO: Whether or not the motor controller is on.
-    bool powertrainCANSelfTestIn = false; ///< CAN (Hardmon): If the powertrain CAN network is working.
+    // Model input data
+    bool eStopA      = false; ///< GPIO: LS A; Whether or not the emergency stop is enabled.
+    bool eStopB      = false; ///< GPIO: LS B; Whether or not the emergency stop is enabled.
+    bool ignitionOnA = false; ///< GPIO: LS A; Whether or not the ignition is on.
+    bool ignitionOnB = false; ///< GPIO: LS B; Whether or not the ignition is on.
+    bool interlock   = false; ///< GPIO: if BFC is plugged in.
+    bool mcOn        = false; ///< GPIO: Whether or not the motor controller is on.
+
+    bool powertrainCANSelfTestIn = false;             ///< CAN (Hardmon): If the powertrain CAN network is working.
+    MC_DC_State mcDischarge  = MC_DC_State::Disabled; ///< CAN (MC): What state the MC discharger is in. [0,4] range.
+    MC_VSM_State mcState     = MC_VSM_State::Start; ///< CAN (MC): What state the MC state machine is in. [0,14] range.
+    uint8_t mcPSPresent      = 0;                   ///< CAN (MC): The MC pump speed.
+    bool forwardEnable       = false;               ///< CAN (HIB): Whether or not the bike is commanded to go forward.
+    bool startPressed        = false;               ///< CAN (HIB): Whether or not the bike is starting.
+    bool brakeOn             = false;               ///< CAN (HIB): Whether or not the brake is on.
+    int16_t throttle         = 0;                   ///< CAN (HIB): Signal state of the throttle.
+    int32_t bmsCellTemps[45] = {0};                 ///< CAN (BMS): The cell temperatures.
+    int16_t bmsCellVoltages[100] = {0};             ///< CAN (BMS): The cell voltages.
+    bool bmsContactorClosed      = false;           ///< CAN (BMS): Whether or not the contactor is closed.
+    uint8_t gfdbIsolationState   = 0;               ///< CAN (GFDB): The isolation state int value.
+    uint8_t battPSPresent        = 0;               ///< CAN (TMS): The battery's pump speed.
+    int32_t coolingLoopTemps[5]  = {0};             ///< CAN (TMS): The cooling loop temperatures.
+    int16_t mcCoolingFR          = 0;               ///< CAN (TMS): The MC's cooling flow rate.
+    int16_t battCoolingFR        = 0;               ///< CAN (TMS): The battery's cooling flow rate.
+    bool hibComparisonFault      = false;           ///< CAN (HIB): Whether or not there is a HIB comparison fault.
+    bool lvssOn                  = false;           ///< CAN (LVSS): Whether
+    bool hibOn                   = false;           ///< CAN (LVSS): Whether or not the HIB is on.
+    bool hudlOn                  = false;           ///< CAN (LVSS): Whether or not the HUDL is on.
+    bool tmsOn                   = false;           ///< CAN (LVSS): Whether or not the TMS is on.
+    bool gubOn                   = false;           ///< CAN (LVSS): Whether or not the GUB is on.
+    bool batt12vOn               = false;           ///< CAN (LVSS): Whether or not the 12V battery is on.
+    int16_t vicorInputCurrent    = 0;               ///< CAN (LVSS): The Vicor's input current.
+    int32_t lvssTemps[6]         = {0};             ///< CAN (LVSS): The LVSS temperatures.
+    int16_t lvssCurrents[6]      = {0};             ///< CAN (LVSS): The LVSS currents.
 
     /**
      * Array holding number of messages received from each of the other boards.
@@ -313,9 +334,11 @@ private:
     vcu::MCuC_Model::ExtU_MCuC_T modelInputs;
 
     // Model output data (only the ones that need a var) some outputs are used directly; like writing to pin
-    UCState ucState;         ///< GPIO: Current State of the MCUC;
-    bool mcEnableUC = false; ///< GPIO: controls mcTogglePositive and mcToggleNegative to enable or disable the motor controller
-    bool powertrainCanSelfTestOut = false; ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over powertrainCAN
+    UCState ucState; ///< GPIO: Current State of the MCUC;
+    bool mcEnableUC =
+        false; ///< GPIO: controls mcTogglePositive and mcToggleNegative to enable or disable the motor controller
+    bool powertrainCanSelfTestOut =
+        false; ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over powertrainCAN
 
     // Model output data (struct)
     vcu::MCuC_Model::ExtY_MCuC_T modelOutputs;
@@ -325,7 +348,7 @@ private:
      */
     static constexpr uint8_t NODE_ID      = 0;
     static constexpr uint8_t LVSS_NODE_ID = 1;
-    static constexpr uint8_t TMS_NODE_ID = 2;
+    static constexpr uint8_t TMS_NODE_ID  = 2;
     static constexpr uint8_t IMU_NODE_ID  = 9;
 
     /**

@@ -47,15 +47,15 @@ void PowertrainCAN::setMCTorque(int16_t torqueRequest) {
     mcCommandPayload.torque = torqueRequest;
 }
 
-void PowertrainCAN::setMCAll(int16_t torque, int16_t speed, int16_t direction, bool inverterEn,
-              bool inverterDC, int16_t speedModeEn, int8_t rollingCounter, int16_t torqueLimit) {
-    mcCommandPayload.torque = torque;
-    mcCommandPayload.speed = speed;
-    mcCommandPayload.direction = direction;
-    mcCommandPayload.inverterEnable = inverterEn;
-    mcCommandPayload.inverterDischarge = inverterDC;
-    mcCommandPayload.speedModeEnable = speedModeEn;
-    mcCommandPayload.rollingCounter = rollingCounter;
+void PowertrainCAN::setMCAll(int16_t torque, int16_t speed, int16_t direction, bool inverterEn, bool inverterDC,
+                             int16_t speedModeEn, int8_t rollingCounter, int16_t torqueLimit) {
+    mcCommandPayload.torque               = torque;
+    mcCommandPayload.speed                = speed;
+    mcCommandPayload.direction            = direction;
+    mcCommandPayload.inverterEnable       = inverterEn;
+    mcCommandPayload.inverterDischarge    = inverterDC;
+    mcCommandPayload.speedModeEnable      = speedModeEn;
+    mcCommandPayload.rollingCounter       = rollingCounter;
     mcCommandPayload.CommandedTorqueLimit = torqueLimit;
 }
 

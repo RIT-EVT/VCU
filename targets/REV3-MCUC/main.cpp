@@ -41,10 +41,10 @@ namespace log  = core::log;
 
 /// The size of the memory pool for the tx application
 #define TX_APP_MEM_POOL_SIZE 65536
-/// How often the model should take 1 step.
-#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(10)   // todo: needs to do 300 hz (every 3ms). rn anything below 10 and process() doesnt run
+/// How often the model should take 1 step.  todo:need do 300hz(every 3ms). rn anything sub 10 and process() doesnt run
+#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(250)
 
-/// How long until start the model trigger rates (give long enough to start
+/// How long until start the model trigger rates (give long enough to start)
 #define MODEL_THREAD_TRIGGER_START MS_TO_TICKS(250)
 
 // Model Thread Parameters
@@ -289,8 +289,8 @@ int main() {
 
     // Initialize Threads
 
-    /// eventflag that triggers the model to run
-    rtos::EventFlags modelTriggerFlag((char*) "Model Trigger Flag");    // todo: look into making flags useful for health thread among others
+    /// eventflag that triggers the model to run // todo: look into making flags useful for health thread among others
+    rtos::EventFlags modelTriggerFlag((char*) "Model Trigger Flag");
 
     /// timer that triggers the model eventflag (and thus steps the model)
     rtos::Timer<rtos::EventFlags*> modelTriggerTimer((char*) "Model Trigger Timer",
@@ -357,7 +357,6 @@ int main() {
         ACC_CAN_RECEIVE_THREAD_TIME_SLICE,
         ACC_CAN_RECEIVE_THREAD_AUTOSTART);
 
-
     // Start kernel
     rtos::Initializable* initArr[] = {
         &mcuc,
@@ -401,9 +400,9 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     while (true) {
         uint32_t flagOutput;
         args->triggerFlag->get(0x01, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
-//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Triggered");
+        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Triggered");
         args->mcuc->process();
-//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Completed");
+        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Completed");
     }
 }
 
@@ -453,27 +452,27 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     rtos::TXError error;
     while (true) {
         // process accessory CAN
-//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-//                        "\tSending %d to LVSS",
-//                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal);
+        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
+        //                        "\tSending %d to LVSS",
+        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal);
 
-        // Save that this node has sent a message
-        args->mcuc->updateNodeHeartbeat(args->accessoryCanNode->NodeId); // todo: idk if this var is the actual messages node id
+        // Save that this node has sent a message // todo: idk if this var is the actual messages node id
+        args->mcuc->updateNodeHeartbeat(args->accessoryCanNode->NodeId);
 
         io::processCANopenNode(args->accessoryCanNode);
 
-//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-//                        "Accessory Can Node Processed\n\r\t"
-//                        "HV Current: %d\n\r\t"
-//                        "Power Switch Error: %d",
-//                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent,
-//                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus);
-//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-//                        "\n\r\tPower Switch Current: %d"
-//                        "\n\r\tTemps: %d",
-//                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents,
-//                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures);
+        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
+        //                        "Accessory Can Node Processed\n\r\t"
+        //                        "HV Current: %d\n\r\t"
+        //                        "Power Switch Error: %d",
+        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent,
+        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus);
+        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
+        //                        "\n\r\tPower Switch Current: %d"
+        //                        "\n\r\tTemps: %d",
+        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents,
+        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures);
 
-        rtos::sleep(MS_TO_TICKS(400));  // why are we waiting?
+        rtos::sleep(MS_TO_TICKS(400)); // why are we waiting?
     }
 }
