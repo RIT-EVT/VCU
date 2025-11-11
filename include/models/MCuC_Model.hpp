@@ -7,9 +7,9 @@
 //
 // Code generated for Simulink model 'MCuC'.
 //
-// Model version                  : 5.3
+// Model version                  : 5.8
 // Simulink Coder version         : 25.2 (R2025b) 28-Jul-2025
-// C/C++ source code generated on : Mon Nov  3 19:58:40 2025
+// C/C++ source code generated on : Mon Nov 10 20:24:09 2025
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: STMicroelectronics->ST10/Super10
@@ -103,14 +103,17 @@ namespace vcu
             int32_t clockTickCounter;  // '<Root>/Discrete Pulse Generator'
             bool UnitDelay4_DSTATE;    // '<Root>/Unit Delay4'
             bool Delay_DSTATE[20];     // '<Root>/Delay'
+            uint8_t is_c2_MCuC;        // '<Root>/MCuC_Chart'
             uint8_t is_Logic;          // '<Root>/MCuC_Chart'
-            uint8_t is_MC_ST;          // '<Root>/MCuC_Chart'
+            uint8_t is_MC;             // '<Root>/MCuC_Chart'
+            uint8_t is_LS;             // '<Root>/MCuC_Chart'
+            uint8_t temporalCounter_i1;// '<Root>/MCuC_Chart'
             uint8_t is_active_c3_MCuC; // '<Root>/Cooling_Control_Chart'
             bool MC_Uncharged;         // '<Root>/MCuC_Chart'
-            bool Activate_ESTOP;       // '<Root>/MCuC_Chart'
-            bool Activate_Fault;       // '<Root>/MCuC_Chart'
-            bool Activate_Super_Fault; // '<Root>/MCuC_Chart'
-            bool Super_Super_Fault;    // '<Root>/MCuC_Chart'
+            bool CAN_ST_Complete;      // '<Root>/MCuC_Chart'
+            bool LS_ST_Complete;       // '<Root>/MCuC_Chart'
+            bool MC_ST_Complete;       // '<Root>/MCuC_Chart'
+            bool isNotInit;            // '<Root>/MCuC_Chart'
         };
 
         // External inputs (root inport signals with default storage)
@@ -250,12 +253,12 @@ namespace vcu
         DW_MCuC_T MCuC_DW;
 
         // private member function(s) for subsystem '<Root>'
-        void MCuC_Contactor_Closed(void);
+        void MCuC_MC_Ready(const bool *AND);
         void MCuC_MC_Active(void);
         void MCuC_MC_Init(void);
-        void MCuC_MC_Ready(const bool *AND);
-        void MCuC_Preset(const bool *NOR);
         void MCuC_exit_internal_Logic(void);
+        void MCuC_Logic(const bool *LogicalOperator, const bool *OR, const bool *
+                        AND);
 
         // Real-Time Model
         RT_MODEL_MCuC_T MCuC_M;

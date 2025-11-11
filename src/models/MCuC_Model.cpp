@@ -7,9 +7,9 @@
 //
 // Code generated for Simulink model 'MCuC'.
 //
-// Model version                  : 5.3
+// Model version                  : 5.8
 // Simulink Coder version         : 25.2 (R2025b) 28-Jul-2025
-// C/C++ source code generated on : Mon Nov  3 19:58:40 2025
+// C/C++ source code generated on : Mon Nov 10 20:24:09 2025
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: STMicroelectronics->ST10/Super10
@@ -21,37 +21,45 @@
 #include <stdint.h>
 
 // Named constants for Chart: '<Root>/MCuC_Chart'
+const uint8_t MCuC_IN_Complete{ 1U };
+
 const uint8_t MCuC_IN_Contactor_Closed{ 1U };
 
 const uint8_t MCuC_IN_Contactor_Open{ 2U };
 
-const uint8_t MCuC_IN_ESTOP{ 3U };
+const uint8_t MCuC_IN_ESTOP{ 1U };
 
-const uint8_t MCuC_IN_Fault{ 4U };
+const uint8_t MCuC_IN_Fault{ 2U };
 
-const uint8_t MCuC_IN_Key_Cycle{ 5U };
+const uint8_t MCuC_IN_Key_Cycle{ 3U };
 
-const uint8_t MCuC_IN_LVSS_MC_Shutdown{ 6U };
+const uint8_t MCuC_IN_LVSS_MC_Shutdown{ 4U };
 
-const uint8_t MCuC_IN_LVSS_MC_Startup{ 7U };
+const uint8_t MCuC_IN_LVSS_MC_Startup{ 5U };
 
-const uint8_t MCuC_IN_MC_Active{ 8U };
+const uint8_t MCuC_IN_Logic{ 3U };
 
-const uint8_t MCuC_IN_MC_Discharging{ 9U };
+const uint8_t MCuC_IN_MC_Active{ 6U };
 
-const uint8_t MCuC_IN_MC_EN_OFF{ 1U };
+const uint8_t MCuC_IN_MC_Discharging{ 7U };
 
-const uint8_t MCuC_IN_MC_EN_ON{ 2U };
+const uint8_t MCuC_IN_MC_EN_OFF{ 2U };
 
-const uint8_t MCuC_IN_MC_Init{ 10U };
+const uint8_t MCuC_IN_MC_EN_ON{ 3U };
 
-const uint8_t MCuC_IN_MC_Off{ 11U };
+const uint8_t MCuC_IN_MC_Init{ 8U };
 
-const uint8_t MCuC_IN_MC_Ready{ 12U };
+const uint8_t MCuC_IN_MC_Off{ 9U };
 
-const uint8_t MCuC_IN_Preset{ 13U };
+const uint8_t MCuC_IN_MC_Ready{ 10U };
 
-const uint8_t MCuC_IN_Super_Fault{ 14U };
+const uint8_t MCuC_IN_Preset{ 4U };
+
+const uint8_t MCuC_IN_Set_High1{ 2U };
+
+const uint8_t MCuC_IN_Set_Low{ 3U };
+
+const uint8_t MCuC_IN_Super_Fault{ 5U };
 
 // Expression: const
 //  Referenced by: '<S1>/Constant'
@@ -95,11 +103,9 @@ const uint8_t MCuC_IN_Super_Fault{ 14U };
 // Pooled Parameter (Mixed Expressions)
 //  Referenced by:
 //    '<Root>/Constant'
+//    '<Root>/Constant1'
 //    '<Root>/Constant10'
 //    '<Root>/Constant2'
-//    '<Root>/Constant3'
-//    '<Root>/Constant4'
-//    '<Root>/Constant5'
 //    '<Root>/Unit Delay4'
 
 #define rtCP_pooled2                   (false)
@@ -124,20 +130,31 @@ const uint8_t MCuC_IN_Super_Fault{ 14U };
 namespace vcu
 {
     // Function for Chart: '<Root>/MCuC_Chart'
-    void MCuC_Model::MCuC_Contactor_Closed(void)
+    void MCuC_Model::MCuC_MC_Ready(const bool *AND)
     {
         // Update for Outport: '<Root>/uC_State'
-        MCuC_Y.uC_State = UC_State::Contactor_Closed;
+        MCuC_Y.uC_State = UC_State::MC_Ready;
 
         // Outport: '<Root>/Inverter_EN_uC_CAN'
+        // Inport: '<Root>/Ignition_LS_A'
         MCuC_Y.Inverter_EN_uC_CAN = false;
 
-        // Inport: '<Root>/Ignition_LS_A' incorporates:
-        //   Inport: '<Root>/Start_CAN'
+        // During 'MC_Ready': '<S10>:436'
+        if (*AND) {
+            // Transition: '<S10>:17'
+            MCuC_DW.is_Logic = MCuC_IN_MC_Active;
 
-        // During 'Contactor_Closed': '<S10>:8'
-        if (!MCuC_U.Ignition_LS_A) {
-            // Transition: '<S10>:195'
+            // Outport: '<Root>/Inverter_EN_uC_CAN'
+            // Entry 'MC_Active': '<S10>:9'
+            MCuC_Y.Inverter_EN_uC_CAN = true;
+
+            // Update for Outport: '<Root>/uC_State'
+            MCuC_Y.uC_State = UC_State::MC_Active;
+
+            // Outport: '<Root>/Torque_Request_CAN'
+            MCuC_Y.Torque_Request_CAN = 0;
+        } else if (!MCuC_U.Ignition_LS_A) {
+            // Transition: '<S10>:453'
             MCuC_DW.is_Logic = MCuC_IN_Contactor_Open;
 
             // Outport: '<Root>/Inverter_DC_uC_CAN'
@@ -164,13 +181,6 @@ namespace vcu
 
             // Outport: '<Root>/Batt_12V_EN_uC_CAN'
             MCuC_Y.Batt_12V_EN_uC_CAN = false;
-        } else if (MCuC_U.Start_CAN) {
-            // Transition: '<S10>:437'
-            MCuC_DW.is_Logic = MCuC_IN_MC_Ready;
-
-            // Update for Outport: '<Root>/uC_State'
-            // Entry 'MC_Ready': '<S10>:436'
-            MCuC_Y.uC_State = UC_State::MC_Ready;
         } else {
             // no actions
         }
@@ -325,127 +335,10 @@ namespace vcu
     }
 
     // Function for Chart: '<Root>/MCuC_Chart'
-    void MCuC_Model::MCuC_MC_Ready(const bool *AND)
-    {
-        // Update for Outport: '<Root>/uC_State'
-        MCuC_Y.uC_State = UC_State::MC_Ready;
-
-        // Outport: '<Root>/Inverter_EN_uC_CAN'
-        MCuC_Y.Inverter_EN_uC_CAN = false;
-
-        // Inport: '<Root>/Ignition_LS_A'
-        // During 'MC_Ready': '<S10>:436'
-        if (!MCuC_U.Ignition_LS_A) {
-            // Transition: '<S10>:452'
-            MCuC_DW.is_Logic = MCuC_IN_Contactor_Open;
-
-            // Outport: '<Root>/Inverter_DC_uC_CAN'
-            // Entry 'Contactor_Open': '<S10>:7'
-            MCuC_Y.Inverter_DC_uC_CAN = true;
-
-            // Update for Outport: '<Root>/uC_State'
-            MCuC_Y.uC_State = UC_State::Contactor_Open;
-
-            // Outport: '<Root>/Acc_EN_uC_CAN'
-            MCuC_Y.Acc_EN_uC_CAN = false;
-
-            // Outport: '<Root>/GUB_EN_uC_CAN'
-            MCuC_Y.GUB_EN_uC_CAN = false;
-
-            // Outport: '<Root>/HUDL_EN_uC_CAN'
-            MCuC_Y.HUDL_EN_uC_CAN = false;
-
-            // Outport: '<Root>/HIB_EN_uC_CAN'
-            MCuC_Y.HIB_EN_uC_CAN = false;
-
-            // Outport: '<Root>/TMS_EN_uC_CAN'
-            MCuC_Y.TMS_EN_uC_CAN = false;
-
-            // Outport: '<Root>/Batt_12V_EN_uC_CAN'
-            MCuC_Y.Batt_12V_EN_uC_CAN = false;
-        } else if (*AND) {
-            // Transition: '<S10>:17'
-            MCuC_DW.is_Logic = MCuC_IN_MC_Active;
-
-            // Outport: '<Root>/Inverter_EN_uC_CAN'
-            // Entry 'MC_Active': '<S10>:9'
-            MCuC_Y.Inverter_EN_uC_CAN = true;
-
-            // Update for Outport: '<Root>/uC_State'
-            MCuC_Y.uC_State = UC_State::MC_Active;
-
-            // Outport: '<Root>/Torque_Request_CAN'
-            MCuC_Y.Torque_Request_CAN = 0;
-        } else {
-            // no actions
-        }
-
-        // End of Inport: '<Root>/Ignition_LS_A'
-    }
-
-    // Function for Chart: '<Root>/MCuC_Chart'
-    void MCuC_Model::MCuC_Preset(const bool *NOR)
-    {
-        // Update for Outport: '<Root>/uC_State'
-        MCuC_Y.uC_State = UC_State::Preset;
-
-        // Update for Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-        MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
-            Open_Contactor;
-
-        // During 'Preset': '<S10>:302'
-        // During 'MC_ST': '<S10>:361'
-        if (static_cast<uint16_t>(MCuC_DW.is_MC_ST) == MCuC_IN_MC_EN_OFF) {
-            // Update for Outport: '<Root>/MC_EN_uC'
-            MCuC_Y.MC_EN_uC = false;
-
-            // During 'MC_EN_OFF': '<S10>:366'
-            if (*NOR) {
-                // Transition: '<S10>:320'
-                MCuC_DW.is_MC_ST = 0;
-
-                // Exit 'Preset': '<S10>:302'
-                MCuC_DW.is_Logic = MCuC_IN_Key_Cycle;
-
-                // Update for Outport: '<Root>/uC_State'
-                // Entry 'Key_Cycle': '<S10>:372'
-                MCuC_Y.uC_State = UC_State::Key_Cycle;
-
-                // Update for Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
-                    Close_Contactor;
-            }
-        } else {
-            // Update for Outport: '<Root>/MC_EN_uC'
-            MCuC_Y.MC_EN_uC = true;
-
-            // Inport: '<Root>/MC_ON'
-            // During 'MC_EN_ON': '<S10>:364'
-            if (MCuC_U.MC_ON) {
-                // Transition: '<S10>:368'
-                MCuC_DW.is_MC_ST = MCuC_IN_MC_EN_OFF;
-
-                // Update for Outport: '<Root>/MC_EN_uC'
-                // Entry 'MC_EN_OFF': '<S10>:366'
-                MCuC_Y.MC_EN_uC = false;
-            }
-
-            // End of Inport: '<Root>/MC_ON'
-        }
-    }
-
-    // Function for Chart: '<Root>/MCuC_Chart'
     void MCuC_Model::MCuC_exit_internal_Logic(void)
     {
         // Exit Internal 'Logic': '<S10>:441'
         switch (MCuC_DW.is_Logic) {
-          case MCuC_IN_Fault:
-            // Outport: '<Root>/Fault_to_MC_CAN'
-            // Exit 'Fault': '<S10>:3'
-            MCuC_Y.Fault_to_MC_CAN = false;
-            MCuC_DW.is_Logic = 0;
-            break;
-
           case MCuC_IN_MC_Active:
             // Outport: '<Root>/Torque_Request_CAN'
             // Exit 'MC_Active': '<S10>:9'
@@ -462,18 +355,361 @@ namespace vcu
             MCuC_DW.is_Logic = 0;
             break;
 
-          case MCuC_IN_Preset:
-            // Exit Internal 'Preset': '<S10>:302'
-            // Exit Internal 'MC_ST': '<S10>:361'
-            MCuC_DW.is_MC_ST = 0;
-
-            // Exit 'Preset': '<S10>:302'
-            MCuC_DW.is_Logic = 0;
-            break;
-
           default:
             MCuC_DW.is_Logic = 0;
             break;
+        }
+    }
+
+    // Function for Chart: '<Root>/MCuC_Chart'
+    void MCuC_Model::MCuC_Logic(const bool *LogicalOperator, const bool *OR,
+        const bool *AND)
+    {
+        bool tmp;
+
+        // During 'Logic': '<S10>:441'
+        if ((*OR) && MCuC_DW.MC_Uncharged) {
+            // Transition: '<S10>:391'
+            MCuC_exit_internal_Logic();
+            MCuC_DW.is_c2_MCuC = MCuC_IN_Super_Fault;
+
+            // Update for Outport: '<Root>/uC_State'
+            // Entry 'Super_Fault': '<S10>:388'
+            MCuC_Y.uC_State = UC_State::Super_Fault;
+
+            // Update for Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
+            MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
+                Open_Contactor;
+        } else if ((!*LogicalOperator) && MCuC_DW.MC_Uncharged) {
+            // Transition: '<S10>:435'
+            MCuC_exit_internal_Logic();
+            MCuC_DW.is_c2_MCuC = MCuC_IN_Fault;
+
+            // Update for Outport: '<Root>/uC_State'
+            // Entry 'Fault': '<S10>:3'
+            MCuC_Y.uC_State = UC_State::Fault;
+
+            // Outport: '<Root>/Fault_to_MC_CAN'
+            MCuC_Y.Fault_to_MC_CAN = true;
+
+            // Update for Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
+            MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::Stay;
+        } else if (MCuC_U.ESTOP_LS_A && MCuC_DW.MC_Uncharged && (MCuC_Y.uC_State
+                    != UC_State::Preset)) {
+            // Transition: '<S10>:200'
+            MCuC_exit_internal_Logic();
+            MCuC_DW.is_c2_MCuC = MCuC_IN_ESTOP;
+
+            // Update for Outport: '<Root>/uC_State'
+            // Entry 'ESTOP': '<S10>:4'
+            MCuC_Y.uC_State = UC_State::Estop;
+
+            // Update for Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
+            MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
+                Open_Contactor;
+
+            // Outport: '<Root>/LVSS_EN_uC'
+            MCuC_Y.LVSS_EN_uC = false;
+        } else {
+            tmp = !MCuC_DW.MC_Uncharged;
+            if (((*OR) && tmp) || (MCuC_U.ESTOP_LS_A && tmp) ||
+                    ((!*LogicalOperator) && tmp)) {
+                // Transition: '<S10>:439'
+                // Transition: '<S10>:199'
+                // Transition: '<S10>:400'
+                MCuC_exit_internal_Logic();
+                MCuC_DW.is_Logic = MCuC_IN_Contactor_Open;
+
+                // Outport: '<Root>/Inverter_EN_uC_CAN'
+                // Entry 'Contactor_Open': '<S10>:7'
+                MCuC_Y.Inverter_EN_uC_CAN = false;
+
+                // Outport: '<Root>/Inverter_DC_uC_CAN'
+                MCuC_Y.Inverter_DC_uC_CAN = true;
+
+                // Update for Outport: '<Root>/uC_State'
+                MCuC_Y.uC_State = UC_State::Contactor_Open;
+
+                // Outport: '<Root>/Acc_EN_uC_CAN'
+                MCuC_Y.Acc_EN_uC_CAN = false;
+
+                // Outport: '<Root>/GUB_EN_uC_CAN'
+                MCuC_Y.GUB_EN_uC_CAN = false;
+
+                // Outport: '<Root>/HUDL_EN_uC_CAN'
+                MCuC_Y.HUDL_EN_uC_CAN = false;
+
+                // Outport: '<Root>/HIB_EN_uC_CAN'
+                MCuC_Y.HIB_EN_uC_CAN = false;
+
+                // Outport: '<Root>/TMS_EN_uC_CAN'
+                MCuC_Y.TMS_EN_uC_CAN = false;
+
+                // Outport: '<Root>/Batt_12V_EN_uC_CAN'
+                MCuC_Y.Batt_12V_EN_uC_CAN = false;
+            } else {
+                switch (MCuC_DW.is_Logic) {
+                  case MCuC_IN_Contactor_Closed:
+                    // Update for Outport: '<Root>/uC_State'
+                    MCuC_Y.uC_State = UC_State::Contactor_Closed;
+
+                    // Outport: '<Root>/Inverter_EN_uC_CAN'
+                    MCuC_Y.Inverter_EN_uC_CAN = false;
+
+                    // Inport: '<Root>/Ignition_LS_A' incorporates:
+                    //   Inport: '<Root>/Start_CAN'
+
+                    // During 'Contactor_Closed': '<S10>:8'
+                    if (!MCuC_U.Ignition_LS_A) {
+                        // Transition: '<S10>:195'
+                        MCuC_DW.is_Logic = MCuC_IN_Contactor_Open;
+
+                        // Outport: '<Root>/Inverter_DC_uC_CAN'
+                        // Entry 'Contactor_Open': '<S10>:7'
+                        MCuC_Y.Inverter_DC_uC_CAN = true;
+
+                        // Update for Outport: '<Root>/uC_State'
+                        MCuC_Y.uC_State = UC_State::Contactor_Open;
+
+                        // Outport: '<Root>/Acc_EN_uC_CAN'
+                        MCuC_Y.Acc_EN_uC_CAN = false;
+
+                        // Outport: '<Root>/GUB_EN_uC_CAN'
+                        MCuC_Y.GUB_EN_uC_CAN = false;
+
+                        // Outport: '<Root>/HUDL_EN_uC_CAN'
+                        MCuC_Y.HUDL_EN_uC_CAN = false;
+
+                        // Outport: '<Root>/HIB_EN_uC_CAN'
+                        MCuC_Y.HIB_EN_uC_CAN = false;
+
+                        // Outport: '<Root>/TMS_EN_uC_CAN'
+                        MCuC_Y.TMS_EN_uC_CAN = false;
+
+                        // Outport: '<Root>/Batt_12V_EN_uC_CAN'
+                        MCuC_Y.Batt_12V_EN_uC_CAN = false;
+                    } else if (MCuC_U.Start_CAN) {
+                        // Transition: '<S10>:437'
+                        MCuC_DW.is_Logic = MCuC_IN_MC_Ready;
+
+                        // Update for Outport: '<Root>/uC_State'
+                        // Entry 'MC_Ready': '<S10>:436'
+                        MCuC_Y.uC_State = UC_State::MC_Ready;
+                    } else {
+                        // no actions
+                    }
+                    break;
+
+                  case MCuC_IN_Contactor_Open:
+                    // Outport: '<Root>/Inverter_EN_uC_CAN'
+                    MCuC_Y.Inverter_EN_uC_CAN = false;
+
+                    // Update for Outport: '<Root>/uC_State'
+                    MCuC_Y.uC_State = UC_State::Contactor_Open;
+
+                    // Outport: '<Root>/Acc_EN_uC_CAN'
+                    MCuC_Y.Acc_EN_uC_CAN = false;
+
+                    // Outport: '<Root>/GUB_EN_uC_CAN'
+                    MCuC_Y.GUB_EN_uC_CAN = false;
+
+                    // Outport: '<Root>/HUDL_EN_uC_CAN'
+                    MCuC_Y.HUDL_EN_uC_CAN = false;
+
+                    // Outport: '<Root>/HIB_EN_uC_CAN'
+                    MCuC_Y.HIB_EN_uC_CAN = false;
+
+                    // Outport: '<Root>/TMS_EN_uC_CAN'
+                    MCuC_Y.TMS_EN_uC_CAN = false;
+
+                    // Outport: '<Root>/Batt_12V_EN_uC_CAN'
+                    MCuC_Y.Batt_12V_EN_uC_CAN = false;
+
+                    // Inport: '<Root>/MC_DC_State_CAN'
+                    // During 'Contactor_Open': '<S10>:7'
+                    if (MCuC_U.MC_DC_State_CAN != MC_DC_State::Disabled) {
+                        // Transition: '<S10>:42'
+                        MCuC_DW.is_Logic = MCuC_IN_MC_Discharging;
+
+                        // Update for Outport: '<Root>/uC_State'
+                        // Entry 'MC_Discharging': '<S10>:5'
+                        MCuC_Y.uC_State = UC_State::MC_Discharging;
+                    }
+                    break;
+
+                  case MCuC_IN_Key_Cycle:
+                    // Update for Outport: '<Root>/uC_State'
+                    MCuC_Y.uC_State = UC_State::Key_Cycle;
+
+                    // Update for Outport: '<Root>/BMS_Contactor_Command_uC_CAN' 
+                    MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
+                        Close_Contactor;
+
+                    // Inport: '<Root>/Ignition_LS_A'
+                    // During 'Key_Cycle': '<S10>:372'
+                    if (!MCuC_U.Ignition_LS_A) {
+                        // Transition: '<S10>:374'
+                        MCuC_DW.is_Logic = MCuC_IN_MC_Off;
+
+                        // Update for Outport: '<Root>/MC_EN_uC'
+                        // Entry 'MC_Off': '<S10>:1'
+                        MCuC_Y.MC_EN_uC = false;
+
+                        // Outport: '<Root>/LVSS_EN_uC'
+                        MCuC_Y.LVSS_EN_uC = false;
+
+                        // Update for Outport: '<Root>/uC_State'
+                        MCuC_Y.uC_State = UC_State::MC_Off;
+                        MCuC_DW.MC_Uncharged = true;
+
+                        // Outport: '<Root>/Inverter_EN_uC_CAN'
+                        MCuC_Y.Inverter_EN_uC_CAN = false;
+                    }
+                    break;
+
+                  case MCuC_IN_LVSS_MC_Shutdown:
+                    // Update for Outport: '<Root>/uC_State'
+                    MCuC_Y.uC_State = UC_State::LVSS_MC_Shutdown;
+
+                    // Outport: '<Root>/LVSS_EN_uC'
+                    MCuC_Y.LVSS_EN_uC = false;
+
+                    // Update for Outport: '<Root>/MC_EN_uC'
+                    MCuC_Y.MC_EN_uC = false;
+
+                    // Inport: '<Root>/MC_ON' incorporates:
+                    //   Inport: '<Root>/LVSS_ON_CAN'
+
+                    // During 'LVSS_MC_Shutdown': '<S10>:353'
+                    if ((!MCuC_U.MC_ON) && (!MCuC_U.LVSS_ON_CAN)) {
+                        // Transition: '<S10>:354'
+                        MCuC_DW.is_Logic = MCuC_IN_MC_Off;
+
+                        // Update for Outport: '<Root>/uC_State'
+                        // Entry 'MC_Off': '<S10>:1'
+                        MCuC_Y.uC_State = UC_State::MC_Off;
+                        MCuC_DW.MC_Uncharged = true;
+
+                        // Outport: '<Root>/Inverter_EN_uC_CAN'
+                        MCuC_Y.Inverter_EN_uC_CAN = false;
+                    }
+                    break;
+
+                  case MCuC_IN_LVSS_MC_Startup:
+                    // Update for Outport: '<Root>/uC_State'
+                    MCuC_Y.uC_State = UC_State::LVSS_MC_Startup;
+
+                    // Outport: '<Root>/LVSS_EN_uC'
+                    MCuC_Y.LVSS_EN_uC = true;
+
+                    // Update for Outport: '<Root>/MC_EN_uC'
+                    MCuC_Y.MC_EN_uC = true;
+
+                    // Inport: '<Root>/MC_ON' incorporates:
+                    //   Inport: '<Root>/LVSS_ON_CAN'
+
+                    // During 'LVSS_MC_Startup': '<S10>:350'
+                    if (MCuC_U.MC_ON && MCuC_U.LVSS_ON_CAN) {
+                        // Transition: '<S10>:351'
+                        MCuC_DW.is_Logic = MCuC_IN_MC_Init;
+
+                        // Update for Outport: '<Root>/uC_State'
+                        // Entry 'MC_Init': '<S10>:6'
+                        MCuC_Y.uC_State = UC_State::MC_Init;
+
+                        // Outport: '<Root>/Batt_12V_EN_uC_CAN'
+                        MCuC_Y.Batt_12V_EN_uC_CAN = true;
+
+                        // Outport: '<Root>/TMS_EN_uC_CAN'
+                        MCuC_Y.TMS_EN_uC_CAN = true;
+
+                        // Outport: '<Root>/HIB_EN_uC_CAN'
+                        MCuC_Y.HIB_EN_uC_CAN = true;
+
+                        // Outport: '<Root>/HUDL_EN_uC_CAN'
+                        MCuC_Y.HUDL_EN_uC_CAN = true;
+
+                        // Outport: '<Root>/GUB_EN_uC_CAN'
+                        MCuC_Y.GUB_EN_uC_CAN = true;
+
+                        // Outport: '<Root>/Acc_EN_uC_CAN'
+                        MCuC_Y.Acc_EN_uC_CAN = true;
+                    }
+                    break;
+
+                  case MCuC_IN_MC_Active:
+                    MCuC_MC_Active();
+                    break;
+
+                  case MCuC_IN_MC_Discharging:
+                    // Update for Outport: '<Root>/uC_State'
+                    MCuC_Y.uC_State = UC_State::MC_Discharging;
+
+                    // Inport: '<Root>/MC_DC_State_CAN'
+                    // During 'MC_Discharging': '<S10>:5'
+                    if (MCuC_U.MC_DC_State_CAN == MC_DC_State::Complete) {
+                        // Transition: '<S10>:250'
+                        // Exit 'MC_Discharging': '<S10>:5'
+                        MCuC_DW.MC_Uncharged = true;
+
+                        // Outport: '<Root>/Inverter_DC_uC_CAN'
+                        MCuC_Y.Inverter_DC_uC_CAN = false;
+                        MCuC_DW.is_Logic = MCuC_IN_LVSS_MC_Shutdown;
+
+                        // Update for Outport: '<Root>/uC_State'
+                        // Entry 'LVSS_MC_Shutdown': '<S10>:353'
+                        MCuC_Y.uC_State = UC_State::LVSS_MC_Shutdown;
+
+                        // Outport: '<Root>/LVSS_EN_uC'
+                        MCuC_Y.LVSS_EN_uC = false;
+
+                        // Update for Outport: '<Root>/MC_EN_uC'
+                        MCuC_Y.MC_EN_uC = false;
+                    }
+                    break;
+
+                  case MCuC_IN_MC_Init:
+                    MCuC_MC_Init();
+                    break;
+
+                  case MCuC_IN_MC_Off:
+                    // Update for Outport: '<Root>/MC_EN_uC'
+                    MCuC_Y.MC_EN_uC = false;
+
+                    // Outport: '<Root>/LVSS_EN_uC'
+                    MCuC_Y.LVSS_EN_uC = false;
+
+                    // Update for Outport: '<Root>/uC_State'
+                    MCuC_Y.uC_State = UC_State::MC_Off;
+
+                    // Outport: '<Root>/Inverter_EN_uC_CAN'
+                    MCuC_Y.Inverter_EN_uC_CAN = false;
+
+                    // Inport: '<Root>/Ignition_LS_A'
+                    // During 'MC_Off': '<S10>:1'
+                    if (MCuC_U.Ignition_LS_A) {
+                        // Transition: '<S10>:11'
+                        MCuC_DW.is_Logic = MCuC_IN_LVSS_MC_Startup;
+
+                        // Entry 'LVSS_MC_Startup': '<S10>:350'
+                        MCuC_DW.MC_Uncharged = false;
+
+                        // Update for Outport: '<Root>/uC_State'
+                        MCuC_Y.uC_State = UC_State::LVSS_MC_Startup;
+
+                        // Outport: '<Root>/LVSS_EN_uC'
+                        MCuC_Y.LVSS_EN_uC = true;
+
+                        // Update for Outport: '<Root>/MC_EN_uC'
+                        MCuC_Y.MC_EN_uC = true;
+                    }
+                    break;
+
+                  default:
+                    MCuC_MC_Ready(AND);
+                    break;
+                }
+            }
         }
     }
 }
@@ -487,13 +723,8 @@ namespace vcu
         bool rtb_VectorConcatenate1[5];
         bool AND;
         bool LogicalOperator;
-        bool NOR;
-        bool NOR_tmp;
-        bool NOR_tmp_0;
         bool OR;
-        bool guard1;
         bool rtb_NOR1;
-        bool tmp;
 
         // SignalConversion generated from: '<Root>/Vector Concatenate1' incorporates:
         //   Inport: '<Root>/LVSS_ON_CAN'
@@ -561,19 +792,6 @@ namespace vcu
 
         LogicalOperator = (rtb_NOR1 || MCuC_DW.Delay_DSTATE[0]);
 
-        // Logic: '<Root>/NOR' incorporates:
-        //   Chart: '<Root>/MCuC_Chart'
-        //   Inport: '<Root>/LVSS_ON_CAN'
-        //   Inport: '<Root>/MC_ON'
-
-        NOR_tmp = !MCuC_U.MC_ON;
-        NOR_tmp_0 = !MCuC_U.LVSS_ON_CAN;
-
-        // Logic: '<Root>/NOR' incorporates:
-        //   Inport: '<Root>/BMS_Contactor_Closed_CAN'
-
-        NOR = (NOR_tmp_0 && NOR_tmp && (!MCuC_U.BMS_Contactor_Closed_CAN));
-
         // Switch: '<Root>/Switch' incorporates:
         //   Constant: '<Root>/Constant'
         //   Constant: '<S1>/Constant'
@@ -584,22 +802,32 @@ namespace vcu
         //   UnitDelay: '<Root>/Unit Delay5'
 
         if (MCuC_DW.UnitDelay5_DSTATE == rtCP_Constant_Value) {
-            tmp = rtCP_pooled2;
+            OR = rtCP_pooled2;
         } else {
-            tmp = (static_cast<int16_t>((static_cast<int16_t>
-                     (MCuC_DW.UnitDelay5_DSTATE) != 0) !=
-                    MCuC_U.BMS_Contactor_Closed_CAN) != 0);
+            OR = (static_cast<int16_t>((static_cast<int16_t>
+                    (MCuC_DW.UnitDelay5_DSTATE) != 0) !=
+                   MCuC_U.BMS_Contactor_Closed_CAN) != 0);
         }
 
         // Logic: '<Root>/OR' incorporates:
         //   Constant: '<S5>/Constant'
         //   Constant: '<S6>/Constant'
         //   Constant: '<S7>/Constant'
+        //   Inport: '<Root>/ESTOP_LS_A'
+        //   Inport: '<Root>/ESTOP_LS_B'
         //   Inport: '<Root>/GFDB_Isolation_State_CAN'
+        //   Inport: '<Root>/Ignition_LS_A'
+        //   Inport: '<Root>/Ignition_LS_B'
         //   Inport: '<Root>/Interlock'
+        //   Inport: '<Root>/LS_Self_Test_In_A'
+        //   Inport: '<Root>/LS_Self_Test_In_B'
         //   Inport: '<Root>/MC_VSM_State_CAN'
         //   Logic: '<Root>/NOT1'
         //   Logic: '<Root>/NXOR1'
+        //   Logic: '<Root>/OR3'
+        //   Logic: '<Root>/XOR1'
+        //   Logic: '<Root>/XOR2'
+        //   Logic: '<Root>/XOR5'
         //   RelationalOperator: '<S5>/Compare'
         //   RelationalOperator: '<S6>/Compare'
         //   RelationalOperator: '<S7>/Compare'
@@ -607,9 +835,13 @@ namespace vcu
         //   UnitDelay: '<Root>/Unit Delay6'
 
         OR = ((MCuC_U.GFDB_Isolation_State_CAN != rtCP_pooled4) ||
-              (!MCuC_U.Interlock) || tmp || ((MCuC_DW.UnitDelay6_DSTATE !=
+              (!MCuC_U.Interlock) || OR || ((MCuC_DW.UnitDelay6_DSTATE !=
                 rtCP_pooled1) && (MCuC_U.MC_VSM_State_CAN ==
-                rtCP_Constant_Value_j)));
+                rtCP_Constant_Value_j)) || ((static_cast<int16_t>
+                (MCuC_U.Ignition_LS_A != MCuC_U.Ignition_LS_B) != 0) || (
+                static_cast<int16_t>(MCuC_U.ESTOP_LS_A != MCuC_U.ESTOP_LS_B) !=
+                0) || (static_cast<int16_t>(MCuC_U.LS_Self_Test_In_A !=
+                 MCuC_U.LS_Self_Test_In_B) != 0)));
 
         // Logic: '<Root>/AND' incorporates:
         //   Constant: '<S8>/Constant'
@@ -623,385 +855,228 @@ namespace vcu
 
         // Chart: '<Root>/MCuC_Chart' incorporates:
         //   Inport: '<Root>/ESTOP_LS_A'
-        //   Inport: '<Root>/Ignition_LS_A'
-        //   Inport: '<Root>/LVSS_ON_CAN'
-        //   Inport: '<Root>/MC_DC_State_CAN'
+        //   Inport: '<Root>/LS_Self_Test_In_A'
+        //   Inport: '<Root>/LS_Self_Test_In_B'
         //   Inport: '<Root>/MC_ON'
 
         // Gateway: MCuC_Chart
-        // During: MCuC_Chart
-        // During 'Logic': '<S10>:441'
-        if ((OR && MCuC_DW.MC_Uncharged) || MCuC_DW.Super_Super_Fault) {
-            // Transition: '<S10>:391'
-            MCuC_exit_internal_Logic();
-            MCuC_DW.is_Logic = MCuC_IN_Super_Fault;
+        if (MCuC_DW.isNotInit && (static_cast<uint16_t>
+                                  (MCuC_DW.temporalCounter_i1) < 7)) {
+            MCuC_DW.temporalCounter_i1 = static_cast<uint8_t>
+                (static_cast<int16_t>(static_cast<int16_t>
+                  (MCuC_DW.temporalCounter_i1) + 1));
+        }
 
+        MCuC_DW.isNotInit = true;
+
+        // During: MCuC_Chart
+        switch (MCuC_DW.is_c2_MCuC) {
+          case MCuC_IN_ESTOP:
             // Outport: '<Root>/uC_State'
-            // Entry 'Super_Fault': '<S10>:388'
+            MCuC_Y.uC_State = UC_State::Estop;
+
+            // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
+            MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
+                Open_Contactor;
+
+            // Outport: '<Root>/LVSS_EN_uC'
+            MCuC_Y.LVSS_EN_uC = false;
+
+            // During 'ESTOP': '<S10>:4'
+            if (!MCuC_U.ESTOP_LS_A) {
+                // Transition: '<S10>:21'
+                MCuC_DW.is_c2_MCuC = MCuC_IN_Logic;
+
+                // Entry Internal 'Logic': '<S10>:441'
+                // Transition: '<S10>:455'
+                MCuC_DW.is_Logic = MCuC_IN_Key_Cycle;
+
+                // Outport: '<Root>/uC_State'
+                // Entry 'Key_Cycle': '<S10>:372'
+                MCuC_Y.uC_State = UC_State::Key_Cycle;
+
+                // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
+                MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
+                    Close_Contactor;
+            }
+            break;
+
+          case MCuC_IN_Fault:
+            // Outport: '<Root>/uC_State'
+            MCuC_Y.uC_State = UC_State::Fault;
+
+            // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
+            MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::Stay;
+
+            // During 'Fault': '<S10>:3'
+            if (LogicalOperator) {
+                // Outport: '<Root>/Fault_to_MC_CAN'
+                // Transition: '<S10>:387'
+                // Exit 'Fault': '<S10>:3'
+                MCuC_Y.Fault_to_MC_CAN = false;
+                MCuC_DW.is_c2_MCuC = MCuC_IN_Logic;
+
+                // Entry Internal 'Logic': '<S10>:441'
+                // Transition: '<S10>:455'
+                MCuC_DW.is_Logic = MCuC_IN_Key_Cycle;
+
+                // Outport: '<Root>/uC_State'
+                // Entry 'Key_Cycle': '<S10>:372'
+                MCuC_Y.uC_State = UC_State::Key_Cycle;
+
+                // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
+                MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
+                    Close_Contactor;
+            }
+            break;
+
+          case MCuC_IN_Logic:
+            MCuC_Logic(&LogicalOperator, &OR, &AND);
+            break;
+
+          case MCuC_IN_Preset:
+            // Outport: '<Root>/uC_State'
+            MCuC_Y.uC_State = UC_State::Preset;
+
+            // During 'Preset': '<S10>:302'
+            if (static_cast<uint16_t>(MCuC_DW.temporalCounter_i1) >= 4) {
+                // Transition: '<S10>:478'
+                // Exit Internal 'Preset': '<S10>:302'
+                // Exit Internal 'LS': '<S10>:459'
+                MCuC_DW.is_LS = 0;
+
+                // Exit Internal 'MC': '<S10>:361'
+                MCuC_DW.is_MC = 0;
+
+                // Outport: '<Root>/MC_Self_Test'
+                // Exit 'MC': '<S10>:361'
+                MCuC_Y.MC_Self_Test = false;
+                MCuC_DW.is_c2_MCuC = MCuC_IN_Super_Fault;
+
+                // Outport: '<Root>/uC_State'
+                // Entry 'Super_Fault': '<S10>:388'
+                MCuC_Y.uC_State = UC_State::Super_Fault;
+
+                // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
+                MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
+                    Open_Contactor;
+            } else if (MCuC_DW.MC_ST_Complete && MCuC_DW.CAN_ST_Complete &&
+                       MCuC_DW.LS_ST_Complete) {
+                // Transition: '<S10>:320'
+                // Exit Internal 'Preset': '<S10>:302'
+                // Exit Internal 'LS': '<S10>:459'
+                MCuC_DW.is_LS = 0;
+
+                // Exit Internal 'MC': '<S10>:361'
+                MCuC_DW.is_MC = 0;
+
+                // Outport: '<Root>/MC_Self_Test'
+                // Exit 'MC': '<S10>:361'
+                MCuC_Y.MC_Self_Test = false;
+                MCuC_DW.is_c2_MCuC = MCuC_IN_Logic;
+
+                // Entry Internal 'Logic': '<S10>:441'
+                // Transition: '<S10>:455'
+                MCuC_DW.is_Logic = MCuC_IN_Key_Cycle;
+
+                // Outport: '<Root>/uC_State'
+                // Entry 'Key_Cycle': '<S10>:372'
+                MCuC_Y.uC_State = UC_State::Key_Cycle;
+
+                // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
+                MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
+                    Close_Contactor;
+            } else {
+                // During 'MC': '<S10>:361'
+                switch (MCuC_DW.is_MC) {
+                  case MCuC_IN_Complete:
+                    // During 'Complete': '<S10>:466'
+                    break;
+
+                  case MCuC_IN_MC_EN_OFF:
+                    // Outport: '<Root>/MC_EN_uC'
+                    MCuC_Y.MC_EN_uC = false;
+
+                    // During 'MC_EN_OFF': '<S10>:366'
+                    if (!MCuC_U.MC_ON) {
+                        // Transition: '<S10>:467'
+                        MCuC_DW.is_MC = MCuC_IN_Complete;
+
+                        // Entry 'Complete': '<S10>:466'
+                        MCuC_DW.MC_ST_Complete = true;
+                    }
+                    break;
+
+                  default:
+                    // Outport: '<Root>/MC_EN_uC'
+                    MCuC_Y.MC_EN_uC = true;
+
+                    // During 'MC_EN_ON': '<S10>:364'
+                    if (MCuC_U.MC_ON) {
+                        // Transition: '<S10>:368'
+                        MCuC_DW.is_MC = MCuC_IN_MC_EN_OFF;
+
+                        // Outport: '<Root>/MC_EN_uC'
+                        // Entry 'MC_EN_OFF': '<S10>:366'
+                        MCuC_Y.MC_EN_uC = false;
+                    }
+                    break;
+                }
+
+                // During 'LS': '<S10>:459'
+                switch (MCuC_DW.is_LS) {
+                  case MCuC_IN_Complete:
+                    // During 'Complete': '<S10>:468'
+                    break;
+
+                  case MCuC_IN_Set_High1:
+                    // Outport: '<Root>/LS_Self_Test_Out'
+                    MCuC_Y.LS_Self_Test_Out = true;
+
+                    // During 'Set_High1': '<S10>:462'
+                    if (MCuC_U.LS_Self_Test_In_A && MCuC_U.LS_Self_Test_In_B) {
+                        // Transition: '<S10>:470'
+                        MCuC_DW.is_LS = MCuC_IN_Complete;
+
+                        // Entry 'Complete': '<S10>:468'
+                        MCuC_DW.LS_ST_Complete = true;
+                    }
+                    break;
+
+                  default:
+                    // Outport: '<Root>/LS_Self_Test_Out'
+                    MCuC_Y.LS_Self_Test_Out = false;
+
+                    // During 'Set_Low': '<S10>:463'
+                    if ((!MCuC_U.LS_Self_Test_In_A) &&
+                            (!MCuC_U.LS_Self_Test_In_B)) {
+                        // Transition: '<S10>:461'
+                        MCuC_DW.is_LS = MCuC_IN_Set_High1;
+
+                        // Outport: '<Root>/LS_Self_Test_Out'
+                        // Entry 'Set_High1': '<S10>:462'
+                        MCuC_Y.LS_Self_Test_Out = true;
+                    }
+                    break;
+                }
+
+                // During 'CAN': '<S10>:457'
+            }
+            break;
+
+          default:
+            // Outport: '<Root>/uC_State'
             MCuC_Y.uC_State = UC_State::Super_Fault;
 
             // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
             MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
                 Open_Contactor;
-            MCuC_DW.Super_Super_Fault = true;
-        } else {
-            tmp = !MCuC_DW.MC_Uncharged;
-            guard1 = false;
-            if (OR && tmp && (!MCuC_DW.Activate_Super_Fault)) {
-                // Transition: '<S10>:439'
-                MCuC_DW.Activate_Super_Fault = true;
-                guard1 = true;
-            } else if (MCuC_U.ESTOP_LS_A && MCuC_DW.MC_Uncharged &&
-                       (MCuC_Y.uC_State != UC_State::Preset)) {
-                // Transition: '<S10>:200'
-                MCuC_exit_internal_Logic();
-                MCuC_DW.is_Logic = MCuC_IN_ESTOP;
 
-                // Outport: '<Root>/uC_State'
-                // Entry 'ESTOP': '<S10>:4'
-                MCuC_Y.uC_State = UC_State::Estop;
-
-                // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
-                    Open_Contactor;
-
-                // Outport: '<Root>/LVSS_EN_uC'
-                MCuC_Y.LVSS_EN_uC = false;
-                MCuC_DW.Activate_ESTOP = false;
-            } else if (MCuC_U.ESTOP_LS_A && tmp && (!MCuC_DW.Activate_ESTOP)) {
-                // Transition: '<S10>:199'
-                MCuC_DW.Activate_ESTOP = true;
-                guard1 = true;
-            } else {
-                OR = !LogicalOperator;
-                if (OR && MCuC_DW.MC_Uncharged) {
-                    // Transition: '<S10>:435'
-                    MCuC_exit_internal_Logic();
-                    MCuC_DW.is_Logic = MCuC_IN_Fault;
-
-                    // Outport: '<Root>/uC_State'
-                    // Entry 'Fault': '<S10>:3'
-                    MCuC_Y.uC_State = UC_State::Fault;
-                    MCuC_DW.Activate_Fault = false;
-
-                    // Outport: '<Root>/Fault_to_MC_CAN'
-                    MCuC_Y.Fault_to_MC_CAN = true;
-
-                    // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                    MCuC_Y.BMS_Contactor_Command_uC_CAN = BMS_Contactor_Command::
-                        Stay;
-                } else if (OR && tmp && (!MCuC_DW.Activate_Fault)) {
-                    // Transition: '<S10>:400'
-                    MCuC_DW.Activate_Fault = true;
-                    guard1 = true;
-                } else {
-                    switch (MCuC_DW.is_Logic) {
-                      case MCuC_IN_Contactor_Closed:
-                        MCuC_Contactor_Closed();
-                        break;
-
-                      case MCuC_IN_Contactor_Open:
-                        // Outport: '<Root>/Inverter_EN_uC_CAN'
-                        MCuC_Y.Inverter_EN_uC_CAN = false;
-
-                        // Outport: '<Root>/uC_State'
-                        MCuC_Y.uC_State = UC_State::Contactor_Open;
-
-                        // Outport: '<Root>/Acc_EN_uC_CAN'
-                        MCuC_Y.Acc_EN_uC_CAN = false;
-
-                        // Outport: '<Root>/GUB_EN_uC_CAN'
-                        MCuC_Y.GUB_EN_uC_CAN = false;
-
-                        // Outport: '<Root>/HUDL_EN_uC_CAN'
-                        MCuC_Y.HUDL_EN_uC_CAN = false;
-
-                        // Outport: '<Root>/HIB_EN_uC_CAN'
-                        MCuC_Y.HIB_EN_uC_CAN = false;
-
-                        // Outport: '<Root>/TMS_EN_uC_CAN'
-                        MCuC_Y.TMS_EN_uC_CAN = false;
-
-                        // Outport: '<Root>/Batt_12V_EN_uC_CAN'
-                        MCuC_Y.Batt_12V_EN_uC_CAN = false;
-
-                        // During 'Contactor_Open': '<S10>:7'
-                        if (MCuC_U.MC_DC_State_CAN != MC_DC_State::Disabled) {
-                            // Transition: '<S10>:42'
-                            MCuC_DW.is_Logic = MCuC_IN_MC_Discharging;
-
-                            // Outport: '<Root>/uC_State'
-                            // Entry 'MC_Discharging': '<S10>:5'
-                            MCuC_Y.uC_State = UC_State::MC_Discharging;
-                        }
-                        break;
-
-                      case MCuC_IN_ESTOP:
-                        // Outport: '<Root>/uC_State'
-                        MCuC_Y.uC_State = UC_State::Estop;
-
-                        // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                        MCuC_Y.BMS_Contactor_Command_uC_CAN =
-                            BMS_Contactor_Command::Open_Contactor;
-
-                        // Outport: '<Root>/LVSS_EN_uC'
-                        MCuC_Y.LVSS_EN_uC = false;
-
-                        // During 'ESTOP': '<S10>:4'
-                        if (!MCuC_U.ESTOP_LS_A) {
-                            // Transition: '<S10>:21'
-                            MCuC_DW.is_Logic = MCuC_IN_Key_Cycle;
-
-                            // Outport: '<Root>/uC_State'
-                            // Entry 'Key_Cycle': '<S10>:372'
-                            MCuC_Y.uC_State = UC_State::Key_Cycle;
-
-                            // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                            MCuC_Y.BMS_Contactor_Command_uC_CAN =
-                                BMS_Contactor_Command::Close_Contactor;
-                        }
-                        break;
-
-                      case MCuC_IN_Fault:
-                        // Outport: '<Root>/uC_State'
-                        MCuC_Y.uC_State = UC_State::Fault;
-
-                        // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                        MCuC_Y.BMS_Contactor_Command_uC_CAN =
-                            BMS_Contactor_Command::Stay;
-
-                        // During 'Fault': '<S10>:3'
-                        if (LogicalOperator) {
-                            // Outport: '<Root>/Fault_to_MC_CAN'
-                            // Transition: '<S10>:387'
-                            // Exit 'Fault': '<S10>:3'
-                            MCuC_Y.Fault_to_MC_CAN = false;
-                            MCuC_DW.is_Logic = MCuC_IN_Key_Cycle;
-
-                            // Outport: '<Root>/uC_State'
-                            // Entry 'Key_Cycle': '<S10>:372'
-                            MCuC_Y.uC_State = UC_State::Key_Cycle;
-
-                            // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                            MCuC_Y.BMS_Contactor_Command_uC_CAN =
-                                BMS_Contactor_Command::Close_Contactor;
-                        }
-                        break;
-
-                      case MCuC_IN_Key_Cycle:
-                        // Outport: '<Root>/uC_State'
-                        MCuC_Y.uC_State = UC_State::Key_Cycle;
-
-                        // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                        MCuC_Y.BMS_Contactor_Command_uC_CAN =
-                            BMS_Contactor_Command::Close_Contactor;
-
-                        // During 'Key_Cycle': '<S10>:372'
-                        if (!MCuC_U.Ignition_LS_A) {
-                            // Transition: '<S10>:374'
-                            MCuC_DW.is_Logic = MCuC_IN_MC_Off;
-
-                            // Outport: '<Root>/MC_EN_uC'
-                            // Entry 'MC_Off': '<S10>:1'
-                            MCuC_Y.MC_EN_uC = false;
-
-                            // Outport: '<Root>/LVSS_EN_uC'
-                            MCuC_Y.LVSS_EN_uC = false;
-
-                            // Outport: '<Root>/uC_State'
-                            MCuC_Y.uC_State = UC_State::MC_Off;
-                            MCuC_DW.MC_Uncharged = true;
-
-                            // Outport: '<Root>/Inverter_EN_uC_CAN'
-                            MCuC_Y.Inverter_EN_uC_CAN = false;
-                        }
-                        break;
-
-                      case MCuC_IN_LVSS_MC_Shutdown:
-                        // Outport: '<Root>/uC_State'
-                        MCuC_Y.uC_State = UC_State::LVSS_MC_Shutdown;
-
-                        // Outport: '<Root>/LVSS_EN_uC'
-                        MCuC_Y.LVSS_EN_uC = false;
-
-                        // Outport: '<Root>/MC_EN_uC'
-                        MCuC_Y.MC_EN_uC = false;
-
-                        // During 'LVSS_MC_Shutdown': '<S10>:353'
-                        if (NOR_tmp && NOR_tmp_0) {
-                            // Transition: '<S10>:354'
-                            MCuC_DW.is_Logic = MCuC_IN_MC_Off;
-
-                            // Outport: '<Root>/uC_State'
-                            // Entry 'MC_Off': '<S10>:1'
-                            MCuC_Y.uC_State = UC_State::MC_Off;
-                            MCuC_DW.MC_Uncharged = true;
-
-                            // Outport: '<Root>/Inverter_EN_uC_CAN'
-                            MCuC_Y.Inverter_EN_uC_CAN = false;
-                        }
-                        break;
-
-                      case MCuC_IN_LVSS_MC_Startup:
-                        // Outport: '<Root>/uC_State'
-                        MCuC_Y.uC_State = UC_State::LVSS_MC_Startup;
-
-                        // Outport: '<Root>/LVSS_EN_uC'
-                        MCuC_Y.LVSS_EN_uC = true;
-
-                        // Outport: '<Root>/MC_EN_uC'
-                        MCuC_Y.MC_EN_uC = true;
-
-                        // During 'LVSS_MC_Startup': '<S10>:350'
-                        if (MCuC_U.MC_ON && MCuC_U.LVSS_ON_CAN) {
-                            // Transition: '<S10>:351'
-                            MCuC_DW.is_Logic = MCuC_IN_MC_Init;
-
-                            // Outport: '<Root>/uC_State'
-                            // Entry 'MC_Init': '<S10>:6'
-                            MCuC_Y.uC_State = UC_State::MC_Init;
-
-                            // Outport: '<Root>/Batt_12V_EN_uC_CAN'
-                            MCuC_Y.Batt_12V_EN_uC_CAN = true;
-
-                            // Outport: '<Root>/TMS_EN_uC_CAN'
-                            MCuC_Y.TMS_EN_uC_CAN = true;
-
-                            // Outport: '<Root>/HIB_EN_uC_CAN'
-                            MCuC_Y.HIB_EN_uC_CAN = true;
-
-                            // Outport: '<Root>/HUDL_EN_uC_CAN'
-                            MCuC_Y.HUDL_EN_uC_CAN = true;
-
-                            // Outport: '<Root>/GUB_EN_uC_CAN'
-                            MCuC_Y.GUB_EN_uC_CAN = true;
-
-                            // Outport: '<Root>/Acc_EN_uC_CAN'
-                            MCuC_Y.Acc_EN_uC_CAN = true;
-                        }
-                        break;
-
-                      case MCuC_IN_MC_Active:
-                        MCuC_MC_Active();
-                        break;
-
-                      case MCuC_IN_MC_Discharging:
-                        // Outport: '<Root>/uC_State'
-                        MCuC_Y.uC_State = UC_State::MC_Discharging;
-
-                        // During 'MC_Discharging': '<S10>:5'
-                        if (MCuC_U.MC_DC_State_CAN == MC_DC_State::Complete) {
-                            // Transition: '<S10>:250'
-                            // Exit 'MC_Discharging': '<S10>:5'
-                            MCuC_DW.MC_Uncharged = true;
-
-                            // Outport: '<Root>/Inverter_DC_uC_CAN'
-                            MCuC_Y.Inverter_DC_uC_CAN = false;
-                            MCuC_DW.is_Logic = MCuC_IN_LVSS_MC_Shutdown;
-
-                            // Outport: '<Root>/uC_State'
-                            // Entry 'LVSS_MC_Shutdown': '<S10>:353'
-                            MCuC_Y.uC_State = UC_State::LVSS_MC_Shutdown;
-
-                            // Outport: '<Root>/LVSS_EN_uC'
-                            MCuC_Y.LVSS_EN_uC = false;
-
-                            // Outport: '<Root>/MC_EN_uC'
-                            MCuC_Y.MC_EN_uC = false;
-                        }
-                        break;
-
-                      case MCuC_IN_MC_Init:
-                        MCuC_MC_Init();
-                        break;
-
-                      case MCuC_IN_MC_Off:
-                        // Outport: '<Root>/MC_EN_uC'
-                        MCuC_Y.MC_EN_uC = false;
-
-                        // Outport: '<Root>/LVSS_EN_uC'
-                        MCuC_Y.LVSS_EN_uC = false;
-
-                        // Outport: '<Root>/uC_State'
-                        MCuC_Y.uC_State = UC_State::MC_Off;
-
-                        // Outport: '<Root>/Inverter_EN_uC_CAN'
-                        MCuC_Y.Inverter_EN_uC_CAN = false;
-
-                        // During 'MC_Off': '<S10>:1'
-                        if (MCuC_U.Ignition_LS_A) {
-                            // Transition: '<S10>:11'
-                            MCuC_DW.is_Logic = MCuC_IN_LVSS_MC_Startup;
-
-                            // Entry 'LVSS_MC_Startup': '<S10>:350'
-                            MCuC_DW.MC_Uncharged = false;
-
-                            // Outport: '<Root>/uC_State'
-                            MCuC_Y.uC_State = UC_State::LVSS_MC_Startup;
-
-                            // Outport: '<Root>/LVSS_EN_uC'
-                            MCuC_Y.LVSS_EN_uC = true;
-
-                            // Outport: '<Root>/MC_EN_uC'
-                            MCuC_Y.MC_EN_uC = true;
-                        }
-                        break;
-
-                      case MCuC_IN_MC_Ready:
-                        MCuC_MC_Ready(&AND);
-                        break;
-
-                      case MCuC_IN_Preset:
-                        MCuC_Preset(&NOR);
-                        break;
-
-                      default:
-                        // Outport: '<Root>/uC_State'
-                        MCuC_Y.uC_State = UC_State::Super_Fault;
-
-                        // Outport: '<Root>/BMS_Contactor_Command_uC_CAN'
-                        MCuC_Y.BMS_Contactor_Command_uC_CAN =
-                            BMS_Contactor_Command::Open_Contactor;
-
-                        // During 'Super_Fault': '<S10>:388'
-                        break;
-                    }
-                }
-            }
-
-            if (guard1) {
-                MCuC_exit_internal_Logic();
-                MCuC_DW.is_Logic = MCuC_IN_Contactor_Open;
-
-                // Outport: '<Root>/Inverter_EN_uC_CAN'
-                // Entry 'Contactor_Open': '<S10>:7'
-                MCuC_Y.Inverter_EN_uC_CAN = false;
-
-                // Outport: '<Root>/Inverter_DC_uC_CAN'
-                MCuC_Y.Inverter_DC_uC_CAN = true;
-
-                // Outport: '<Root>/uC_State'
-                MCuC_Y.uC_State = UC_State::Contactor_Open;
-
-                // Outport: '<Root>/Acc_EN_uC_CAN'
-                MCuC_Y.Acc_EN_uC_CAN = false;
-
-                // Outport: '<Root>/GUB_EN_uC_CAN'
-                MCuC_Y.GUB_EN_uC_CAN = false;
-
-                // Outport: '<Root>/HUDL_EN_uC_CAN'
-                MCuC_Y.HUDL_EN_uC_CAN = false;
-
-                // Outport: '<Root>/HIB_EN_uC_CAN'
-                MCuC_Y.HIB_EN_uC_CAN = false;
-
-                // Outport: '<Root>/TMS_EN_uC_CAN'
-                MCuC_Y.TMS_EN_uC_CAN = false;
-
-                // Outport: '<Root>/Batt_12V_EN_uC_CAN'
-                MCuC_Y.Batt_12V_EN_uC_CAN = false;
-            }
+            // During 'Super_Fault': '<S10>:388'
+            break;
         }
+
+        // End of Chart: '<Root>/MCuC_Chart'
 
         // RelationalOperator: '<S4>/Compare' incorporates:
         //   Constant: '<S4>/Constant'
@@ -1157,23 +1232,36 @@ namespace vcu
             // Chart: '<Root>/MCuC_Chart'
             // Entry: MCuC_Chart
             // Entry Internal: MCuC_Chart
-            // Entry Internal 'Logic': '<S10>:441'
             // Transition: '<S10>:2'
-            MCuC_DW.is_Logic = MCuC_IN_Preset;
+            MCuC_DW.is_c2_MCuC = MCuC_IN_Preset;
 
+            // Outport: '<Root>/MC_Self_Test' incorporates:
+            //   Chart: '<Root>/MCuC_Chart'
+            //
             // Entry 'Preset': '<S10>:302'
             // Entry Internal 'Preset': '<S10>:302'
-            // Transition: '<S10>:362'
-            // Entry 'MC_ST': '<S10>:361'
-            // Entry Internal 'MC_ST': '<S10>:361'
+            // Entry 'MC': '<S10>:361'
+            MCuC_Y.MC_Self_Test = true;
+
+            // Chart: '<Root>/MCuC_Chart'
+            // Entry Internal 'MC': '<S10>:361'
             // Transition: '<S10>:365'
-            MCuC_DW.is_MC_ST = MCuC_IN_MC_EN_ON;
+            MCuC_DW.is_MC = MCuC_IN_MC_EN_ON;
 
             // Outport: '<Root>/MC_EN_uC' incorporates:
             //   Chart: '<Root>/MCuC_Chart'
             //
             // Entry 'MC_EN_ON': '<S10>:364'
             MCuC_Y.MC_EN_uC = true;
+
+            // Chart: '<Root>/MCuC_Chart'
+            // Entry Internal 'LS': '<S10>:459'
+            // Transition: '<S10>:460'
+            MCuC_DW.is_LS = MCuC_IN_Set_Low;
+
+            // Entry 'Set_Low': '<S10>:463'
+            // Entry 'CAN': '<S10>:457'
+            MCuC_DW.CAN_ST_Complete = true;
 
             // ConstCode for Outport: '<Root>/Fault' incorporates:
             //   Constant: '<Root>/Constant10'
@@ -1185,20 +1273,10 @@ namespace vcu
 
             MCuC_Y.Super_Fault = rtCP_pooled2;
 
-            // ConstCode for Outport: '<Root>/LS_Self_Test_Out' incorporates:
-            //   Constant: '<Root>/Constant3'
-
-            MCuC_Y.LS_Self_Test_Out = rtCP_pooled2;
-
             // ConstCode for Outport: '<Root>/CAN_Self_Test' incorporates:
-            //   Constant: '<Root>/Constant4'
+            //   Constant: '<Root>/Constant1'
 
             MCuC_Y.CAN_Self_Test = rtCP_pooled2;
-
-            // ConstCode for Outport: '<Root>/MC_Self_Test' incorporates:
-            //   Constant: '<Root>/Constant5'
-
-            MCuC_Y.MC_Self_Test = rtCP_pooled2;
         }
     }
 
