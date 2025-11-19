@@ -109,6 +109,9 @@ public:
      */
     static constexpr uint8_t HB_SIZE = 5;
 
+    static constexpr uint8_t BMS_CELL_TEMP_LEN = 45;
+    static constexpr uint8_t BMS_CELL_VOLT_LEN = 100;
+
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
      */
@@ -290,31 +293,32 @@ private:
     MCuC_GPIO gpios;
 
     // Model input data
-    bool eStopA      = false; ///< GPIO: LS A; Whether or not the emergency stop is enabled.
-    bool eStopB      = false; ///< GPIO: LS B; Whether or not the emergency stop is enabled.
-    bool ignitionOnA = false; ///< GPIO: LS A; Whether or not the ignition is on.
-    bool ignitionOnB = false; ///< GPIO: LS B; Whether or not the ignition is on.
-    bool interlock   = false; ///< GPIO: if BFC is plugged in.
-    bool mcOn        = false; ///< GPIO: Whether or not the motor controller is on.
+// TODO: Should i delete? no point to have GPIO inputs put in middle-man var
+//    bool eStopA      = false; ///< GPIO: LS A; Whether or not the emergency stop is enabled.
+//    bool eStopB      = false; ///< GPIO: LS B; Whether or not the emergency stop is enabled.
+//    bool ignitionOnA = false; ///< GPIO: LS A; Whether or not the ignition is on.
+//    bool ignitionOnB = false; ///< GPIO: LS B; Whether or not the ignition is on.
+//    bool interlock   = false; ///< GPIO: if BFC is plugged in.
+//    bool mcOn        = false; ///< GPIO: Whether or not the motor controller is on.
 
     bool powertrainCANSelfTestIn = false;             ///< CAN (Hardmon): If the powertrain CAN network is working.
     MC_DC_State mcDischarge  = MC_DC_State::Disabled; ///< CAN (MC): What state the MC discharger is in. [0,4] range.
     MC_VSM_State mcState     = MC_VSM_State::Start; ///< CAN (MC): What state the MC state machine is in. [0,14] range.
-    uint8_t mcPSPresent      = 0;                   ///< CAN (MC): The MC pump speed.
     bool forwardEnable       = false;               ///< CAN (HIB): Whether or not the bike is commanded to go forward.
     bool startPressed        = false;               ///< CAN (HIB): Whether or not the bike is starting.
     bool brakeOn             = false;               ///< CAN (HIB): Whether or not the brake is on.
+    bool hibComparisonFault  = false;               ///< CAN (HIB): Whether or not there is a HIB comparison fault.
     int16_t throttle         = 0;                   ///< CAN (HIB): Signal state of the throttle.
-    int32_t bmsCellTemps[45] = {0};                 ///< CAN (BMS): The cell temperatures.
-    int16_t bmsCellVoltages[100] = {0};             ///< CAN (BMS): The cell voltages.
+    int32_t bmsCellTemps[BMS_CELL_TEMP_LEN] = {0};       ///< CAN (BMS): The cell temperatures.
+    int16_t bmsCellVoltages[BMS_CELL_VOLT_LEN] = {0};    ///< CAN (BMS): The cell voltages.
     bool bmsContactorClosed      = false;           ///< CAN (BMS): Whether or not the contactor is closed.
     uint8_t gfdbIsolationState   = 0;               ///< CAN (GFDB): The isolation state int value.
     uint8_t battPSPresent        = 0;               ///< CAN (TMS): The battery's pump speed.
     int32_t coolingLoopTemps[5]  = {0};             ///< CAN (TMS): The cooling loop temperatures.
     int16_t mcCoolingFR          = 0;               ///< CAN (TMS): The MC's cooling flow rate.
     int16_t battCoolingFR        = 0;               ///< CAN (TMS): The battery's cooling flow rate.
-    bool hibComparisonFault      = false;           ///< CAN (HIB): Whether or not there is a HIB comparison fault.
-    bool lvssOn                  = false;           ///< CAN (LVSS): Whether
+    uint8_t mcPSPresent          = 0;               ///< CAN (TMS): The MC pump speed.
+    bool lvssOn                  = false;           ///< CAN (LVSS): Whether or not the LVSS is on.
     bool hibOn                   = false;           ///< CAN (LVSS): Whether or not the HIB is on.
     bool hudlOn                  = false;           ///< CAN (LVSS): Whether or not the HUDL is on.
     bool tmsOn                   = false;           ///< CAN (LVSS): Whether or not the TMS is on.

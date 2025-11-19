@@ -76,6 +76,7 @@ target_sources(${PROJECT_NAME} PRIVATE
         src/models/MCuC_Model.cpp
         src/MCuC.cpp
         src/Hardmon.cpp
+        src/BoardMessageParsers.cpp
         )
 
 ###############################################################################

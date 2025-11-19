@@ -1,4 +1,5 @@
 #include <MCuC.hpp>
+#include <BoardMessageParsers.hpp>
 #include <core/rtos/Threadx.hpp>
 #include <core/utils/log.hpp>
 #include <core/utils/time.hpp>
@@ -33,21 +34,37 @@ uint8_t MCuC::getNodeID() {
 void MCuC::handlePowertrainCanMessage(io::CANMessage& message) {
     bufferMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     switch (message.getId()) {
-    case dev::PowertrainCAN::MC_INTERNAL_STATES_ID:
-        mcState     = static_cast<MC_VSM_State>(powertrainCAN.parseMCState(message));
-        mcDischarge = static_cast<MC_DC_State>(powertrainCAN.parseMCDischarge(message));
+    case dev::PowertrainCAN::MC_INTERNAL_STATES_ID: {
+        boards::MCInternalParsed ps = boards::parseMCInternalMessage(message);
+        mcState = static_cast<MC_VSM_State>(ps.mcState);
+        mcDischarge = static_cast<MC_DC_State>(ps.mcDischarge);
         break;
-    case dev::PowertrainCAN::HIB_MESSAGE_ID:
-        throttle      = powertrainCAN.parseHIBThrottle(message);
-        forwardEnable = powertrainCAN.parseHIBForwardEnable(message);
-        startPressed  = powertrainCAN.parseHIBStartPressed(message);
+    }
+    case dev::PowertrainCAN::HIB_MESSAGE_ID: {
+        boards::HIBParsed ps = boards::parseHIBMessage(message);
+        throttle = ps.throttle;
+        forwardEnable = ps.forwardEn;
+        startPressed = ps.startPressed;
+        brakeOn = ps.brakeOn;
+        hibComparisonFault = ps.comparisonFault;
         break;
-    case dev::PowertrainCAN::HARDMON_SELF_TEST_MESSAGE_ID: // todo: fill these out
+    }
+    case dev::PowertrainCAN::HARDMON_SELF_TEST_MESSAGE_ID: {
+        boards::HardmonParsed ps = boards::parseHardmonMessage(message);
+        powertrainCANSelfTestIn = ps.powertrainCANSelfTest;
         break;
-    case dev::PowertrainCAN::BMS_MESSAGE_ID:
+    }
+    case dev::PowertrainCAN::BMS_MESSAGE_ID: {
+        boards::BMSParsed ps = boards::parseBMSMessage(message);
+        bmsContactorClosed = ps.contactorClosed;
+        memcpy(bmsCellTemps, ps.cellTemps, sizeof(bmsCellTemps));
+        memcpy(bmsCellVoltages, ps.cellVolts, sizeof(bmsCellVoltages));
         break;
-    case dev::PowertrainCAN::GFDB_MESSAGE_ID:
+    }
+    case dev::PowertrainCAN::GFDB_MESSAGE_ID: {
+        gfdbIsolationState = boards::parseGFDBMessage(message).isolationState;
         break;
+    }
     default:
         // do nothing, we don't care about this message
         break;
@@ -99,7 +116,7 @@ void MCuC::updateNodeHeartbeat(uint32_t nodeId) {
         slot = 4;
         break;
     default:
-        return; // Should never get here; means we received a message from an unknown board
+        return;
     }
 
     hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
@@ -153,6 +170,7 @@ void MCuC::process() {
     static bool firstStep         = true;
     static bool seenMCInit        = false;
     static bool forwardStatic     = false;
+    static bool interlock         = true;
     static int16_t throttleStatic = 0;
     static uint32_t cycles = 0, total = 0;
 
@@ -178,35 +196,41 @@ void MCuC::process() {
     modelInputs.ESTOP_LS_B        = gpios.eStopBGPIO.readPin() == io::GPIO::State::LOW;    // active low
 
     // Set CAN inputs (values updated over CAN)
-    modelInputs.MC_DC_State_CAN          = mcDischarge;
-    modelInputs.MC_VSM_State_CAN         = mcState;
-    modelInputs.MC_PS_Present_CAN        = mcPSPresent;
-    modelInputs.Forward_EN_CAN           = forwardEnable;
-    modelInputs.Start_CAN                = startPressed;
-    modelInputs.Brake_CAN                = brakeOn;
-    modelInputs.Throttle_CAN             = throttle;
+        // From Motor Controller
+    modelInputs.MC_DC_State_CAN   = MC_DC_State::Enabled;
+    modelInputs.MC_VSM_State_CAN  = mcState;
+        // From HIB
+    modelInputs.Forward_EN_CAN    = forwardEnable;
+    modelInputs.Start_CAN         = startPressed;
+    modelInputs.Brake_CAN         = brakeOn;
+    modelInputs.HIB_Comparison_Fault_CAN = hibComparisonFault;
+    modelInputs.Throttle_CAN      = throttle;
+        // From BMS
     memcpy(modelInputs.BMS_Cell_Temps_CAN, bmsCellTemps, sizeof(bmsCellTemps));
     memcpy(modelInputs.BMS_Cell_Voltages_CAN, bmsCellVoltages, sizeof(bmsCellVoltages));
     modelInputs.BMS_Contactor_Closed_CAN = bmsContactorClosed;
+        // From GFDB
     modelInputs.GFDB_Isolation_State_CAN = gfdbIsolationState;
-    modelInputs.Batt_PS_Present_CAN = battPSPresent;
+        // From TMS
+    modelInputs.Batt_PS_Present_CAN      = battPSPresent;
     memcpy(modelInputs.Cooling_Loop_Temps_CAN, coolingLoopTemps, sizeof(coolingLoopTemps));
-    modelInputs.MC_Cooling_FR_CAN = mcCoolingFR;
-    modelInputs.Batt_Cooling_FR_CAN = battCoolingFR;
-    modelInputs.HIB_Comparison_Fault_CAN = hibComparisonFault;
+    modelInputs.MC_Cooling_FR_CAN        = mcCoolingFR;
+    modelInputs.Batt_Cooling_FR_CAN      = battCoolingFR;
+    modelInputs.MC_PS_Present_CAN        = mcPSPresent;
+        // From LVSS
     modelInputs.LVSS_ON_CAN              = lvssOn;
-    modelInputs.HIB_ON_CAN = hibOn;
-    modelInputs.HUDL_ON_CAN = hudlOn;
-    modelInputs.TMS_ON_CAN = tmsOn;
-    modelInputs.GUB_ON_CAN = gubOn;
-    modelInputs.Batt_12V_ON_CAN = batt12vOn;
-    modelInputs.Vicor_Input_Current_CAN = vicorInputCurrent;
+    modelInputs.HIB_ON_CAN               = hibOn;
+    modelInputs.HUDL_ON_CAN              = hudlOn;
+    modelInputs.TMS_ON_CAN               = tmsOn;
+    modelInputs.GUB_ON_CAN               = gubOn;
+    modelInputs.Batt_12V_ON_CAN          = batt12vOn;
+    modelInputs.Vicor_Input_Current_CAN  = vicorInputCurrent;
     memcpy(modelInputs.LVSS_Temps_CAN, lvssTemps, sizeof(lvssTemps));
     memcpy(modelInputs.LVSS_Currents_CAN, lvssCurrents, sizeof(lvssCurrents));
 
-
     // todo: test hardcoding
-    modelInputs.Interlock                = true;
+    modelInputs.Interlock                = interlock;
+    modelInputs.LVSS_ON_CAN              = false;
     modelInputs.LVSS_ON_CAN              = false;
     modelInputs.MC_ON                    = false;
     modelInputs.BMS_Contactor_Closed_CAN = false;
@@ -215,7 +239,7 @@ void MCuC::process() {
     modelInputs.HIB_Comparison_Fault_CAN = false;
 
     if (firstStep) {
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Running steps");
+//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Running steps");
         firstStep = false;
         for (int i = 0; i < HB_SIZE; i++) {
             modelInputs.Heartbeats_CAN[i] = 0;
@@ -306,7 +330,7 @@ void MCuC::process() {
     mcEnableUC        = modelOutputs.MC_EN_uC;
 
 #ifdef EVT_CORE_LOG_ENABLE
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "STATE: %s", stateToString(ucState.stateEnum));
+//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "STATE: %s", stateToString(ucState.stateEnum));
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Step Length: %lu ms", (halstepEnd - halstep));
 #endif
 
@@ -377,7 +401,7 @@ void MCuC::process() {
 
     rollingCounter++;
 
-    // Rolling Counter is stored in 4 bits, and is actually 0-15
+    // Rolling Counter is stored in 4 bits, meaning it is actually 0-15
     if (rollingCounter == 16) {
         rollingCounter = 0;
     }

@@ -6,6 +6,7 @@
 
 namespace io = core::io;
 
+namespace boards {
 struct BMSParsed {
     int32_t cellTemps[vcu::MCuC::BMS_CELL_TEMP_LEN];    ///< Array of Cell Temperatures
     int16_t cellVolts[vcu::MCuC::BMS_CELL_VOLT_LEN];    ///< Array of Cell Voltages
@@ -44,8 +45,6 @@ struct GFDBParsed {
 struct HardmonParsed {
     bool powertrainCANSelfTest; ///<
 };
-
-namespace boards {
 
 /**
  * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED

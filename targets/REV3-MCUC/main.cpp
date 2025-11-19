@@ -42,7 +42,7 @@ namespace log  = core::log;
 /// The size of the memory pool for the tx application
 #define TX_APP_MEM_POOL_SIZE 65536
 /// How often the model should take 1 step.  todo:need do 300hz(every 3ms). rn anything sub 10 and process() doesnt run
-#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(250)
+#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(10)
 
 /// How long until start the model trigger rates (give long enough to start)
 #define MODEL_THREAD_TRIGGER_START MS_TO_TICKS(250)
@@ -221,7 +221,7 @@ int main() {
 
     // test that the board is connected to the can network
     if (ptRes != io::CAN::CANStatus::OK) {
-        uart.printf("Failed to connect to Powertrain CAN network\r\n");
+        log::LOGGER.log(log::Logger::LogLevel::ERROR, "Failed to connect to Powertrain CAN network");
         return 1;
     }
 
@@ -260,7 +260,7 @@ int main() {
 
     // test that the board is connected to the can network
     if (result != io::CAN::CANStatus::OK) {
-        uart.printf("Failed to connect to CAN network\r\n");
+        log::LOGGER.log(log::Logger::LogLevel::ERROR, "Failed to connect to Accessory CAN network");
         return 1;
     }
 
@@ -277,7 +277,7 @@ int main() {
     time::wait(500);
 
     // print any CANopen errors
-    uart.printf("CanOpen Error: %d\r\n", CONodeGetErr(&canNode));
+    log::LOGGER.log(log::Logger::LogLevel::WARNING, "CanOpen Error: %d\r\n", CONodeGetErr(&canNode));
 
     ////////////////////////
     // Initialize Threadx //

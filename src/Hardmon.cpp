@@ -1,4 +1,5 @@
 #include <Hardmon.hpp>
+#include <BoardMessageParsers.hpp>
 
 #include <core/rtos/Enums.hpp>
 #include <core/rtos/Threadx.hpp>
@@ -31,7 +32,7 @@ void Hardmon::handlePowertrainCanMessage(io::CANMessage& message) { // todo: we 
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     switch (message.getId()) {
     case dev::PowertrainCAN::HIB_MESSAGE_ID:
-        forwardEnable = powertrainCAN.parseHIBForwardEnable(message);
+        forwardEnable = boards::parseHIBMessage(message).forwardEn;
         break;
     case dev::PowertrainCAN::UC_SELF_TEST_MESSAGE_ID:
         powertrainCAN.sendHardmonSelfTestResponse();

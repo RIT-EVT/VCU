@@ -63,57 +63,6 @@ public:
     PowertrainCAN(io::CAN& can);
 
     /**
-     * Parses the motor controller state from the motor controller internal state message
-     *  (message with id = MC_INTERNAL_STATES_ID)
-     *
-     * @param message[in] a message from the motor controller describing its internal state
-     * @return the state of the motor controller state machine
-     */
-    uint8_t parseMCState(io::CANMessage& message);
-
-    /**
-     * Parses the motor controller discharge machine state from the motor controller internal state message
-     *  (message with id = MC_INTERNAL_STATES_ID)
-     *
-     * @param message[in] a message from the motor controller describing its internal state.
-     * @return the state of the motor controller's discharger internal state machine.
-     */
-    uint8_t parseMCDischarge(io::CANMessage& message);
-
-    /**
-     * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
-     * Parses the HIB throttle value from the HIB message.
-     *  (message with id = HIB_MESSAGE_ID)
-     *
-     * @param message[in] a message from the HIB that contains throttle information.
-     * @return the value of the throttle.
-     */
-    int16_t parseHIBThrottle(io::CANMessage& message);
-
-    // TODO: Heller's point about moving all of this parsing to
-    //  separate board classes that takes in a CAN message from that respective board and extracts the relevant data
-    /**
-     * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
-     * Parses the HIB forward enable value from the HIB message.
-     *  (message with id = HIB_MESSAGE_ID)
-     *
-     * @param message[in] a message from the HIB that contains forward enable information.
-     * @return whether or not forward enable is on.
-     */
-    bool parseHIBForwardEnable(io::CANMessage& message);
-
-    // TODO: All HIB parsing needs to be updated to match actual messages
-    /**
-     * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
-     * Parses the HIB start pressed value from the HIB message.
-     *  (message with id = HIB_MESSAGE_ID)
-     *
-     * @param message[in] a message from the HIB that contains start pressed information.
-     * @return whether or not start is pressed
-     */
-    bool parseHIBStartPressed(io::CANMessage& message);
-
-    /**
      * Sets the Motor Controller Command message values.
      * @param torque the value to set torque to.
      * @param speed the value to set speed to.

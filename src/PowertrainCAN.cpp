@@ -6,35 +6,6 @@ PowertrainCAN::PowertrainCAN(io::CAN& can)
     : Initializable("Powertrain CAN"), can(can),
       queue("Powertrain Queue", sizeof(io::CANMessage), POWERTRAIN_QUEUE_SIZE) {}
 
-uint8_t PowertrainCAN::parseMCState(io::CANMessage& message) {
-    return (message.getPayload()[0]);
-}
-
-uint8_t PowertrainCAN::parseMCDischarge(io::CANMessage& message) {
-    return ((message.getPayload()[4] >> 5));
-}
-
-int16_t PowertrainCAN::parseHIBThrottle(io::CANMessage& message) {
-    // TODO: HIB example implementation, update when HIB is completed
-    uint8_t* message_payload = message.getPayload();
-    uint16_t throttle        = (message_payload[0]);
-    throttle <<= 8;
-    throttle += (message_payload[1]);
-    return throttle;
-}
-
-bool PowertrainCAN::parseHIBForwardEnable(io::CANMessage& message) {
-    // TODO: HIB example implementation, update when HIB is completed
-    bool forwardEnable = (message.getPayload()[2] & 0b10000000) != 0;
-    return forwardEnable;
-}
-
-bool PowertrainCAN::parseHIBStartPressed(io::CANMessage& message) {
-    // TODO: HIB example implementation, update when HIB is completed
-    bool startPressed = (message.getPayload()[2] & 0b01000000) != 0;
-    return startPressed;
-}
-
 void PowertrainCAN::setMCInverterEnable(bool inverterEnable) {
     mcCommandPayload.inverterEnable = inverterEnable;
 }
