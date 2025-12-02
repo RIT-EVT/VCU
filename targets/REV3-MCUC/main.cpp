@@ -42,10 +42,10 @@ namespace log  = core::log;
 /// The size of the memory pool for the tx application
 #define TX_APP_MEM_POOL_SIZE 65536
 /// How often the model should take 1 step.  todo:need do 300hz(every 3ms). rn anything sub 10 and process() doesnt run
-#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(10)
+#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(3)
 
 /// How long until start the model trigger rates (give long enough to start)
-#define MODEL_THREAD_TRIGGER_START MS_TO_TICKS(250)
+#define MODEL_THREAD_TRIGGER_START MS_TO_TICKS(100)
 
 // Model Thread Parameters
 #define MODEL_THREAD_STACK_SIZE        1024
@@ -235,7 +235,7 @@ int main() {
     core::types::FixedQueue<CANOPEN_QUEUE_SIZE, io::CANMessage> canOpenQueue;
 
     // Initialize CAN, add an IRQ which will add messages to the queue above
-    // Can init for testing not on VCU
+    // CAN init for testing not on VCU
     //    io::CAN& accessoryCAN = io::getCAN<io::Pin::PA_12, io::Pin::PA_11>();
 
     // Actual CAN init
@@ -383,7 +383,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     if ((flags & 0x01) == 0x01) {
         // the model is not running fast enough- this is very bad!!!!
         // todo: determine what error to throw
-        log::LOGGER.log(core::log::Logger::LogLevel::ERROR, "Model Thread Not Running Fast Enough!");
+//        log::LOGGER.log(core::log::Logger::LogLevel::ERROR, "Model Thread Not Running Fast Enough!");
     }
     modelTriggerFlag->set(0x01);
 }
