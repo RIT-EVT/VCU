@@ -45,6 +45,9 @@ public:
         // Ground Fault message
         GFDB_MESSAGE_ID = 0xA100100,
 
+        // Early shutdown warning for the GUB message
+        GUB_EARLY_SHUTDOWN_WARNING_ID = 0x0FF,  // it spells off :)
+
         // self test message ids
         HARDMON_SELF_TEST_MESSAGE_ID = 0x044, // TODO: This is not the correct ID, will not work!
         UC_SELF_TEST_MESSAGE_ID      = 0x045, // TODO: This is not the correct ID, will not work!
@@ -120,14 +123,23 @@ public:
     /**
      * Sends a UC Self Test Message that the Hardmon will respond to.
      *  (Message is the same every time)
+     *  Returns CAN status of the attempted send
      */
-    void sendUCSelfTestMessage();
+    io::CAN::CANStatus sendUCSelfTestMessage();
+
+    /**
+     * Sends a Shutdown Message to the GUB. This message is sent ~100ms before power will be cut!
+     *  (Message is the same every time)
+     *  Returns CAN status of the attempted send
+     */
+    io::CAN::CANStatus sendShutdownWarningMessage();
 
     /**
      * Sends the Hardmon Response to the UC Self Test Message.
      *  (Message is the same every time).
+     *  Returns CAN status of the attempted send
      */
-    void sendHardmonSelfTestResponse();
+    io::CAN::CANStatus sendHardmonSelfTestResponse();
 
     core::rtos::TXError init(rtos::BytePoolBase& pool) override;
 
@@ -168,6 +180,11 @@ private:
     uint8_t UCSelfTestPayload = 4;
     /// the uc self test message
     io::CANMessage UCSelfTestMessage = io::CANMessage(UC_SELF_TEST_MESSAGE_ID, 1, &UCSelfTestPayload, false);
+
+    /// Payload for gub to be warned about power about to turn off
+    uint8_t GUBShutdownPayload = 255;
+    /// the pre-shutdown warning message for the GUV
+    io::CANMessage GUBShutdownWarningMessage = io::CANMessage(GUB_EARLY_SHUTDOWN_WARNING_ID, 1, &GUBShutdownPayload, false);
 
     /// Example payload for the Hardmon selfTest Response Message.
     /// In the future, could be replaced by a more meaningful payload

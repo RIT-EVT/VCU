@@ -41,7 +41,7 @@ namespace log  = core::log;
 
 /// The size of the memory pool for the tx application
 #define TX_APP_MEM_POOL_SIZE 65536
-/// How often the model should take 1 step.  todo:need do 300hz(every 3ms). rn anything sub 10 and process() doesnt run
+/// How often the model should take 1 step.
 #define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(3)
 
 /// How long until start the model trigger rates (give long enough to start)
@@ -382,8 +382,8 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     modelTriggerFlag->getCurrentFlags(&flags);
     if ((flags & 0x01) == 0x01) {
         // the model is not running fast enough- this is very bad!!!!
+        // this will happen every time we need to toggle the MC on or off, as it requires a 10ms wait
         // todo: determine what error to throw
-//        log::LOGGER.log(core::log::Logger::LogLevel::ERROR, "Model Thread Not Running Fast Enough!");
     }
     modelTriggerFlag->set(0x01);
 }

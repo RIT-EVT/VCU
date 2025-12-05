@@ -54,11 +54,15 @@ io::CAN::CANStatus PowertrainCAN::sendBMSMessage() {
     return can.transmit(message);
 }
 
-void PowertrainCAN::sendUCSelfTestMessage() {
+io::CAN::CANStatus PowertrainCAN::sendShutdownWarningMessage() {
+    return can.transmit(GUBShutdownWarningMessage);
+}
+
+io::CAN::CANStatus PowertrainCAN::sendUCSelfTestMessage() {
     can.transmit(UCSelfTestMessage);
 }
 
-void PowertrainCAN::sendHardmonSelfTestResponse() {
+io::CAN::CANStatus PowertrainCAN::sendHardmonSelfTestResponse() {
     can.transmit(UCSelfTestMessage);
 }
 

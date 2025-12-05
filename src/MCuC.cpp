@@ -34,40 +34,40 @@ uint8_t MCuC::getNodeID() {
 void MCuC::handlePowertrainCanMessage(io::CANMessage& message) {
     bufferMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     switch (message.getId()) {
-    case dev::PowertrainCAN::MC_INTERNAL_STATES_ID: {
-        boards::MCInternalParsed ps = boards::parseMCInternalMessage(message);
-        mcState = static_cast<MC_VSM_State>(ps.mcState);
-        mcDischarge = static_cast<MC_DC_State>(ps.mcDischarge);
-        break;
-    }
-    case dev::PowertrainCAN::HIB_MESSAGE_ID: {
-        boards::HIBParsed ps = boards::parseHIBMessage(message);
-        throttle = ps.throttle;
-        forwardEnable = ps.forwardEn;
-        startPressed = ps.startPressed;
-        brakeOn = ps.brakeOn;
-        hibComparisonFault = ps.comparisonFault;
-        break;
-    }
-    case dev::PowertrainCAN::HARDMON_SELF_TEST_MESSAGE_ID: {
-        boards::HardmonParsed ps = boards::parseHardmonMessage(message);
-        powertrainCANSelfTestIn = ps.powertrainCANSelfTest;
-        break;
-    }
-    case dev::PowertrainCAN::BMS_MESSAGE_ID: {
-        boards::BMSParsed ps = boards::parseBMSMessage(message);
-        bmsContactorClosed = ps.contactorClosed;
-        memcpy(bmsCellTemps, ps.cellTemps, sizeof(bmsCellTemps));
-        memcpy(bmsCellVoltages, ps.cellVolts, sizeof(bmsCellVoltages));
-        break;
-    }
-    case dev::PowertrainCAN::GFDB_MESSAGE_ID: {
-        gfdbIsolationState = boards::parseGFDBMessage(message).isolationState;
-        break;
-    }
-    default:
-        // do nothing, we don't care about this message
-        break;
+        case dev::PowertrainCAN::MC_INTERNAL_STATES_ID: {
+            boards::MCInternalParsed ps = boards::parseMCInternalMessage(message);
+            mcState = static_cast<MC_VSM_State>(ps.mcState);
+            mcDischarge = static_cast<MC_DC_State>(ps.mcDischarge);
+            break;
+        }
+        case dev::PowertrainCAN::HIB_MESSAGE_ID: {
+            boards::HIBParsed ps = boards::parseHIBMessage(message);
+            throttle = ps.throttle;
+            forwardEnable = ps.forwardEn;
+            startPressed = ps.startPressed;
+            brakeOn = ps.brakeOn;
+            hibComparisonFault = ps.comparisonFault;
+            break;
+        }
+        case dev::PowertrainCAN::HARDMON_SELF_TEST_MESSAGE_ID: {
+            boards::HardmonParsed ps = boards::parseHardmonMessage(message);
+            powertrainCANSelfTestIn = ps.powertrainCANSelfTest;
+            break;
+        }
+        case dev::PowertrainCAN::BMS_MESSAGE_ID: {
+            boards::BMSParsed ps = boards::parseBMSMessage(message);
+            bmsContactorClosed = ps.contactorClosed;
+            memcpy(bmsCellTemps, ps.cellTemps, sizeof(bmsCellTemps));
+            memcpy(bmsCellVoltages, ps.cellVolts, sizeof(bmsCellVoltages));
+            break;
+        }
+        case dev::PowertrainCAN::GFDB_MESSAGE_ID: {
+            gfdbIsolationState = boards::parseGFDBMessage(message).isolationState;
+            break;
+        }
+        default:
+            // do nothing, we don't care about this message
+            break;
     }
     bufferMutex.put();
 }
@@ -172,7 +172,11 @@ void MCuC::process() {
     static bool forwardStatic     = false;
     static bool interlock         = true;
     static int16_t throttleStatic = 0;
-    static uint32_t cycles = 0, total = 0;
+
+    // todo: This is only for checking process trigger timing using saleae
+//    static io::GPIO::State state = io::GPIO::State::LOW;
+//    gpios.ledTwoGPIO.writePin(state);
+//    state = (state == io::GPIO::State::LOW ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
 #ifdef EVT_CORE_LOG_ENABLE
     uint32_t halstart, halstep, halstepEnd, halpowerTrainCAN = 0, halmotorControllerCan, halend;
@@ -239,7 +243,6 @@ void MCuC::process() {
     modelInputs.HIB_Comparison_Fault_CAN = false;
 
     if (firstStep) {
-//        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Running steps");
         firstStep = false;
         for (int i = 0; i < HB_SIZE; i++) {
             modelInputs.Heartbeats_CAN[i] = 0;
@@ -329,11 +332,6 @@ void MCuC::process() {
     ucState.stateEnum = modelOutputs.uC_State; // keep for the union
     mcEnableUC        = modelOutputs.MC_EN_uC;
 
-#ifdef EVT_CORE_LOG_ENABLE
-//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "STATE: %s", stateToString(ucState.stateEnum));
-//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Step Length: %lu ms", (halstepEnd - halstep));
-#endif
-
     // use outputs
     gpios.ucStateZeroGPIO.writePin(ucState.stateBit0 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ucStateOneGPIO.writePin(ucState.stateBit1 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
@@ -353,7 +351,7 @@ void MCuC::process() {
 
     // HUDL LEDs
     gpios.ledOneGPIO.writePin(modelOutputs.LED[0] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    gpios.ledTwoGPIO.writePin(modelOutputs.LED[1] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+//    gpios.ledTwoGPIO.writePin(modelOutputs.LED[1] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ledThreeGPIO.writePin(modelOutputs.LED[2] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
     // set Motor Controller via the two gpios
@@ -373,13 +371,14 @@ void MCuC::process() {
         mcEnableLast = mcEnableUC;
     }
 
-    // set torqueRequest before we send the message
-    // We will send accessory CAN SelfTest message over CANopen
-    // Send the powertrainCanSelfTest message
+    static UC_State lastState = UC_State::Preset;
 
-#ifdef EVT_CORE_LOG_ENABLE
-//    uint32_t halSectionEnd = core::time::millis();  // todo: remove when done debugging
-#endif
+    if (ucState.stateEnum != lastState) {
+        if (ucState.stateEnum == UC_State::MC_Discharging) {    // todo: test this is actually where we wait for 100ms
+            powertrainCAN.sendShutdownWarningMessage();
+        }
+        lastState = ucState.stateEnum;
+    }
 
     if (powertrainCanSelfTestOut) { // todo: this isn't an updated var
 #ifdef EVT_CORE_LOG_ENABLE
@@ -428,13 +427,6 @@ void MCuC::process() {
 
 #ifdef EVT_CORE_LOG_ENABLE
     halend = core::time::millis();
-    total += halend - halstart;
-    cycles++;
-    if (cycles >= 100) {
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "%lu ms", (total / cycles));
-        cycles = 0;
-        total  = 0;
-    }
 
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
 //                    "Starting: %d\n\r"
