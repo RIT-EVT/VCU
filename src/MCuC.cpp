@@ -57,6 +57,7 @@ void MCuC::handlePowertrainCanMessage(io::CANMessage& message) {
         case dev::PowertrainCAN::BMS_MESSAGE_ID: {
             boards::BMSParsed ps = boards::parseBMSMessage(message);
             bmsContactorClosed = ps.contactorClosed;
+            // todo: V these will most def be sent in across multiple messages, figure out how to receive them
             memcpy(bmsCellTemps, ps.cellTemps, sizeof(bmsCellTemps));
             memcpy(bmsCellVoltages, ps.cellVolts, sizeof(bmsCellVoltages));
             break;
@@ -119,7 +120,7 @@ void MCuC::updateNodeHeartbeat(uint32_t nodeId) {
         return;
     }
 
-    hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
+    hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);    // todo: probs shouldn't wait forever...
     heartbeatMessages[slot]++;
     hbMutex.put();
 }
@@ -173,7 +174,7 @@ void MCuC::process() {
     static bool interlock         = true;
     static int16_t throttleStatic = 0;
 
-    // todo: This is only for checking process trigger timing using saleae
+    // todo: These 3 below are only for checking process trigger timing using saleae
 //    static io::GPIO::State state = io::GPIO::State::LOW;
 //    gpios.ledTwoGPIO.writePin(state);
 //    state = (state == io::GPIO::State::LOW ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
@@ -294,8 +295,8 @@ void MCuC::process() {
 
     hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     for (int i = 0; i < HB_SIZE; i++) {
-        //      modelInputs.Heartbeats_CAN[i] = heartbeatMessages[i]; // todo: untested, but should work when we
-        //      actually connect other boards
+        // todo: untested, but should work when we actually connect other boards
+        //      modelInputs.Heartbeats_CAN[i] = heartbeatMessages[i];
     }
 
 #ifdef EVT_CORE_LOG_ENABLE
@@ -305,23 +306,16 @@ void MCuC::process() {
 //    "EStop: %d, Ignition %d", eStop, ignitionOn);
 #endif
     hbMutex.put();
-
     bufferMutex.put();
 
 #ifdef EVT_CORE_LOG_ENABLE
 //    halstep = core::time::millis();
 #endif
 
+    // Set inputs, run model, and receive outputs
     model.setExternalInputs(&modelInputs);
-
     model.step();
-
-    // TODO: in the future when the model is reworked so the inputs and outputs are in separate blocks of CAN & GPIO
-    //      inputs, we can use unions for this and iterate through it.
-
-    // get outputs
     modelOutputs = model.getExternalOutputs();
-    // save outputs
 
 #ifdef EVT_CORE_LOG_ENABLE
 //    halstepEnd = core::time::millis();
@@ -351,7 +345,7 @@ void MCuC::process() {
 
     // HUDL LEDs
     gpios.ledOneGPIO.writePin(modelOutputs.LED[0] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-//    gpios.ledTwoGPIO.writePin(modelOutputs.LED[1] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.ledTwoGPIO.writePin(modelOutputs.LED[1] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ledThreeGPIO.writePin(modelOutputs.LED[2] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
     // set Motor Controller via the two gpios
@@ -374,20 +368,13 @@ void MCuC::process() {
     static UC_State lastState = UC_State::Preset;
 
     if (ucState.stateEnum != lastState) {
-        if (ucState.stateEnum == UC_State::MC_Discharging) {    // todo: test this is actually where we wait for 100ms
+        if (ucState.stateEnum == UC_State::MC_Discharging) {
             powertrainCAN.sendShutdownWarningMessage();
         }
         lastState = ucState.stateEnum;
     }
 
-    if (powertrainCanSelfTestOut) { // todo: this isn't an updated var
-#ifdef EVT_CORE_LOG_ENABLE
-        halpowerTrainCAN = core::time::millis();
-#endif
-        powertrainCAN.sendUCSelfTestMessage();
-    }
-
-    // todo: Look into speeding up cycle time by only sending powertrain CAN if something changes
+    // todo: If needed, look into speeding up cycle time by only sending powertrain CAN messages if something changes
     // Send the Motor Controller CAN message (set values first)
     powertrainCAN.setMCAll(modelOutputs.Torque_Request_CAN,
                            modelOutputs.Speed_Command_uC_CAN,
@@ -401,7 +388,7 @@ void MCuC::process() {
     rollingCounter++;
 
     // Rolling Counter is stored in 4 bits, meaning it is actually 0-15
-    if (rollingCounter == 16) {
+    if (rollingCounter >= 16) {
         rollingCounter = 0;
     }
 
