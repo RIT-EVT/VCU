@@ -353,7 +353,7 @@ private:
     static constexpr uint8_t NODE_ID      = 0;
     static constexpr uint8_t LVSS_NODE_ID = 1;
     static constexpr uint8_t TMS_NODE_ID  = 2;
-    static constexpr uint8_t IMU_NODE_ID  = 9;
+    static constexpr uint8_t IMU_NODE_ID  = 5;
 
     /**
      * The size of the Object Dictionary
