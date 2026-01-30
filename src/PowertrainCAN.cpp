@@ -54,6 +54,10 @@ io::CAN::CANStatus PowertrainCAN::sendBMSMessage() {
     return can.transmit(message);
 }
 
+io::CAN::CANStatus PowertrainCAN::sendGFDBStateRequest() {
+    return can.transmit(GFDBStateRequestMessage);
+}
+
 io::CAN::CANStatus PowertrainCAN::sendShutdownWarningMessage() {
     return can.transmit(GUBShutdownWarningMessage);
 }
