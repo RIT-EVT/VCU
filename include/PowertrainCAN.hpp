@@ -42,8 +42,11 @@ public:
         // BMS message
         BMS_MESSAGE_ID = 0x202,
 
-        // Ground Fault message
-        GFDB_MESSAGE_ID = 0xA100100,
+        // Ground Fault recieve message
+        GFDB_INCOMING_ID = 0xA100100,
+
+        // Ground Fault outgoing message
+        GFDB_OUTGOING_ID = 0xA100101,
 
         // Early shutdown warning for the GUB message
         GUB_EARLY_SHUTDOWN_WARNING_ID = 0x0FF,  // it spells off :)
@@ -121,6 +124,13 @@ public:
     io::CAN::CANStatus sendBMSMessage();
 
     /**
+     * Sends the request to the GFDB for its isolation state.
+     * (Message is the same every time)
+     * @return CAN status of the send
+     */
+    io::CAN::CANStatus sendGFDBStateRequest();
+
+    /**
      * Sends a UC Self Test Message that the Hardmon will respond to.
      *  (Message is the same every time)
      *  Returns CAN status of the attempted send
@@ -183,8 +193,13 @@ private:
 
     /// Payload for gub to be warned about power about to turn off
     uint8_t GUBShutdownPayload = 255;
-    /// the pre-shutdown warning message for the GUV
+    /// the pre-shutdown warning message for the GUB
     io::CANMessage GUBShutdownWarningMessage = io::CANMessage(GUB_EARLY_SHUTDOWN_WARNING_ID, 1, &GUBShutdownPayload, false);
+
+    /// Payload for GFDB to tell it to send the current isolation state
+    uint8_t GFDBStateRequestPayload = 0xE0;
+    /// Message for the GFDB to request isolation state; According to SIM200 CAN Spreadsheet, all requests need to have datalength of 3
+    io::CANMessage GFDBStateRequestMessage = io::CANMessage(GFDB_OUTGOING_ID, 3, &GFDBStateRequestPayload, false);
 
     /// Example payload for the Hardmon selfTest Response Message.
     /// In the future, could be replaced by a more meaningful payload

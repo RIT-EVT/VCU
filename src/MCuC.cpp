@@ -62,7 +62,7 @@ void MCuC::handlePowertrainCanMessage(io::CANMessage& message) {
             memcpy(bmsCellVoltages, ps.cellVolts, sizeof(bmsCellVoltages));
             break;
         }
-        case dev::PowertrainCAN::GFDB_MESSAGE_ID: {
+        case dev::PowertrainCAN::GFDB_INCOMING_ID: {
             gfdbIsolationState = boards::parseGFDBMessage(message).isolationState;
             break;
         }
@@ -110,7 +110,7 @@ void MCuC::updateNodeHeartbeat(uint32_t nodeId) {
     case dev::PowertrainCAN::BMS_MESSAGE_ID:
         slot = 2;
         break;
-    case dev::PowertrainCAN::GFDB_MESSAGE_ID:
+    case dev::PowertrainCAN::GFDB_INCOMING_ID:
         slot = 3;
         break;
     case dev::PowertrainCAN::HIB_MESSAGE_ID:
@@ -406,6 +406,14 @@ void MCuC::process() {
 #ifdef EVT_CORE_LOG_ENABLE
     if (bmsMessageStatus != io::CAN::CANStatus::OK) {
         log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "BMS Message Failed with error %d", bmsMessageStatus);
+    }
+#endif
+
+    io::CAN::CANStatus gfdbMessageStatus = powertrainCAN.sendGFDBStateRequest();
+
+#ifdef EVT_CORE_LOG_ENABLE
+    if (gfdbMessageStatus != io::CAN::CANStatus::OK) {
+        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "GFDB Isolation State Message Failed with error %d", gfdbMessageStatus);
     }
 #endif
 
