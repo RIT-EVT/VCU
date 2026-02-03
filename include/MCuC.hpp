@@ -262,6 +262,12 @@ public:
      */
     void updateNodeHeartbeat(uint32_t nodeId);
 
+    /**
+     * Sets private groundFaultRequestFlag variable to true, which is then used
+     * in process() to send CAN request.
+     */
+    void setGroundFaultFlag();
+
 private:
     /**
      * Mutex that protects internal buffer access to the MCuC
@@ -288,6 +294,11 @@ private:
      * Safe (mutexed) Buffer Data that comes in or is sent out over Accessory CAN.
      */
     AccessoryCanData_t accessoryCanDataSafeBuffer;
+
+    /**
+     * Flag for when to send the GFDB Isolation state CAN request
+     */
+    volatile bool groundFaultRequestFlag = false;
 
     /// the gpios
     MCuC_GPIO gpios;

@@ -47,6 +47,10 @@ namespace log  = core::log;
 /// How long until start the model trigger rates (give long enough to start)
 #define MODEL_THREAD_TRIGGER_START MS_TO_TICKS(100)
 
+/// How often to send the isolation state request to the ground fault detection board
+#define GFDB_TRIGGER_START              MS_TO_TICKS(100)
+#define GFDB_REQUEST_TIMER_TRIGGER_RATE MS_TO_TICKS(25)
+
 // Model Thread Parameters
 #define MODEL_THREAD_STACK_SIZE        1024
 #define MODEL_THREAD_PRIORITY          1
@@ -109,8 +113,19 @@ typedef struct {
     rtos::EventFlags* eventFlags;
 } accessoryCanReceiveThreadArgs_t;
 
-// Timer expiration function
+/**
+ * Struct that holds information needed for the gfdb timer expiration function
+ */
+typedef struct {
+    vcu::MCuC* mcuc;
+    rtos::EventFlags* eventFlags;
+} gfdbArgs_t;
+
+// Timer expiration function for model trigger
 void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag);
+
+// Timer expiration function for gfdb isolation state request
+void gfdbTimerExpiration(gfdbArgs_t* args);
 
 // Thread Function Prototypes-- implementation below main.
 [[noreturn]] void modelThreadEntry(modelThreadArgs_t* args);
@@ -302,6 +317,18 @@ int main() {
                                                      MODEL_THREAD_TRIGGER_RATE,
                                                      true);
 
+    gfdbArgs_t gfdbArgs = {
+        &mcuc,
+        &modelTriggerFlag
+    };
+    /// timer that triggers the gfdb request message
+    rtos::Timer<gfdbArgs_t*> gfdbTriggerTimer((char*) "GFDB Trigger Timer",
+                                                     gfdbTimerExpiration,
+                                                     &gfdbArgs,
+                                                     GFDB_TRIGGER_START,
+                                                     GFDB_REQUEST_TIMER_TRIGGER_RATE,
+                                                     true);
+
     /// Argument struct the modelThread takes in
     modelThreadArgs_t modelThreadArgs = {
         &mcuc,
@@ -365,6 +392,7 @@ int main() {
         &modelThread,
         &modelTriggerFlag,
         &modelTriggerTimer,
+        &gfdbTriggerTimer,
         &powertrainCANReceiveThread,
         &healthThread,
         &accessoryCanReceiveThread,
@@ -372,6 +400,16 @@ int main() {
 
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting Kernel");
     rtos::startKernel(initArr, sizeof(initArr) / sizeof(initArr[0]), txPool);
+}
+
+/**
+ * Triggers every time the gfdb timer expires
+ *
+ * @param args the arguments for this timer expiration function
+ */
+void gfdbTimerExpiration(gfdbArgs_t* args) {
+    args->mcuc->setGroundFaultFlag();
+    args->eventFlags->set((1 << 5)); // Mark as ran
 }
 
 /**
@@ -468,6 +506,14 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         } else {
             // did not run
             log::LOGGER.log(log::Logger::LogLevel::DEBUG, "canopen FAIL");
+        }
+        if (flagOutput & (1 << 5)) {
+            // thread ran
+            args->eventFlags->clear((1 << 5));
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "reqGFDB");
+        } else {
+            // did not run
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "reqGFDB FAIL");
         }
         #endif
 

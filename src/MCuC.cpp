@@ -125,6 +125,10 @@ void MCuC::updateNodeHeartbeat(uint32_t nodeId) {
     hbMutex.put();
 }
 
+void MCuC::setGroundFaultFlag() {
+    groundFaultRequestFlag = true;
+}
+
 // todo: for testing purposes; remove when done
 inline const char* stateToString(UC_State state) {
     switch (state) {
@@ -409,7 +413,13 @@ void MCuC::process() {
     }
 #endif
 
-    io::CAN::CANStatus gfdbMessageStatus = powertrainCAN.sendGFDBStateRequest();
+    io::CAN::CANStatus gfdbMessageStatus = io::CAN::CANStatus::OK;
+
+    // Flag is set by RTOS gfdbTimer
+    if (groundFaultRequestFlag) {
+        gfdbMessageStatus = powertrainCAN.sendGFDBStateRequest();
+        groundFaultRequestFlag = false;
+    }
 
 #ifdef EVT_CORE_LOG_ENABLE
     if (gfdbMessageStatus != io::CAN::CANStatus::OK) {
