@@ -90,13 +90,14 @@ typedef struct {
  */
 typedef struct {
     vcu::MCuC* mcuc;
+    rtos::EventFlags* eventFlags;
 } powertrainCANReceiveThreadArgs_t;
 
 /**
  * Struct that holds information needed for the health thread
  */
 typedef struct {
-    vcu::MCuC* mcuc;
+    rtos::EventFlags* eventFlags;
 } healthThreadArgs_t;
 
 /**
@@ -105,6 +106,7 @@ typedef struct {
 typedef struct {
     vcu::MCuC* mcuc;
     CO_NODE* accessoryCanNode;
+    rtos::EventFlags* eventFlags;
 } accessoryCanReceiveThreadArgs_t;
 
 // Timer expiration function
@@ -318,7 +320,7 @@ int main() {
 
     // PowerTrain CAN input Thread
     /// argument struct the thread takes in
-    powertrainCANReceiveThreadArgs_t powertrainCANReceiveThreadArgs = {&mcuc};
+    powertrainCANReceiveThreadArgs_t powertrainCANReceiveThreadArgs = {&mcuc, &modelTriggerFlag};
 
     /// Thread that processes the Powertrain CAN Receive queue
     rtos::Thread<powertrainCANReceiveThreadArgs_t*> powertrainCANReceiveThread((char*) "Powertrain CAN Receive Thread",
@@ -331,7 +333,7 @@ int main() {
                                                                                PT_CAN_RECEIVE_AUTOSTART);
 
     /// Argument struct the healthThread takes in
-    healthThreadArgs_t healthThreadArgs{&mcuc};
+    healthThreadArgs_t healthThreadArgs{&modelTriggerFlag};
 
     /// Thread that checks the health of the other threads
     rtos::Thread<healthThreadArgs_t*> healthThread((char*) "MCuC Health Monitoring Thread",
@@ -344,7 +346,7 @@ int main() {
                                                    HEALTH_THREAD_AUTOSTART);
 
     /// Argument struct the Accessory Can Receive takes in
-    accessoryCanReceiveThreadArgs_t accessoryCanReceiveThreadArgs{&mcuc, &canNode};
+    accessoryCanReceiveThreadArgs_t accessoryCanReceiveThreadArgs{&mcuc, &canNode, &modelTriggerFlag};
 
     /// Thread that checks the health of the other threads
     rtos::Thread<accessoryCanReceiveThreadArgs_t*> accessoryCanReceiveThread(
@@ -402,6 +404,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         args->triggerFlag->get(0x01, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
         //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Triggered");
         args->mcuc->process();
+        args->triggerFlag->set((1 << 2)); // Mark as ran
         //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Completed");
     }
 }
@@ -423,20 +426,53 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 
         // process the message
         args->mcuc->handlePowertrainCanMessage(message);
+
+        args->eventFlags->set((1 << 3)); // mark as ran
     }
 }
 
+// stats on threads, turn the "not running fast enough"
 /**
  * Entry Function for the healthThread.
  *
  * @param args the arguments for this thread
  */
-[[noreturn]] void healthThreadEntry(healthThreadArgs_t* args) { // todo: this currently doesnt do anything
+[[noreturn]] void healthThreadEntry(healthThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Started");
     rtos::TXError error;
     while (true) {
+        uint32_t flagOutput;
+        args->eventFlags->getCurrentFlags(&flagOutput);
+
+        #ifdef EVT_CORE_LOG_ENABLE
+        if (flagOutput & (1 << 2)) {
+            // thread ran
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "sim_model");
+            args->eventFlags->clear((1 << 2));
+        } else {
+            // did not run
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "sim_model FAIL");
+        }
+        if (flagOutput & (1 << 3)) {
+            // thread ran
+            args->eventFlags->clear((1 << 3));
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "rawcan");
+        } else {
+            // did not run
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "rawcan FAIL");
+        }
+        if (flagOutput & (1 << 4)) {
+            // thread ran
+            args->eventFlags->clear((1 << 4));
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "canopen");
+        } else {
+            // did not run
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "canopen FAIL");
+        }
+        #endif
+
         // do health thread stuff
-        rtos::sleep(MS_TO_TICKS(120));
+        rtos::sleep(MS_TO_TICKS(250));
     }
 }
 
@@ -461,6 +497,8 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 
         io::processCANopenNode(args->accessoryCanNode);
 
+        args->eventFlags->set((1 << 4)); // Mark as ran
+
         //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
         //                        "Accessory Can Node Processed\n\r\t"
         //                        "HV Current: %d\n\r\t"
@@ -473,6 +511,6 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents,
         //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures);
 
-        rtos::sleep(MS_TO_TICKS(400)); // why are we waiting?
+        rtos::sleep(MS_TO_TICKS(200));
     }
 }
