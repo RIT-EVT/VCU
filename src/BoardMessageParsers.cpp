@@ -5,16 +5,21 @@ namespace boards {
 BMSParsed parseBMSMessage(io::CANMessage& message) {
     // TODO: BMS example implementation, update when BMS CAN message format is known
     uint8_t* payload     = message.getPayload();
-    bool contactorClosed = ((payload[0] & 0b10000000) == 0);
+    bool contactorClosed = ((payload[0] & 0b00000001) == 0);
     return BMSParsed{{0}, {0}, contactorClosed};
 }
 
 HIBParsed parseHIBMessage(io::CANMessage& message) {
     uint8_t* payload  = message.getPayload();
-    uint16_t throttle = (payload[0] << 8) | payload[1];
+    uint16_t throttle = payload[0];
+    throttle <<= 8;
+    throttle |= payload[1];
 
-    uint16_t brakeMillivolts = (payload[2] << 8) | payload[3];  // 0 to 12_000 (millivolts)
-    bool brakeOn         = brakeMillivolts > 6000;  // Completely magical number decided by EE's
+    uint16_t brakeMillivolts = payload[2];
+    brakeMillivolts <<= 8;
+    brakeMillivolts |= payload[3];  // 0 to 12_000 (millivolts)
+
+    bool brakeOn         = brakeMillivolts > 6000;  // Completely magical number decided by EE's (50% of max)
 
     bool comparisonFault = ((payload[4] & 0b00000100) | (payload[5] & 0b00000100)) != 0;
     bool forwardEnable   = (payload[6] & 0b00000001) != 0;  // todo: double check these once HIB code is merged

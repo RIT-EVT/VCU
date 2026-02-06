@@ -375,6 +375,9 @@ void MCuC::process() {
         if (ucState.stateEnum == UC_State::MC_Discharging) {
             powertrainCAN.sendShutdownWarningMessage();
         }
+
+        // todo: SEND NEW STATE OVER CANOPEN
+
         lastState = ucState.stateEnum;
     }
 
