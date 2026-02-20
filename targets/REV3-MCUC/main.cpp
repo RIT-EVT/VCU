@@ -79,6 +79,24 @@ namespace log  = core::log;
 #define ACC_CAN_RECEIVE_THREAD_TIME_SLICE        MS_TO_TICKS(10)
 #define ACC_CAN_RECEIVE_THREAD_AUTOSTART         true
 
+// Constexpr's for health thread flags
+constexpr int MODEL_THREAD_SLOW_LS = 1;
+constexpr uint32_t MODEL_THREAD_SLOW_MASK = 1 << MODEL_THREAD_SLOW_LS;
+
+constexpr int MODEL_THREAD_LS = 2;
+constexpr uint32_t MODEL_THREAD_MASK = 1 << MODEL_THREAD_LS;
+
+constexpr int PT_CAN_THREAD_LS = 3;
+constexpr uint32_t PT_CAN_THREAD_MASK = 1 << PT_CAN_THREAD_LS;
+
+constexpr int CANOPEN_THREAD_LS = 4;
+constexpr uint32_t CANOPEN_THREAD_MASK = 1 << CANOPEN_THREAD_LS;
+
+constexpr int GFDB_TIMER_THREAD_LS = 5;
+constexpr uint32_t GFDB_TIMER_THREAD_MASK = 1 << GFDB_TIMER_THREAD_LS;
+
+
+
 // Thread Structs
 
 /**
@@ -306,8 +324,8 @@ int main() {
 
     // Initialize Threads
 
-    /// eventflag that triggers the model to run // todo: look into making flags useful for health thread among others
-    rtos::EventFlags modelTriggerFlag((char*) "Model Trigger Flag");
+    /// eventflag that triggers the model to run
+    rtos::EventFlags modelTriggerFlag((char*) "Model Trigger Flag");    //todo: rename probably. used in healththread now
 
     /// timer that triggers the model eventflag (and thus steps the model)
     rtos::Timer<rtos::EventFlags*> modelTriggerTimer((char*) "Model Trigger Timer",
@@ -409,7 +427,7 @@ int main() {
  */
 void gfdbTimerExpiration(gfdbArgs_t* args) {
     args->mcuc->setGroundFaultFlag();
-    args->eventFlags->set((1 << 5)); // Mark as ran
+    args->eventFlags->set(GFDB_TIMER_THREAD_MASK); // Mark as ran
 }
 
 /**
@@ -421,9 +439,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     uint32_t flags;
     modelTriggerFlag->getCurrentFlags(&flags);
     if ((flags & 0x01) == 0x01) {
-        // the model is not running fast enough- this is very bad!!!!
-        // this will happen every time we need to toggle the MC on or off, as it requires a 10ms wait
-        // todo: determine what error to throw
+        modelTriggerFlag->set(MODEL_THREAD_SLOW_LS);
     }
     modelTriggerFlag->set(0x01);
 }
@@ -440,10 +456,9 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     while (true) {
         uint32_t flagOutput;
         args->triggerFlag->get(0x01, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
-        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Triggered");
+
         args->mcuc->process();
-        args->triggerFlag->set((1 << 2)); // Mark as ran
-        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Completed");
+        args->triggerFlag->set(MODEL_THREAD_MASK); // Mark as ran
     }
 }
 
@@ -465,7 +480,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         // process the message
         args->mcuc->handlePowertrainCanMessage(message);
 
-        args->eventFlags->set((1 << 3)); // mark as ran
+        args->eventFlags->set(PT_CAN_THREAD_MASK); // mark as ran
     }
 }
 
@@ -483,37 +498,43 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         args->eventFlags->getCurrentFlags(&flagOutput);
 
         #ifdef EVT_CORE_LOG_ENABLE
-        if (flagOutput & (1 << 2)) {
+        if (flagOutput & MODEL_THREAD_SLOW_MASK) {
+            // This will print 3 times every time the device goes through contactor opening / closing states
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "Model running >3ms.");
+            args->eventFlags->clear(MODEL_THREAD_SLOW_MASK);
+        }
+
+        if (flagOutput & MODEL_THREAD_MASK) {
             // thread ran
             log::LOGGER.log(log::Logger::LogLevel::DEBUG, "sim_model");
-            args->eventFlags->clear((1 << 2));
+            args->eventFlags->clear(MODEL_THREAD_MASK);
         } else {
             // did not run
             log::LOGGER.log(log::Logger::LogLevel::DEBUG, "sim_model FAIL");
         }
-        if (flagOutput & (1 << 3)) {
+        if (flagOutput & PT_CAN_THREAD_MASK) {
             // thread ran
-            args->eventFlags->clear((1 << 3));
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "rawcan");
+            args->eventFlags->clear(PT_CAN_THREAD_MASK);
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "pt can");
         } else {
             // did not run
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "rawcan FAIL");
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "pt can FAIL");
         }
-        if (flagOutput & (1 << 4)) {
+        if (flagOutput & CANOPEN_THREAD_MASK) {
             // thread ran
-            args->eventFlags->clear((1 << 4));
+            args->eventFlags->clear(CANOPEN_THREAD_MASK);
             log::LOGGER.log(log::Logger::LogLevel::DEBUG, "canopen");
         } else {
             // did not run
             log::LOGGER.log(log::Logger::LogLevel::DEBUG, "canopen FAIL");
         }
-        if (flagOutput & (1 << 5)) {
+        if (flagOutput & GFDB_TIMER_THREAD_MASK) {
             // thread ran
-            args->eventFlags->clear((1 << 5));
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "reqGFDB");
+            args->eventFlags->clear(GFDB_TIMER_THREAD_MASK);
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "request GFDB");
         } else {
             // did not run
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "reqGFDB FAIL");
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "request GFDB FAIL");
         }
         #endif
 
