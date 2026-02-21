@@ -379,10 +379,52 @@ private:
      */
     CO_OBJ_T objectDictionary[OBJECT_DICTIONARY_SIZE + 1] = {
         MANDATORY_IDENTIFICATION_ENTRIES_1000_1014,
-        HEARTBEAT_PRODUCER_1017(2000),
+        HEARTBEAT_PRODUCER_1017(2000), //2000ms
         IDENTITY_OBJECT_1018,
         SDO_CONFIGURATION_1200,
 
+        //MY STUFF --------------------------------------------------
+        /* --- Receive PDOs --- */
+        //RPDO 0 HV Current (100ms)
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(0x00, 0x00, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
+
+        //RPDO 1 Power Switch Error Status (100ms)
+
+
+        //RPDO 2 Power Switch currents (1000ms)
+
+
+        //RPDO 3 Power Switch Temperature (1000ms)
+
+
+
+        /* -- Transmit PDOs -- */
+
+        // VCU State
+
+
+        /* -- Data Links -- */
+
+
+        //HV current
+
+
+
+        //Power Switch Error Status
+
+
+        //Power Switch Currents
+
+
+        //Power Switch Temperature
+
+
+        //VCU Outputs (State and Enable Board)
+
+
+        // End marker
+
+        //BEFORE STUFF--------------------------------------------------
         // RPDOS and data links
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x00, 0x00, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x01, 0x01, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
@@ -442,6 +484,8 @@ private:
         DATA_LINK_21XX(0x03, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus),
 
         // todo: need to add CANOPEN transmits
+
+
         // Transmit DATA
         {
             .Key  = CO_KEY(0x2200 + 0x00, 0x00, CO_OBJ_D___R_),
