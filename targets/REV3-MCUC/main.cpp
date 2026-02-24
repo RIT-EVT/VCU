@@ -45,7 +45,7 @@ namespace log  = core::log;
 #define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(3)
 
 /// How long until start the model trigger rates (give long enough to start)
-#define MODEL_THREAD_TRIGGER_START MS_TO_TICKS(100)
+#define MODEL_THREAD_TRIGGER_START MS_TO_TICKS(75)
 
 /// How often to send the isolation state request to the ground fault detection board
 #define GFDB_TRIGGER_START              MS_TO_TICKS(100)
@@ -79,23 +79,21 @@ namespace log  = core::log;
 #define ACC_CAN_RECEIVE_THREAD_TIME_SLICE        MS_TO_TICKS(10)
 #define ACC_CAN_RECEIVE_THREAD_AUTOSTART         true
 
-// Constexpr's for health thread flags
+// Model Thread sharedFlag Mask
+constexpr uint32_t MODEL_TRIGGER_FLAG_MASK = 0x01;
+
+// Constexpr's for sharedFlag masks for Health thread related flags
 constexpr int MODEL_THREAD_SLOW_LS = 1;
-constexpr uint32_t MODEL_THREAD_SLOW_MASK = 1 << MODEL_THREAD_SLOW_LS;
-
-constexpr int MODEL_THREAD_LS = 2;
-constexpr uint32_t MODEL_THREAD_MASK = 1 << MODEL_THREAD_LS;
-
-constexpr int PT_CAN_THREAD_LS = 3;
-constexpr uint32_t PT_CAN_THREAD_MASK = 1 << PT_CAN_THREAD_LS;
-
-constexpr int CANOPEN_THREAD_LS = 4;
-constexpr uint32_t CANOPEN_THREAD_MASK = 1 << CANOPEN_THREAD_LS;
-
+constexpr int MODEL_THREAD_LS      = 2;
+constexpr int PT_CAN_THREAD_LS     = 3;
+constexpr int CANOPEN_THREAD_LS    = 4;
 constexpr int GFDB_TIMER_THREAD_LS = 5;
+
+constexpr uint32_t MODEL_THREAD_SLOW_MASK = 1 << MODEL_THREAD_SLOW_LS;
+constexpr uint32_t MODEL_THREAD_MASK      = 1 << MODEL_THREAD_LS;
+constexpr uint32_t PT_CAN_THREAD_MASK     = 1 << PT_CAN_THREAD_LS;
+constexpr uint32_t CANOPEN_THREAD_MASK    = 1 << CANOPEN_THREAD_LS;
 constexpr uint32_t GFDB_TIMER_THREAD_MASK = 1 << GFDB_TIMER_THREAD_LS;
-
-
 
 // Thread Structs
 
@@ -180,7 +178,6 @@ void accessoryCANOpenInterrupt(io::CANMessage& message, void* priv) {
 void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
     auto* mcuc = (vcu::MCuC*) priv;
     if (mcuc != nullptr) {
-        // TODO: determine if WaitForever is what we want to do in the interrupt- could be bad
         mcuc->sendToPowertrainQueue(&message, rtos::TXWait::TXW_WAIT_FOREVER);
     }
 }
@@ -324,33 +321,31 @@ int main() {
 
     // Initialize Threads
 
-    /// eventflag that triggers the model to run
-    rtos::EventFlags modelTriggerFlag((char*) "Model Trigger Flag");    //todo: rename probably. used in healththread now
+    /// eventflag that stores between thread flags, and most importantly has flag to trigger the main thread to run
+    rtos::EventFlags sharedFlags((char*) "Shared Flags");
 
-    /// timer that triggers the model eventflag (and thus steps the model)
+    /// timer that triggers the main threads eventflag bit (and thus steps the model)
     rtos::Timer<rtos::EventFlags*> modelTriggerTimer((char*) "Model Trigger Timer",
                                                      modelTimerExpiration,
-                                                     &modelTriggerFlag,
+                                                     &sharedFlags,
                                                      MODEL_THREAD_TRIGGER_START,
                                                      MODEL_THREAD_TRIGGER_RATE,
                                                      true);
 
-    gfdbArgs_t gfdbArgs = {
-        &mcuc,
-        &modelTriggerFlag
-    };
+    gfdbArgs_t gfdbArgs = {&mcuc, &sharedFlags};
+
     /// timer that triggers the gfdb request message
     rtos::Timer<gfdbArgs_t*> gfdbTriggerTimer((char*) "GFDB Trigger Timer",
-                                                     gfdbTimerExpiration,
-                                                     &gfdbArgs,
-                                                     GFDB_TRIGGER_START,
-                                                     GFDB_REQUEST_TIMER_TRIGGER_RATE,
-                                                     true);
+                                              gfdbTimerExpiration,
+                                              &gfdbArgs,
+                                              GFDB_TRIGGER_START,
+                                              GFDB_REQUEST_TIMER_TRIGGER_RATE,
+                                              true);
 
     /// Argument struct the modelThread takes in
     modelThreadArgs_t modelThreadArgs = {
         &mcuc,
-        &modelTriggerFlag,
+        &sharedFlags,
     };
 
     /// Thread that runs the model
@@ -365,7 +360,7 @@ int main() {
 
     // PowerTrain CAN input Thread
     /// argument struct the thread takes in
-    powertrainCANReceiveThreadArgs_t powertrainCANReceiveThreadArgs = {&mcuc, &modelTriggerFlag};
+    powertrainCANReceiveThreadArgs_t powertrainCANReceiveThreadArgs = {&mcuc, &sharedFlags};
 
     /// Thread that processes the Powertrain CAN Receive queue
     rtos::Thread<powertrainCANReceiveThreadArgs_t*> powertrainCANReceiveThread((char*) "Powertrain CAN Receive Thread",
@@ -378,7 +373,7 @@ int main() {
                                                                                PT_CAN_RECEIVE_AUTOSTART);
 
     /// Argument struct the healthThread takes in
-    healthThreadArgs_t healthThreadArgs{&modelTriggerFlag};
+    healthThreadArgs_t healthThreadArgs{&sharedFlags};
 
     /// Thread that checks the health of the other threads
     rtos::Thread<healthThreadArgs_t*> healthThread((char*) "MCuC Health Monitoring Thread",
@@ -391,7 +386,7 @@ int main() {
                                                    HEALTH_THREAD_AUTOSTART);
 
     /// Argument struct the Accessory Can Receive takes in
-    accessoryCanReceiveThreadArgs_t accessoryCanReceiveThreadArgs{&mcuc, &canNode, &modelTriggerFlag};
+    accessoryCanReceiveThreadArgs_t accessoryCanReceiveThreadArgs{&mcuc, &canNode, &sharedFlags};
 
     /// Thread that checks the health of the other threads
     rtos::Thread<accessoryCanReceiveThreadArgs_t*> accessoryCanReceiveThread(
@@ -408,7 +403,7 @@ int main() {
     rtos::Initializable* initArr[] = {
         &mcuc,
         &modelThread,
-        &modelTriggerFlag,
+        &sharedFlags,
         &modelTriggerTimer,
         &gfdbTriggerTimer,
         &powertrainCANReceiveThread,
@@ -438,10 +433,11 @@ void gfdbTimerExpiration(gfdbArgs_t* args) {
 void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     uint32_t flags;
     modelTriggerFlag->getCurrentFlags(&flags);
-    if ((flags & 0x01) == 0x01) {
+    if ((flags & MODEL_TRIGGER_FLAG_MASK) == MODEL_TRIGGER_FLAG_MASK) {
+        // If last trigger flag hasn't been cleared yet (model missed a run)
         modelTriggerFlag->set(MODEL_THREAD_SLOW_LS);
     }
-    modelTriggerFlag->set(0x01);
+    modelTriggerFlag->set(MODEL_TRIGGER_FLAG_MASK);
 }
 
 /**
@@ -455,7 +451,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     rtos::TXError error;
     while (true) {
         uint32_t flagOutput;
-        args->triggerFlag->get(0x01, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
+        args->triggerFlag->get(MODEL_TRIGGER_FLAG_MASK, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
 
         args->mcuc->process();
         args->triggerFlag->set(MODEL_THREAD_MASK); // Mark as ran
@@ -484,7 +480,6 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     }
 }
 
-// stats on threads, turn the "not running fast enough"
 /**
  * Entry Function for the healthThread.
  *
@@ -497,7 +492,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         uint32_t flagOutput;
         args->eventFlags->getCurrentFlags(&flagOutput);
 
-        #ifdef EVT_CORE_LOG_ENABLE
+#ifdef EVT_CORE_LOG_ENABLE
         if (flagOutput & MODEL_THREAD_SLOW_MASK) {
             // This will print 3 times every time the device goes through contactor opening / closing states
             log::LOGGER.log(log::Logger::LogLevel::DEBUG, "Model running >3ms.");
@@ -512,6 +507,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
             // did not run
             log::LOGGER.log(log::Logger::LogLevel::DEBUG, "sim_model FAIL");
         }
+
         if (flagOutput & PT_CAN_THREAD_MASK) {
             // thread ran
             args->eventFlags->clear(PT_CAN_THREAD_MASK);
@@ -520,6 +516,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
             // did not run
             log::LOGGER.log(log::Logger::LogLevel::DEBUG, "pt can FAIL");
         }
+
         if (flagOutput & CANOPEN_THREAD_MASK) {
             // thread ran
             args->eventFlags->clear(CANOPEN_THREAD_MASK);
@@ -528,6 +525,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
             // did not run
             log::LOGGER.log(log::Logger::LogLevel::DEBUG, "canopen FAIL");
         }
+
         if (flagOutput & GFDB_TIMER_THREAD_MASK) {
             // thread ran
             args->eventFlags->clear(GFDB_TIMER_THREAD_MASK);
@@ -536,10 +534,10 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
             // did not run
             log::LOGGER.log(log::Logger::LogLevel::DEBUG, "request GFDB FAIL");
         }
-        #endif
+#endif
 
         // do health thread stuff
-        rtos::sleep(MS_TO_TICKS(250));
+        rtos::sleep(MS_TO_TICKS(250)); // todo: Potentially be on a timer like the model?
     }
 }
 
@@ -564,7 +562,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 
         io::processCANopenNode(args->accessoryCanNode);
 
-        args->eventFlags->set((1 << 4)); // Mark as ran
+        args->eventFlags->set(CANOPEN_THREAD_MASK); // Mark as ran
 
         //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
         //                        "Accessory Can Node Processed\n\r\t"
