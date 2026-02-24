@@ -385,6 +385,7 @@ private:
 
         //MY STUFF --------------------------------------------------
         /* --- Receive PDOs --- */
+
         //RPDO 0 HV Current (100ms)
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x00, 0x00, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
         RECEIVE_PDO_MAPPING_START_KEY_16XX(0x00, 0x02), //RPDO 0 quantity 2
@@ -444,9 +445,15 @@ private:
         DATA_LINK_21XX(0x03, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus),
 
         //VCU Outputs (State and Enable Board)
+        DATA_LINK_START_KEY_21XX(0x04, 0x02),
+        DATA_LINK_21XX(0x04, 0x01, CO_TUNSIGNED16, &ucState), // Sent via TPDO 0
+        DATA_LINK_21XX(0x04, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal), // SDO
 
 
-        // End marker
+        // End of dictionary marker
+        CO_OBJ_DICT_ENDMARK,
+
+
 
         //BEFORE STUFF--------------------------------------------------
         // RPDOS and data links
