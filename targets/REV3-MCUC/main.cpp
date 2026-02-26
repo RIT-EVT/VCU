@@ -42,7 +42,7 @@ namespace log  = core::log;
 /// The size of the memory pool for the tx application
 #define TX_APP_MEM_POOL_SIZE 65536
 /// How often the model should take 1 step.
-#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(3)
+#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(50)
 
 /// How long until start the model trigger rates (give long enough to start)
 #define MODEL_THREAD_TRIGGER_START MS_TO_TICKS(75)
@@ -166,8 +166,9 @@ void gfdbTimerExpiration(gfdbArgs_t* args);
  */
 void accessoryCANOpenInterrupt(io::CANMessage& message, void* priv) {
     auto* queue = (core::types::FixedQueue<CANOPEN_QUEUE_SIZE, io::CANMessage>*) priv;
-    if (queue != nullptr)
+    if (queue != nullptr) {
         queue->append(message);
+    }
 }
 
 /**
@@ -178,7 +179,13 @@ void accessoryCANOpenInterrupt(io::CANMessage& message, void* priv) {
 void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
     auto* mcuc = (vcu::MCuC*) priv;
     if (mcuc != nullptr) {
-        mcuc->sendToPowertrainQueue(&message, rtos::TXWait::TXW_WAIT_FOREVER);
+        // todo: must be nowait as its in ISR, probably handle error responses
+        rtos::TXError response = mcuc->sendToPowertrainQueue(&message, rtos::TXWait::TXW_NO_WAIT);
+        if (response != rtos::TXError::TXE_SUCCESS) {
+            // Will enter here if queue is full & message wasn't added, or if there is something seriously wrong with the queue.
+            // todo: probably enable flag for health thread to notice
+            log::LOGGER.log(log::Logger::LogLevel::ERROR, "PTCAN ISR FAILURE: %d", response);
+        }
     }
 }
 
@@ -552,10 +559,8 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal = 63; // todo: temporary
     rtos::TXError error;
     while (true) {
-        // process accessory CAN
-        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-        //                        "\tSending %d to LVSS",
-        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal);
+        // todo: why does this while loop constantly run even when no data is coming in? is it just how canOpen works? effectively polling?
+        //  there must be a way to sleep/block til a message comes in
 
         // Save that this node has sent a message // todo: idk if this var is the actual messages node id
         args->mcuc->updateNodeHeartbeat(args->accessoryCanNode->NodeId);

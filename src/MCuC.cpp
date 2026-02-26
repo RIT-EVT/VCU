@@ -120,7 +120,7 @@ void MCuC::updateNodeHeartbeat(uint32_t nodeId) {
         return;
     }
 
-    hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);    // todo: probs shouldn't wait forever...
+    hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);    // todo: maybe shouldn't wait forever?
     heartbeatMessages[slot]++;
     hbMutex.put();
 }
@@ -260,9 +260,9 @@ void MCuC::process() {
 
     // Big ass code block to fake inputs to test simulink model
     if (!firstStep) {
-        for (int i = 0; i < HB_SIZE; i++) {
-            modelInputs.Heartbeats_CAN[i]++;
-        }
+//        for (int i = 0; i < HB_SIZE; i++) {
+//            modelInputs.Heartbeats_CAN[i]++;
+//        }
 
         if (modelOutputs.uC_State == UC_State::MC_Init || seenMCInit) {
             modelInputs.MC_VSM_State_CAN = MC_VSM_State::Ready;
@@ -299,15 +299,14 @@ void MCuC::process() {
 
     hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     for (int i = 0; i < HB_SIZE; i++) {
-        // todo: untested, but should work when we actually connect other boards
-        //      modelInputs.Heartbeats_CAN[i] = heartbeatMessages[i];
+        modelInputs.Heartbeats_CAN[i] = heartbeatMessages[i];
     }
 
 #ifdef EVT_CORE_LOG_ENABLE
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "heartbeats: %lu, %lu, %lu, %lu, %lu",
-//    modelInputs.Heartbeats_CAN[0], modelInputs.Heartbeats_CAN[1], modelInputs.Heartbeats_CAN[2],
-//    modelInputs.Heartbeats_CAN[3], modelInputs.Heartbeats_CAN[4]); log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-//    "EStop: %d, Ignition %d", eStop, ignitionOn);
+//                    modelInputs.Heartbeats_CAN[0], modelInputs.Heartbeats_CAN[1], modelInputs.Heartbeats_CAN[2],
+//                    modelInputs.Heartbeats_CAN[3], modelInputs.Heartbeats_CAN[4]);
+//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,"EStop: %d, Ignition %d", eStop, ignitionOn);
 #endif
     hbMutex.put();
     bufferMutex.put();
@@ -376,8 +375,10 @@ void MCuC::process() {
             powertrainCAN.sendShutdownWarningMessage();
         }
 
-        // todo: SEND NEW STATE OVER CANOPEN
-
+        // todo: SEND NEW STATE OVER CANOPEN here
+#ifdef EVT_CORE_LOG_ENABLE
+//        log::LOGGER.log(log::Logger::LogLevel::DEBUG, "%s", stateToString(ucState.stateEnum));
+#endif
         lastState = ucState.stateEnum;
     }
 
