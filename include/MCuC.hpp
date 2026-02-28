@@ -383,7 +383,6 @@ private:
         IDENTITY_OBJECT_1018,
         SDO_CONFIGURATION_1200,
 
-        //MY STUFF --------------------------------------------------
         /* --- Receive PDOs --- */
 
         //RPDO 0 HV Current (100ms)
