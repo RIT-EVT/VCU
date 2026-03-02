@@ -179,12 +179,12 @@ void accessoryCANOpenInterrupt(io::CANMessage& message, void* priv) {
 void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
     auto* mcuc = (vcu::MCuC*) priv;
     if (mcuc != nullptr) {
-        // todo: must be nowait as its in ISR, probably handle error responses
+        // must be tx_no_wait as it's in an ISR
         rtos::TXError response = mcuc->sendToPowertrainQueue(&message, rtos::TXWait::TXW_NO_WAIT);
         if (response != rtos::TXError::TXE_SUCCESS) {
-            // Will enter here if queue is full & message wasn't added, or if there is something seriously wrong with the queue.
-            // todo: probably enable flag for health thread to notice
-            log::LOGGER.log(log::Logger::LogLevel::ERROR, "PTCAN ISR FAILURE: %d", response);
+            // Will run if queue is full & message wasn't added; or if there is something seriously wrong with the queue
+            // todo: probably enable flag for health thread to notice instead of logging to UART
+            log::LOGGER.log(log::Logger::LogLevel::ERROR, "PTCAN ISR: QUEUE FAILURE: %d", response);
         }
     }
 }
@@ -500,46 +500,45 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         args->eventFlags->getCurrentFlags(&flagOutput);
 
 #ifdef EVT_CORE_LOG_ENABLE
+        // todo: we really should have a way for these outputs to be recorded in case of failure, as we wont be logging
+        //  to UART when its running on the bike i'd assume; and if something happens we want to be able to tell if
+        //  health thread caught whatever 'it' was.
         if (flagOutput & MODEL_THREAD_SLOW_MASK) {
-            // This will print 3 times every time the device goes through contactor opening / closing states
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "Model running >3ms.");
+            // This flag will be set up to 3 times every time the device goes through contactor opening / closing states
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "Model running slower than 300 Hz.");
             args->eventFlags->clear(MODEL_THREAD_SLOW_MASK);
         }
 
         if (flagOutput & MODEL_THREAD_MASK) {
             // thread ran
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "sim_model");
             args->eventFlags->clear(MODEL_THREAD_MASK);
         } else {
             // did not run
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "sim_model FAIL");
+            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: sim_model thread not run");
         }
 
         if (flagOutput & PT_CAN_THREAD_MASK) {
             // thread ran
             args->eventFlags->clear(PT_CAN_THREAD_MASK);
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "pt can");
         } else {
             // did not run
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "pt can FAIL");
+            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: pt can thread not run");
         }
 
         if (flagOutput & CANOPEN_THREAD_MASK) {
             // thread ran
             args->eventFlags->clear(CANOPEN_THREAD_MASK);
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "canopen");
         } else {
             // did not run
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "canopen FAIL");
+            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: canopen thread not run");
         }
 
         if (flagOutput & GFDB_TIMER_THREAD_MASK) {
             // thread ran
             args->eventFlags->clear(GFDB_TIMER_THREAD_MASK);
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "request GFDB");
         } else {
             // did not run
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "request GFDB FAIL");
+            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: request GFDB thread not run");
         }
 #endif
 
@@ -559,8 +558,8 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal = 63; // todo: temporary
     rtos::TXError error;
     while (true) {
-        // todo: why does this while loop constantly run even when no data is coming in? is it just how canOpen works? effectively polling?
-        //  there must be a way to sleep/block til a message comes in
+        // todo: why does this while loop constantly run even when no data is coming in? is it just how canOpen works?
+        //  effectively polling? there must be a way to sleep/block til a message comes in
 
         // Save that this node has sent a message // todo: idk if this var is the actual messages node id
         args->mcuc->updateNodeHeartbeat(args->accessoryCanNode->NodeId);
