@@ -302,6 +302,13 @@ void MCuC::process() {
         modelInputs.Heartbeats_CAN[i] = heartbeatMessages[i];
     }
 
+    //todo: for testing that heartbeats are still coming through at 3ms pace
+    if (modelInputs.Heartbeats_CAN[0] % 2 == 0) {
+        gpios.ledTwoGPIO.writePin(io::GPIO::State::HIGH);
+    } else {
+        gpios.ledTwoGPIO.writePin(io::GPIO::State::LOW);
+    }
+
 #ifdef EVT_CORE_LOG_ENABLE
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "heartbeats: %lu, %lu, %lu, %lu, %lu",
 //                    modelInputs.Heartbeats_CAN[0], modelInputs.Heartbeats_CAN[1], modelInputs.Heartbeats_CAN[2],
@@ -348,7 +355,7 @@ void MCuC::process() {
 
     // HUDL LEDs
     gpios.ledOneGPIO.writePin(modelOutputs.LED[0] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    gpios.ledTwoGPIO.writePin(modelOutputs.LED[1] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+//    gpios.ledTwoGPIO.writePin(modelOutputs.LED[1] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ledThreeGPIO.writePin(modelOutputs.LED[2] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
     // set Motor Controller via the two gpios
