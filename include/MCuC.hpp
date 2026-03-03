@@ -369,7 +369,7 @@ private:
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 64; // TODO: CANopen set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 65; // TODO: CANopen set size of object dictionary
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -415,7 +415,7 @@ private:
         /* -- Transmit PDOs -- */
 
         //TPDO 0 VCU State (On Transition)
-        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_ASYNC, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
+        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
         TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x00, 0x01), //TPDO 0, quantity 1
         TRANSMIT_PDO_MAPPING_ENTRY_1AXX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
 
