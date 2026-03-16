@@ -387,30 +387,30 @@ private:
 
         //RPDO 0 HV Current (100ms)
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x00, 0x00, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x00, 0x02), //RPDO 0 quantity 2
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x00, 0x01), //RPDO 0 quantity 1
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x02, PDO_MAPPING_UNSIGNED16),
 
         //RPDO 1 Power Switch Error Status (100ms)
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x01, 0x01, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x01, 0x03), //RPDO 1 quantity 3
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x01, 0x01), //RPDO 1 quantity 1
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x01, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x02, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x03, PDO_MAPPING_UNSIGNED16),
 
         //RPDO 2 Power Switch currents (1000ms)
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x02, 0x02, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x02, 0x04), //RPDO 2 quantity 4
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x02, 0x06), //RPDO 2 quantity 6
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x01, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x02, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x03, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x04, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x05, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x06, PDO_MAPPING_UNSIGNED16),
 
         //RPDO 3 Power Switch Temperature (1000ms)
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x03, 0x03, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x03, 0x02), //RPDO 4 quantity 2
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x03, 0x03), //RPDO 3 quantity 3
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x01, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x02, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x03, PDO_MAPPING_UNSIGNED16),
 
         /* -- Transmit PDOs -- */
 
@@ -421,27 +421,27 @@ private:
 
         /* -- Data Links -- */
         //HV current
-        DATA_LINK_START_KEY_21XX(0x00, 0x02), //RPDO 0 quantity 2
+        DATA_LINK_START_KEY_21XX(0x00, 0x01), //RPDO 0 quantity 1
         DATA_LINK_21XX(0x00, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent[0]),
-        DATA_LINK_21XX(0x00, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent[1]),
 
         //Power Switch Error Status
-        DATA_LINK_START_KEY_21XX(0x01, 0x03), //RPDO 1 quantity 3
+        DATA_LINK_START_KEY_21XX(0x01, 0x01), //RPDO 1 quantity 1
         DATA_LINK_21XX(0x01, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus[0]),
-        DATA_LINK_21XX(0x01, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus[1]),
-        DATA_LINK_21XX(0x01, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus[2]),
 
         //Power Switch Currents
-        DATA_LINK_START_KEY_21XX(0x02, 0x04), //RPDO 2, quantity 4
+        DATA_LINK_START_KEY_21XX(0x02, 0x06), //RPDO 2, quantity 6
         DATA_LINK_21XX(0x02, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[0]),
         DATA_LINK_21XX(0x02, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[1]),
         DATA_LINK_21XX(0x02, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[2]),
         DATA_LINK_21XX(0x02, 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[3]),
+        DATA_LINK_21XX(0x02, 0x05, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[4]),
+        DATA_LINK_21XX(0x02, 0x05, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[5]),
 
         //Power Switch Temperature
-        DATA_LINK_START_KEY_21XX(0x03, 0x02), //RPDO 3, quantity 2
+        DATA_LINK_START_KEY_21XX(0x03, 0x03), //RPDO 3, quantity 3
         DATA_LINK_21XX(0x03, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures[0]),
         DATA_LINK_21XX(0x03, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures[1]),
+        DATA_LINK_21XX(0x03, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures[2]),
 
         //VCU Outputs (State and Enable Board)
         DATA_LINK_START_KEY_21XX(0x04, 0x02),
