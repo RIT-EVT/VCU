@@ -193,6 +193,7 @@ void MCuC::process() {
 
     // update Accessory Can Safe buffer
     sendInputDataToSafeBuffer();
+    bufferMutex.put();
 
     // Set pin inputs
     modelInputs.LS_Self_Test_In_A = gpios.lsSelfTestInAGPIO.readPin() == io::GPIO::State::HIGH;
@@ -302,6 +303,8 @@ void MCuC::process() {
         modelInputs.Heartbeats_CAN[i] = heartbeatMessages[i];
     }
 
+    hbMutex.put();
+
     //todo: for testing that heartbeats are still coming through at 3ms pace
     if (modelInputs.Heartbeats_CAN[0] % 2 == 0) {
         gpios.ledTwoGPIO.writePin(io::GPIO::State::HIGH);
@@ -315,8 +318,6 @@ void MCuC::process() {
 //                    modelInputs.Heartbeats_CAN[3], modelInputs.Heartbeats_CAN[4]);
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,"EStop: %d, Ignition %d", eStop, ignitionOn);
 #endif
-    hbMutex.put();
-    bufferMutex.put();
 
 #ifdef EVT_CORE_LOG_ENABLE
 //    halstep = core::time::millis();

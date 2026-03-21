@@ -42,7 +42,7 @@ namespace log  = core::log;
 /// The size of the memory pool for the tx application
 #define TX_APP_MEM_POOL_SIZE 65536
 /// How often the model should take 1 step.
-#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(50)
+#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(100)
 
 /// How long until start the model trigger rates (give long enough to start)
 #define MODEL_THREAD_TRIGGER_START MS_TO_TICKS(75)
@@ -562,7 +562,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         //  effectively polling? there must be a way to sleep/block til a message comes in
 
         // Save that this node has sent a message // todo: idk if this var is the actual messages node id
-        args->mcuc->updateNodeHeartbeat(args->accessoryCanNode->NodeId);
+        args->mcuc->updateNodeHeartbeat(0);
 
         io::processCANopenNode(args->accessoryCanNode);
 
@@ -580,6 +580,6 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents,
         //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures);
 
-        rtos::sleep(MS_TO_TICKS(200));
+        rtos::sleep(MS_TO_TICKS(10));
     }
 }
