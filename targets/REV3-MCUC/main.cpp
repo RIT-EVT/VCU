@@ -79,6 +79,8 @@ namespace log  = core::log;
 #define ACC_CAN_RECEIVE_THREAD_TIME_SLICE        MS_TO_TICKS(10)
 #define ACC_CAN_RECEIVE_THREAD_AUTOSTART         true
 
+#define CANOPEN_NODE_ID_MASK 0x7F
+
 // Model Thread sharedFlag Mask
 constexpr uint32_t MODEL_TRIGGER_FLAG_MASK = 0x01;
 
@@ -104,6 +106,14 @@ typedef struct {
     vcu::MCuC* mcuc;
     rtos::EventFlags* triggerFlag;
 } modelThreadArgs_t;
+
+/**
+ * Struct that holds information needed for the canopen interrupt
+ */
+typedef struct {
+    vcu::MCuC* mcuc;
+    core::types::FixedQueue<CANOPEN_QUEUE_SIZE, io::CANMessage>* queue;
+} canOpenInterruptArgs_t;
 
 /**
  * Struct that holds information needed for the powertrain CAN thread
@@ -159,15 +169,15 @@ void gfdbTimerExpiration(gfdbArgs_t* args);
  * will be passed to the EVT-core CAN interface which will in turn call this
  * function each time a new CAN message comes in.
  *
- * NOTE: For this sample, every non-extended (so 11 bit CAN IDs) will be
- * assumed to be intended to be passed as a CANopen message.
- *
  * @param message[in] The passed in CAN message that was read.
+ * @param priv[in] The canOpenInterruptArgs instance that holds the mcuc & canOpen queue
  */
 void accessoryCANOpenInterrupt(io::CANMessage& message, void* priv) {
-    auto* queue = (core::types::FixedQueue<CANOPEN_QUEUE_SIZE, io::CANMessage>*) priv;
-    if (queue != nullptr) {
-        queue->append(message);
+    auto* args = (canOpenInterruptArgs_t*) priv;
+    if (args != nullptr) {
+        args->queue->append(message);
+        uint32_t nodeID = message.getId() & CANOPEN_NODE_ID_MASK;
+        args->mcuc->updateCanOpenNodeHeartbeat(nodeID);
     }
 }
 
@@ -279,7 +289,11 @@ int main() {
 
     // Actual CAN init
     io::CAN& accessoryCAN = io::getCAN<vcu::MCuC::ACCESSORY_CAN_TX_PIN, vcu::MCuC::ACCESSORY_CAN_RX_PIN>();
-    accessoryCAN.addIRQHandler(accessoryCANOpenInterrupt, reinterpret_cast<void*>(&canOpenQueue));
+    canOpenInterruptArgs_t canOpenIntArgs = {
+        &mcuc,
+        &canOpenQueue
+    };
+    accessoryCAN.addIRQHandler(accessoryCANOpenInterrupt, reinterpret_cast<void*>(&canOpenIntArgs));
 
     // Reserved memory for CANopen stack usage
     uint8_t sdoBuffer[CO_SSDO_N * CO_SDO_BUF_BYTE];
@@ -478,7 +492,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         args->mcuc->receiveFromPowertrainQueue(&message, rtos::TXWait::TXW_WAIT_FOREVER);
 
         // save that this node has sent a message
-        args->mcuc->updateNodeHeartbeat(message.getId());
+        args->mcuc->updateCanNodeHeartbeat(message.getId());
 
         // process the message
         args->mcuc->handlePowertrainCanMessage(message);
@@ -505,7 +519,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         //  health thread caught whatever 'it' was.
         if (flagOutput & MODEL_THREAD_SLOW_MASK) {
             // This flag will be set up to 3 times every time the device goes through contactor opening / closing states
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "Model running slower than 300 Hz.");
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "HT: Model running slow");
             args->eventFlags->clear(MODEL_THREAD_SLOW_MASK);
         }
 
@@ -560,9 +574,6 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     while (true) {
         // todo: why does this while loop constantly run even when no data is coming in? is it just how canOpen works?
         //  effectively polling? there must be a way to sleep/block til a message comes in
-
-        // Save that this node has sent a message // todo: idk if this var is the actual messages node id
-        args->mcuc->updateNodeHeartbeat(0);
 
         io::processCANopenNode(args->accessoryCanNode);
 

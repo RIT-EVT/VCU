@@ -96,10 +96,8 @@ void MCuC::sendInputDataToSafeBuffer() {
     bufferMutex.put();
 }
 
-void MCuC::updateNodeHeartbeat(uint32_t nodeId) {
+void MCuC::updateCanOpenNodeHeartbeat(uint32_t nodeId) {
     int slot;
-
-    // Convert board ID to array index
     switch (nodeId) {
     case LVSS_NODE_ID:
         slot = 0;
@@ -107,6 +105,18 @@ void MCuC::updateNodeHeartbeat(uint32_t nodeId) {
     case TMS_NODE_ID:
         slot = 1;
         break;
+    default:
+        return;
+    }
+
+    heartbeatMessages[slot]++;
+}
+
+void MCuC::updateCanNodeHeartbeat(uint32_t nodeId) {
+    int slot;
+
+    // Convert board ID to array index
+    switch (nodeId) {
     case dev::PowertrainCAN::BMS_MESSAGE_ID:
         slot = 2;
         break;
@@ -120,7 +130,7 @@ void MCuC::updateNodeHeartbeat(uint32_t nodeId) {
         return;
     }
 
-    hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);    // todo: maybe shouldn't wait forever?
+    hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);    // todo: idk if a mutex is even needed here
     heartbeatMessages[slot]++;
     hbMutex.put();
 }
@@ -313,9 +323,9 @@ void MCuC::process() {
     }
 
 #ifdef EVT_CORE_LOG_ENABLE
-//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "heartbeats: %lu, %lu, %lu, %lu, %lu",
-//                    modelInputs.Heartbeats_CAN[0], modelInputs.Heartbeats_CAN[1], modelInputs.Heartbeats_CAN[2],
-//                    modelInputs.Heartbeats_CAN[3], modelInputs.Heartbeats_CAN[4]);
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "heartbeats: %lu, %lu, %lu, %lu, %lu",
+                    modelInputs.Heartbeats_CAN[0], modelInputs.Heartbeats_CAN[1], modelInputs.Heartbeats_CAN[2],
+                    modelInputs.Heartbeats_CAN[3], modelInputs.Heartbeats_CAN[4]);
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,"EStop: %d, Ignition %d", eStop, ignitionOn);
 #endif
 

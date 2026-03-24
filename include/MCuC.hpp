@@ -257,10 +257,17 @@ public:
     void sendInputDataToSafeBuffer();
 
     /**
-     * Updates the heartbeat array as a notice of receiving a message from a CAN node.
-     * @param nodeId the CAN ID of the node to accept heartbeat from
+     * Updates the heartbeat array for CanOpen nodes as a notice of receiving a message from said CanOpen node.
+     *
+     * @param nodeId the CanOpen ID of the node to accept heartbeat from
      */
-    void updateNodeHeartbeat(uint32_t nodeId);
+    void updateCanOpenNodeHeartbeat(uint32_t nodeId);
+
+    /**
+     * Updates the heartbeat array for raw Can nodes as a notice of receiving a message from said CAN node.
+     * @param nodeId the Can ID of the node to accept heartbeat from
+     */
+    void updateCanNodeHeartbeat(uint32_t nodeId);
 
     /**
      * Sets private groundFaultRequestFlag variable to true, which is then used
