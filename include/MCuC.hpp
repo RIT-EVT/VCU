@@ -168,10 +168,13 @@ public:
     typedef union {
         struct {
             uint16_t LVSS_out_EnableBoardSignal;        ///< LVSS (out) Determines which boards it will send power to
-            uint16_t LVSS_in_HVCurrent[2];              ///< LVSS (in)
-            uint16_t LVSS_in_PowerSwitchCurrents[4];    ///< LVSS (in)
-            uint16_t LVSS_in_Temperatures[2];           ///< LVSS (in)
-            uint16_t LVSS_in_PowerSwitchErrorStatus[3]; ///< LVSS (in)
+            uint16_t LVSS_in_HVCurrent[1];              ///< LVSS (in)
+            uint16_t LVSS_in_PowerSwitchCurrents[6];    ///< LVSS (in)
+            uint16_t LVSS_in_Temperatures[3];           ///< LVSS (in)
+            uint16_t LVSS_in_PowerSwitchErrorStatus[1]; ///< LVSS (in)
+            uint16_t TMS_in_FlowRates[2];
+            uint16_t TMS_in_FirstFourTemps[4];
+            uint16_t TMS_in_NextFourTemps[4];
         };
         struct {
             uint16_t outputs[1];
@@ -376,7 +379,7 @@ private:
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 64; // TODO: CANopen set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 128; // TODO: CANopen set size of object dictionary
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -390,8 +393,8 @@ private:
         IDENTITY_OBJECT_1018,
         SDO_CONFIGURATION_1200,
 
-        //---------RPDOS------------//
-        //-------Settings-------//
+        //----------------RPDOS-----------------//
+        //----------Settings----------//
         //------LVSS--------//
         //LVSS HV current
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x00, 0x00, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
@@ -402,7 +405,19 @@ private:
         //LVSS Power Switch Temperature
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x03, 0x03, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
 
-        //--------LVSS---------//
+        //------TMS--------//
+        //TMS flow
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(0x04, 0x04, TMS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
+        //TMS Temps
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(0x05, 0x05, TMS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(0x06, 0x06, TMS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
+
+        //------IMU--------//
+        //IMU Traction Control Value
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(0x07, 0x07, IMU_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
+
+        //----------Mappings----------//
+        //------LVSS--------//
         //RPDO 0 LVSS HV Current (100ms)
         RECEIVE_PDO_MAPPING_START_KEY_16XX(0x00, 0x02), //RPDO 0 quantity 1
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
@@ -420,20 +435,44 @@ private:
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x05, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x06, PDO_MAPPING_UNSIGNED16),
 
-
         //RPDO 3 LVSS Power Switch Temperature (1000ms)
         RECEIVE_PDO_MAPPING_START_KEY_16XX(0x03, 0x03), //RPDO 3 quantity 3
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x01, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x02, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x03, PDO_MAPPING_UNSIGNED16),
 
-        //--------TPDO-----------//
-        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 500),
-        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x00, 0x01),
+        //------TMS--------//
+        // RPDO 4 TMS Flow Rate (1000ms)
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x04,0x02), //RPDO 4, quantity 2
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x04,0x01),
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x04,0x02),
+
+        //RPDO 5 TMS first 4 Temps (1000ms)
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x05,0x04), //RPDO 5, quantity 4
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x05,0x01),
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x05,0x02),
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x05,0x03),
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x05,0x04),
+
+        //RPDO 6 TMS next 4 Temps (1000ms)
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x06,0x04), //RPDO 6, quantity 4
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x06,0x01),
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x06,0x02),
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x06,0x03),
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x06,0x04),
+
+        //------IMU--------// TODO
+
+
+        //----------------TPDOS-----------------//
+        //----------Settings----------//
+        // //TPDO 0 VCU State
+        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0), //TODO check interval
+        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x00, 0x01), //TPDO 0 quantity 1
         TRANSMIT_PDO_MAPPING_ENTRY_1AXX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
 
         //------------Data Links-----------//
-        //--------LVSS-----------//
+        //------LVSS--------//
         //LVSS HV Current
         DATA_LINK_START_KEY_21XX(0x00, 0x01), //RPDO 0 quantity 1
         DATA_LINK_21XX(0x00, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent[0]),
@@ -457,6 +496,30 @@ private:
         DATA_LINK_21XX(0x03, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures[0]),
         DATA_LINK_21XX(0x03, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures[1]),
         DATA_LINK_21XX(0x03, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures[2]),
+
+
+        //------TMS--------//
+        //TMS Flow Rate
+        DATA_LINK_START_KEY_21XX(0x04, 0x02), //RPDO 4, quantity 2
+        DATA_LINK_21XX(0x04, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_FlowRates[0]),
+        DATA_LINK_21XX(0x04, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_FlowRates[1]),
+
+        //TMS First Four Temps
+        DATA_LINK_START_KEY_21XX(0x05, 0x04), //RPDO 5, quantity 4
+        DATA_LINK_21XX(0x05, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_FirstFourTemps[0]),
+        DATA_LINK_21XX(0x05, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_FirstFourTemps[1]),
+        DATA_LINK_21XX(0x05, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_FirstFourTemps[2]),
+        DATA_LINK_21XX(0x05, 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_FirstFourTemps[3]),
+
+        //TMS Next Four Temps
+        DATA_LINK_START_KEY_21XX(0x06, 0x04), //RPDO 6, quantity 4
+        DATA_LINK_21XX(0x06, 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_NextFourTemps[0]),
+        DATA_LINK_21XX(0x06, 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_NextFourTemps[1]),
+        DATA_LINK_21XX(0x06, 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_NextFourTemps[2]),
+        DATA_LINK_21XX(0x06, 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_NextFourTemps[3]),
+
+
+        //------IMU--------// TODO
 
 
          //VCU Outputs (State and Enable Board)
