@@ -167,11 +167,11 @@ public:
      */
     typedef union {
         struct {
-            uint16_t LVSS_out_EnableBoardSignal;        ///< LVSS (out) Determines which boards it will send power to
-            uint16_t LVSS_in_HVCurrent[2];              ///< LVSS (in)
-            uint16_t LVSS_in_PowerSwitchCurrents[4];    ///< LVSS (in)
-            uint16_t LVSS_in_Temperatures[2];           ///< LVSS (in)
-            uint16_t LVSS_in_PowerSwitchErrorStatus[3]; ///< LVSS (in)
+            uint16_t LVSS_out_EnableBoardSignal;            ///< LVSS (out) Determines which boards it will send power to
+            uint16_t LVSS_in_PowerSwitchCurrents[6];        ///< LVSS (in)
+            uint16_t LVSS_in_PowerSwitchTemperatures[3];    ///< LVSS (in)
+            uint16_t LVSS_in_VicorCurrent;                  ///< LVSS (in) hv vicor current
+            uint16_t LVSS_in_EnableBoardSignal;            ///< LVSS (in)
         };
         struct {
             uint16_t outputs[1];
@@ -349,8 +349,10 @@ private:
     /**
      * Array holding number of messages received from each of the other boards.
      * Used to hold data before sending it to Simulink model for heartbeat checking.
+     *
+     * Volatile because it is updated from the canOpen interrupt, as that is the only place we have access to CanOpen Node ID's.
      */
-    uint32_t heartbeatMessages[HB_SIZE] = {0};
+    volatile uint32_t heartbeatMessages[HB_SIZE] = {0};
 
     // Model input data (struct)
     vcu::MCuC_Model::ExtU_MCuC_T modelInputs;
@@ -376,7 +378,7 @@ private:
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 64; // TODO: CANopen set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 59; // TODO: CANopen set size of object dictionary
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -390,30 +392,30 @@ private:
         IDENTITY_OBJECT_1018,
         SDO_CONFIGURATION_1200,
 
-        // RPDOS and data links
+        // RPDOS settings
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x00, 0x00, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x01, 0x01, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x02, 0x02, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
-        RECEIVE_PDO_SETTINGS_OBJECT_140X(0x03, 0x03, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
 
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x00, 0x02),
+        // 4 currents
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x00, 0x04),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x02, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x03, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x04, PDO_MAPPING_UNSIGNED16),
 
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x01, 0x04),
+        // other 2 currents + vicor current
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x01, 0x03),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x01, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x02, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x03, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x04, PDO_MAPPING_UNSIGNED16),
 
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x02, 0x02),
+        // temperatures 0-3 & board-enabled bit-packed value
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x02, 0x04),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x01, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x02, PDO_MAPPING_UNSIGNED16),
-
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x03, 0x03),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x01, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x02, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x03, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x03, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x04, PDO_MAPPING_UNSIGNED16),
 
         // Actual TPDO
         TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 500),
@@ -423,27 +425,26 @@ private:
         // data links
         // LVSS!!!!
         // HV Current Data
-        DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x00), 0x02),
-        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x00), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent[0]),
-        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x00), 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent[1]),
+        DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x00), 0x04),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x00), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[0]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x00), 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[1]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x00), 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[2]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x00), 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[3]),
 
-        DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x01), 0x04),
-        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[0]),
-        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[1]),
-        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[2]),
-        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[3]),
+        DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x01), 0x03),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[4]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[5]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_VicorCurrent),
 
-        DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x02), 0x02),
-        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures[0]),
-        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures[1]),
-
-        DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x03), 0x03),
-        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x03), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus[0]),
-        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x03), 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus[1]),
-        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x03), 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus[2]  ),
+        DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x02), 0x04),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchTemperatures[0]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchTemperatures[1]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchTemperatures[2]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_EnableBoardSignal),
 
         // todo: need to add CANOPEN transmits
         // TPDO Datalinks
+        DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(0x00), 0x01),
         DATA_LINK_21XX(LINK_TPDO_NUMBER(0x00), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal),
 
         // End of dictionary marker
