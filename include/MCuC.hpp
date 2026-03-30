@@ -168,10 +168,10 @@ public:
     typedef union {
         struct {
             uint16_t LVSS_out_EnableBoardSignal;            ///< LVSS (out) Determines which boards it will send power to
-            uint16_t LVSS_in_PowerSwitchCurrents[6];        ///< LVSS (in)
-            uint16_t LVSS_in_PowerSwitchTemperatures[3];    ///< LVSS (in)
+            uint16_t LVSS_in_PowerSwitchCurrents[6];        ///< LVSS (in) currents
+            uint16_t LVSS_in_PowerSwitchTemperatures[3];    ///< LVSS (in) temps
             uint16_t LVSS_in_VicorCurrent;                  ///< LVSS (in) hv vicor current
-            uint16_t LVSS_in_EnableBoardSignal;            ///< LVSS (in)
+            uint16_t LVSS_in_EnableBoardSignal;            ///< LVSS (in) what LVSS is powering
         };
         struct {
             uint16_t outputs[1];
