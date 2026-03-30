@@ -42,7 +42,7 @@ namespace log  = core::log;
 /// The size of the memory pool for the tx application
 #define TX_APP_MEM_POOL_SIZE 65536
 /// How often the model should take 1 step.
-#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(100)
+#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(3)
 
 /// How long until start the model trigger rates (give long enough to start)
 #define MODEL_THREAD_TRIGGER_START MS_TO_TICKS(75)
@@ -194,7 +194,7 @@ void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
         if (response != rtos::TXError::TXE_SUCCESS) {
             // Will run if queue is full & message wasn't added; or if there is something seriously wrong with the queue
             // todo: probably enable flag for health thread to notice instead of logging to UART
-            log::LOGGER.log(log::Logger::LogLevel::ERROR, "PTCAN ISR: QUEUE FAILURE: %d", response);
+//            log::LOGGER.log(log::Logger::LogLevel::ERROR, "PTCAN ISR: QUEUE FAILURE: %d", response);
         }
     }
 }
@@ -212,8 +212,8 @@ int main() {
     // UART for testing not on VCU
     //    io::UART& uart = io::getUART<io::Pin::UART_TX, io::Pin::UART_RX>(9600);
 
-    log::LOGGER.setUART(&uart);
-    log::LOGGER.setLogLevel(log::Logger::LogLevel::DEBUG);
+//    log::LOGGER.setUART(&uart);
+//    log::LOGGER.setLogLevel(log::Logger::LogLevel::DEBUG);
 
     // Initialize MCuC and Powertrain CAN
     vcu::MCuC::MCuC_GPIO gpios = {{
@@ -519,7 +519,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         //  health thread caught whatever 'it' was.
         if (flagOutput & MODEL_THREAD_SLOW_MASK) {
             // This flag will be set up to 3 times every time the device goes through contactor opening / closing states
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "HT: Model running slow");
+//            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "HT: Model running slow");
             args->eventFlags->clear(MODEL_THREAD_SLOW_MASK);
         }
 
@@ -528,7 +528,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
             args->eventFlags->clear(MODEL_THREAD_MASK);
         } else {
             // did not run
-            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: sim_model thread not run");
+//            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: sim_model thread not run");
         }
 
         if (flagOutput & PT_CAN_THREAD_MASK) {
@@ -536,7 +536,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
             args->eventFlags->clear(PT_CAN_THREAD_MASK);
         } else {
             // did not run
-            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: pt can thread not run");
+//            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: pt can thread not run");
         }
 
         if (flagOutput & CANOPEN_THREAD_MASK) {
@@ -544,7 +544,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
             args->eventFlags->clear(CANOPEN_THREAD_MASK);
         } else {
             // did not run
-            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: canopen thread not run");
+//            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: canopen thread not run");
         }
 
         if (flagOutput & GFDB_TIMER_THREAD_MASK) {
@@ -552,7 +552,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
             args->eventFlags->clear(GFDB_TIMER_THREAD_MASK);
         } else {
             // did not run
-            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: request GFDB thread not run");
+//            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: request GFDB thread not run");
         }
 #endif
 
