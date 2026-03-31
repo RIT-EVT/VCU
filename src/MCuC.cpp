@@ -139,6 +139,17 @@ void MCuC::setGroundFaultFlag() {
     groundFaultRequestFlag = true;
 }
 
+void MCuC::sendHealthFlags(bool modelSpeedErr, bool modelRanErr, bool ptcanRanErr, bool ptcanISRErr, bool canopenNotRun, bool gfdbReqNotRun) {
+    uint8_t flags = modelSpeedErr | modelRanErr << 1 | ptcanRanErr << 2 | ptcanISRErr << 3 | canopenNotRun << 4 | gfdbReqNotRun << 5;
+    io::CAN::CANStatus mcMessageStatus = powertrainCAN.sendHealthFlagMessage(flags);
+
+#ifdef EVT_CORE_LOG_ENABLE
+    if (mcMessageStatus != io::CAN::CANStatus::OK) {
+        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "VCU Health Flags failed to send with error %d", mcMessageStatus);
+    }
+#endif
+}
+
 // todo: for testing purposes; remove when done
 inline const char* stateToString(UC_State state) {
     switch (state) {

@@ -88,14 +88,20 @@ constexpr uint32_t MODEL_TRIGGER_FLAG_MASK = 0x01;
 constexpr int MODEL_THREAD_SLOW_LS = 1;
 constexpr int MODEL_THREAD_LS      = 2;
 constexpr int PT_CAN_THREAD_LS     = 3;
-constexpr int CANOPEN_THREAD_LS    = 4;
-constexpr int GFDB_TIMER_THREAD_LS = 5;
+constexpr int PTCAN_ERR_LS         = 4;
+constexpr int CANOPEN_THREAD_LS    = 5;
+constexpr int GFDB_TIMER_THREAD_LS = 6;
 
 constexpr uint32_t MODEL_THREAD_SLOW_MASK = 1 << MODEL_THREAD_SLOW_LS;
 constexpr uint32_t MODEL_THREAD_MASK      = 1 << MODEL_THREAD_LS;
 constexpr uint32_t PT_CAN_THREAD_MASK     = 1 << PT_CAN_THREAD_LS;
+constexpr uint32_t PT_CAN_ERR_MASK        = 1 << PTCAN_ERR_LS;
 constexpr uint32_t CANOPEN_THREAD_MASK    = 1 << CANOPEN_THREAD_LS;
 constexpr uint32_t GFDB_TIMER_THREAD_MASK = 1 << GFDB_TIMER_THREAD_LS;
+
+constexpr uint32_t FULL_HEALTH_THREAD_MASK = MODEL_THREAD_SLOW_MASK | MODEL_THREAD_MASK
+                                            | PT_CAN_THREAD_MASK | PT_CAN_ERR_MASK
+                                            | CANOPEN_THREAD_MASK | GFDB_TIMER_THREAD_MASK;
 
 // Thread Structs
 
@@ -124,9 +130,18 @@ typedef struct {
 } powertrainCANReceiveThreadArgs_t;
 
 /**
+ * Struct that holds information needed for the powertrain CAN ISR
+ */
+typedef struct {
+    vcu::MCuC* mcuc;
+    rtos::EventFlags* eventFlags;
+} powertrainCANReceiveISRArgs_t;
+
+/**
  * Struct that holds information needed for the health thread
  */
 typedef struct {
+    vcu::MCuC* mcuc;
     rtos::EventFlags* eventFlags;
 } healthThreadArgs_t;
 
@@ -187,14 +202,13 @@ void accessoryCANOpenInterrupt(io::CANMessage& message, void* priv) {
  * @param priv[in] The MCuC instance that contains the queue the message is to be added to. Must be an vcu::MCuC*
  */
 void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
-    auto* mcuc = (vcu::MCuC*) priv;
-    if (mcuc != nullptr) {
+    auto* args = (powertrainCANReceiveISRArgs_t*) priv;
+    if (args != nullptr) {
         // must be tx_no_wait as it's in an ISR
-        rtos::TXError response = mcuc->sendToPowertrainQueue(&message, rtos::TXWait::TXW_NO_WAIT);
+        rtos::TXError response = args->mcuc->sendToPowertrainQueue(&message, rtos::TXWait::TXW_NO_WAIT);
         if (response != rtos::TXError::TXE_SUCCESS) {
             // Will run if queue is full & message wasn't added; or if there is something seriously wrong with the queue
-            // todo: probably enable flag for health thread to notice instead of logging to UART
-//            log::LOGGER.log(log::Logger::LogLevel::ERROR, "PTCAN ISR: QUEUE FAILURE: %d", response);
+            args->eventFlags->set(PT_CAN_ERR_MASK);
         }
     }
 }
@@ -264,7 +278,12 @@ int main() {
 
     vcu::MCuC mcuc(gpios, ptCAN);
 
-    ptCAN.addIRQHandler(reinterpret_cast<void (*)(io::CANMessage&, void*)>(powertrainCANInterrupt), &mcuc);
+    /// eventflag that stores between thread flags, and most importantly has flag to trigger the main thread to run
+    rtos::EventFlags sharedFlags((char*) "Shared Flags");
+
+    powertrainCANReceiveISRArgs_t ptCanISRArgs = { &mcuc, &sharedFlags };
+
+    ptCAN.addIRQHandler(reinterpret_cast<void (*)(io::CANMessage&, void*)>(powertrainCANInterrupt), &ptCanISRArgs);
 
     io::CAN::CANStatus ptRes = ptCAN.connect(true);
 
@@ -341,10 +360,6 @@ int main() {
     rtos::BytePool<TX_APP_MEM_POOL_SIZE> txPool((char*) "txBytePool");
 
     // Initialize Threads
-
-    /// eventflag that stores between thread flags, and most importantly has flag to trigger the main thread to run
-    rtos::EventFlags sharedFlags((char*) "Shared Flags");
-
     /// timer that triggers the main threads eventflag bit (and thus steps the model)
     rtos::Timer<rtos::EventFlags*> modelTriggerTimer((char*) "Model Trigger Timer",
                                                      modelTimerExpiration,
@@ -394,7 +409,7 @@ int main() {
                                                                                PT_CAN_RECEIVE_AUTOSTART);
 
     /// Argument struct the healthThread takes in
-    healthThreadArgs_t healthThreadArgs{&sharedFlags};
+    healthThreadArgs_t healthThreadArgs{&mcuc, &sharedFlags};
 
     /// Thread that checks the health of the other threads
     rtos::Thread<healthThreadArgs_t*> healthThread((char*) "MCuC Health Monitoring Thread",
@@ -513,51 +528,27 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         uint32_t flagOutput;
         args->eventFlags->getCurrentFlags(&flagOutput);
 
-#ifdef EVT_CORE_LOG_ENABLE
-        // todo: we really should have a way for these outputs to be recorded in case of failure, as we wont be logging
-        //  to UART when its running on the bike i'd assume; and if something happens we want to be able to tell if
-        //  health thread caught whatever 'it' was.
-        if (flagOutput & MODEL_THREAD_SLOW_MASK) {
-            // This flag will be set up to 3 times every time the device goes through contactor opening / closing states
-//            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "HT: Model running slow");
-            args->eventFlags->clear(MODEL_THREAD_SLOW_MASK);
-        }
+#define SEND_HEALTH_THREAD_CAN // todo: decide where to put this define. prolly in the cmake
+#ifdef SEND_HEALTH_THREAD_CAN
+        // This flag will be set up to 3 times every time the device goes through contactor opening / closing states
+        bool modelSlowErr = (flagOutput & MODEL_THREAD_SLOW_MASK);
 
-        if (flagOutput & MODEL_THREAD_MASK) {
-            // thread ran
-            args->eventFlags->clear(MODEL_THREAD_MASK);
-        } else {
-            // did not run
-//            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: sim_model thread not run");
-        }
+        bool modelNotRun = !(flagOutput & MODEL_THREAD_MASK);
 
-        if (flagOutput & PT_CAN_THREAD_MASK) {
-            // thread ran
-            args->eventFlags->clear(PT_CAN_THREAD_MASK);
-        } else {
-            // did not run
-//            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: pt can thread not run");
-        }
+        bool ptcanNotRun = !(flagOutput & PT_CAN_THREAD_MASK);
 
-        if (flagOutput & CANOPEN_THREAD_MASK) {
-            // thread ran
-            args->eventFlags->clear(CANOPEN_THREAD_MASK);
-        } else {
-            // did not run
-//            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: canopen thread not run");
-        }
+        bool ptcanISRErr = (flagOutput & PT_CAN_ERR_MASK);
 
-        if (flagOutput & GFDB_TIMER_THREAD_MASK) {
-            // thread ran
-            args->eventFlags->clear(GFDB_TIMER_THREAD_MASK);
-        } else {
-            // did not run
-//            log::LOGGER.log(log::Logger::LogLevel::WARNING, "HT: request GFDB thread not run");
-        }
+        bool canopenNotRun = !(flagOutput & CANOPEN_THREAD_MASK);
+
+        bool gfdbReqNotRun = !(flagOutput & GFDB_TIMER_THREAD_MASK);
+
+        args->mcuc->sendHealthFlags(modelSlowErr, modelNotRun, ptcanNotRun,
+                                    ptcanISRErr, canopenNotRun, gfdbReqNotRun);
 #endif
-
-        // do health thread stuff
-        rtos::sleep(MS_TO_TICKS(250)); // todo: Potentially be on a timer like the model?
+        // clear flags for fresh data next loop
+        args->eventFlags->clear(FULL_HEALTH_THREAD_MASK);
+        rtos::sleep(MS_TO_TICKS(250));
     }
 }
 

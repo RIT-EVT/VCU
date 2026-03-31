@@ -275,6 +275,17 @@ public:
      */
     void setGroundFaultFlag();
 
+    /**
+     * Takes the boolean flags from the health thread and give it to powertrainCAN to send.
+     * @param modelSpeedErr true if model was attempted to be triggered but last cycle hasn't finished yet, else false
+     * @param modelRanErr true if model thread has NOT run since last health thread cycle, else false
+     * @param ptcanRanErr true if ptcan thread has NOT run since last health thread cycle, else false
+     * @param ptcanISRErr true if ptcan ISR had error adding message to queue, else false
+     * @param canopenNotRun true if canopen thread has NOT run since last health thread cycle, else false
+     * @param gfdbReqNotRun true if GFDB Request thread has NOT run since last health thread cycle, else false
+     */
+    void sendHealthFlags(bool modelSpeedErr, bool modelRanErr, bool ptcanRanErr, bool ptcanISRErr, bool canopenNotRun, bool gfdbReqNotRun);
+
 private:
     /**
      * Mutex that protects internal buffer access to the MCuC
