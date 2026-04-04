@@ -54,14 +54,6 @@ io::CAN::CANStatus PowertrainCAN::sendBMSMessage() {
     return can.transmit(message);
 }
 
-io::CAN::CANStatus PowertrainCAN::sendHealthFlagMessage(uint8_t flags) {
-    uint8_t payload[1] = {flags};
-    // make the message
-    io::CANMessage message = io::CANMessage(PowertrainCAN::MessageIDs::VCU_HEALTH_FLAGS_ID, 1u, payload, false);
-    // send the message
-    return can.transmit(message);
-}
-
 io::CAN::CANStatus PowertrainCAN::sendGFDBStateRequest() {
     return can.transmit(GFDBStateRequestMessage);
 }

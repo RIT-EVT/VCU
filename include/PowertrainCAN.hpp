@@ -36,9 +36,6 @@ public:
         MC_COMMAND_ID           = 0x0C0,
         MC_PARAMETER_COMMAND_ID = 0x0C1,
 
-        VCU_HEALTH_FLAGS_ID = 0x0, // todo: CHOOSE SAFE ID FOR THIS
-        VCU_STATE_ID = 0x0, // todo: CHOOSE SAFE ID FOR THIS
-
         // HIB message
         HIB_MESSAGE_ID = 0x0D0,
 
@@ -125,13 +122,6 @@ public:
      *  i.e. calling this function twice will send two identical messages.
      */
     io::CAN::CANStatus sendBMSMessage();
-
-    /**
-     * Sends the health thread flags message
-     * @param flags the flags that are being sent over can
-     * @return the CAN status of the send
-     */
-    io::CAN::CANStatus sendHealthFlagMessage(uint8_t flags);
 
     /**
      * Sends the request to the GFDB for its isolation state.

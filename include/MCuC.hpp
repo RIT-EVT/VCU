@@ -112,6 +112,9 @@ public:
     static constexpr uint8_t BMS_CELL_TEMP_LEN = 45;
     static constexpr uint8_t BMS_CELL_VOLT_LEN = 100;
 
+    static constexpr uint32_t SIM_STATE_TPDO_NUM = 0x01;
+    static constexpr uint32_t HEALTH_FLAG_TPDO_NUM = 0x02;
+
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
      */
@@ -226,9 +229,10 @@ public:
     rtos::TXError receiveFromPowertrainQueue(io::CANMessage* destination, uint32_t waitOption);
 
     /**
-     * Runs one step of the Hardmon model, including processing and handling inputs and outputs of the model.
+     * Runs one step of the Simulink model, including processing and handling inputs and outputs of the model.
+     * @return boolean if the state has been updated, and thus needs to be sent over canOpen.
      */
-    void process();
+    bool process();
 
     // override methods from Initializable
     rtos::TXError init(rtos::BytePoolBase& pool) override;
@@ -276,15 +280,15 @@ public:
     void setGroundFaultFlag();
 
     /**
-     * Takes the boolean flags from the health thread and give it to powertrainCAN to send.
+     * Takes the boolean flags from the health thread and sets variable for CanOpen to send.
      * @param modelSpeedErr true if model was attempted to be triggered but last cycle hasn't finished yet, else false
      * @param modelRanErr true if model thread has NOT run since last health thread cycle, else false
      * @param ptcanRanErr true if ptcan thread has NOT run since last health thread cycle, else false
-     * @param ptcanISRErr true if ptcan ISR had error adding message to queue, else false
+     * @param ptcanISRErr true if ptcan ISR had an error adding message to queue, else false
      * @param canopenNotRun true if canopen thread has NOT run since last health thread cycle, else false
      * @param gfdbReqNotRun true if GFDB Request thread has NOT run since last health thread cycle, else false
      */
-    void sendHealthFlags(bool modelSpeedErr, bool modelRanErr, bool ptcanRanErr, bool ptcanISRErr, bool canopenNotRun, bool gfdbReqNotRun);
+    void setHealthFlags(bool modelSpeedErr, bool modelRanErr, bool ptcanRanErr, bool ptcanISRErr, bool canopenNotRun, bool gfdbReqNotRun);
 
 private:
     /**
@@ -317,6 +321,11 @@ private:
      * Flag for when to send the GFDB Isolation state CAN request
      */
     volatile bool groundFaultRequestFlag = false;
+
+    /**
+     * Flags from Health Thread to be sent over CANOpen (Accessory CAN)
+     */
+    uint16_t healthFlags = 0;
 
     /// the gpios
     MCuC_GPIO gpios;
@@ -389,7 +398,7 @@ private:
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 59; // TODO: CANopen set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 77; // TODO: CANopen set size of object dictionary
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -433,6 +442,13 @@ private:
         TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x00, 0x01),
         TRANSMIT_PDO_MAPPING_ENTRY_1AXX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
 
+        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(SIM_STATE_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
+        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(SIM_STATE_TPDO_NUM, 0x01),
+        TRANSMIT_PDO_MAPPING_ENTRY_1AXX(SIM_STATE_TPDO_NUM, 0x01, PDO_MAPPING_UNSIGNED16),
+
+        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(HEALTH_FLAG_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
+        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(HEALTH_FLAG_TPDO_NUM, 0x01),
+        TRANSMIT_PDO_MAPPING_ENTRY_1AXX(HEALTH_FLAG_TPDO_NUM, 0x01, PDO_MAPPING_UNSIGNED16),
         // data links
         // LVSS!!!!
         // HV Current Data
@@ -457,6 +473,12 @@ private:
         // TPDO Datalinks
         DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(0x00), 0x01),
         DATA_LINK_21XX(LINK_TPDO_NUMBER(0x00), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal),
+
+        DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(SIM_STATE_TPDO_NUM), 0x01),
+        DATA_LINK_21XX(LINK_TPDO_NUMBER(SIM_STATE_TPDO_NUM), 0x01, CO_TUNSIGNED16, &ucState),
+
+        DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(0x03), 0x01),
+        DATA_LINK_21XX(LINK_TPDO_NUMBER(0x03), 0x01, CO_TUNSIGNED16, &healthFlags),
 
         // End of dictionary marker
         CO_OBJ_DICT_ENDMARK,

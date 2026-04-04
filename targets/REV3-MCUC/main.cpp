@@ -110,6 +110,7 @@ constexpr uint32_t FULL_HEALTH_THREAD_MASK = MODEL_THREAD_SLOW_MASK | MODEL_THRE
  */
 typedef struct {
     vcu::MCuC* mcuc;
+    CO_NODE* accessoryCanNode;
     rtos::EventFlags* triggerFlag;
 } modelThreadArgs_t;
 
@@ -142,6 +143,7 @@ typedef struct {
  */
 typedef struct {
     vcu::MCuC* mcuc;
+    CO_NODE* accessoryCanNode;
     rtos::EventFlags* eventFlags;
 } healthThreadArgs_t;
 
@@ -381,7 +383,8 @@ int main() {
     /// Argument struct the modelThread takes in
     modelThreadArgs_t modelThreadArgs = {
         &mcuc,
-        &sharedFlags,
+        &canNode,
+        &sharedFlags
     };
 
     /// Thread that runs the model
@@ -409,7 +412,7 @@ int main() {
                                                                                PT_CAN_RECEIVE_AUTOSTART);
 
     /// Argument struct the healthThread takes in
-    healthThreadArgs_t healthThreadArgs{&mcuc, &sharedFlags};
+    healthThreadArgs_t healthThreadArgs{&mcuc, &canNode, &sharedFlags};
 
     /// Thread that checks the health of the other threads
     rtos::Thread<healthThreadArgs_t*> healthThread((char*) "MCuC Health Monitoring Thread",
@@ -484,12 +487,19 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
  */
 [[noreturn]] void modelThreadEntry(modelThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Started");
-    rtos::TXError error;
+
     while (true) {
         uint32_t flagOutput;
         args->triggerFlag->get(MODEL_TRIGGER_FLAG_MASK, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
 
-        args->mcuc->process();
+        bool result = args->mcuc->process();
+
+        // If state has changed, alert canOpen to send the flags when it gets the chance
+        if (result) {
+
+            io::alertTPDO(args->accessoryCanNode, vcu::MCuC::SIM_STATE_TPDO_NUM);
+        }
+
         args->triggerFlag->set(MODEL_THREAD_MASK); // Mark as ran
     }
 }
@@ -531,7 +541,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 #define SEND_HEALTH_THREAD_CAN // todo: decide where to put this define. prolly in the cmake
 #ifdef SEND_HEALTH_THREAD_CAN
         // This flag will be set up to 3 times every time the device goes through contactor opening / closing states
-        bool modelSlowErr = (flagOutput & MODEL_THREAD_SLOW_MASK);
+        bool modelTooSlow = (flagOutput & MODEL_THREAD_SLOW_MASK);
 
         bool modelNotRun = !(flagOutput & MODEL_THREAD_MASK);
 
@@ -543,8 +553,13 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 
         bool gfdbReqNotRun = !(flagOutput & GFDB_TIMER_THREAD_MASK);
 
-        args->mcuc->sendHealthFlags(modelSlowErr, modelNotRun, ptcanNotRun,
+        // set canOpen data values
+        args->mcuc->setHealthFlags(modelTooSlow, modelNotRun, ptcanNotRun,
                                     ptcanISRErr, canopenNotRun, gfdbReqNotRun);
+
+        // alert canOpen to send the flags when it gets the chance
+        io::alertTPDO(args->accessoryCanNode, vcu::MCuC::HEALTH_FLAG_TPDO_NUM);
+
 #endif
         // clear flags for fresh data next loop
         args->eventFlags->clear(FULL_HEALTH_THREAD_MASK);

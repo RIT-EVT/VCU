@@ -139,15 +139,9 @@ void MCuC::setGroundFaultFlag() {
     groundFaultRequestFlag = true;
 }
 
-void MCuC::sendHealthFlags(bool modelSpeedErr, bool modelRanErr, bool ptcanRanErr, bool ptcanISRErr, bool canopenNotRun, bool gfdbReqNotRun) {
-    uint8_t flags = modelSpeedErr | modelRanErr << 1 | ptcanRanErr << 2 | ptcanISRErr << 3 | canopenNotRun << 4 | gfdbReqNotRun << 5;
-    io::CAN::CANStatus mcMessageStatus = powertrainCAN.sendHealthFlagMessage(flags);
-
-#ifdef EVT_CORE_LOG_ENABLE
-    if (mcMessageStatus != io::CAN::CANStatus::OK) {
-        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "VCU Health Flags failed to send with error %d", mcMessageStatus);
-    }
-#endif
+void MCuC::setHealthFlags(bool modelSpeedErr, bool modelRanErr, bool ptcanRanErr, bool ptcanISRErr, bool canopenNotRun, bool gfdbReqNotRun) {
+    // set the variable that canOpen sends for the health flags
+    healthFlags = modelSpeedErr | modelRanErr << 1 | ptcanRanErr << 2 | ptcanISRErr << 3 | canopenNotRun << 4 | gfdbReqNotRun << 5;
 }
 
 // todo: for testing purposes; remove when done
@@ -186,11 +180,18 @@ inline const char* stateToString(UC_State state) {
     }
 }
 
-void MCuC::process() {
-    // The mcEnable needs to do a pulse every time it switches, so need to remember last state
+bool MCuC::process() {
+    // The mcEnable needs to do a pulse every time it switches, so keep track of last mcEnable value
     static bool mcEnableLast = false;
+
+    // Need to send canOpen message on state change, so keep track of lastState
+    static UC_State lastState = UC_State::Preset;
+
     // rollingCounter is CAN message counter to alert it to repeat msgs; will be incremented from 0 to 15 and repeat
     static int8_t rollingCounter = 0;
+
+    // return value
+    bool updatedState = false;
 
     // todo: debugging static vars for manually tricking simulink model into going through full state machine
     static bool firstStep         = true;
@@ -271,9 +272,6 @@ void MCuC::process() {
 
     if (firstStep) {
         firstStep = false;
-        for (int i = 0; i < HB_SIZE; i++) {
-            modelInputs.Heartbeats_CAN[i] = 0;
-        }
     } else {
         modelInputs.BMS_Contactor_Closed_CAN = static_cast<int>(modelOutputs.BMS_Contactor_Command_uC_CAN) != 0;
         modelInputs.LVSS_ON_CAN              = modelOutputs.LVSS_EN_uC;
@@ -282,10 +280,6 @@ void MCuC::process() {
 
     // Big ass code block to fake inputs to test simulink model
     if (!firstStep) {
-//        for (int i = 0; i < HB_SIZE; i++) {
-//            modelInputs.Heartbeats_CAN[i]++;
-//        }
-
         if (modelOutputs.uC_State == UC_State::MC_Init || seenMCInit) {
             modelInputs.MC_VSM_State_CAN = MC_VSM_State::Ready;
             seenMCInit                   = true;
@@ -323,22 +317,7 @@ void MCuC::process() {
     for (int i = 0; i < HB_SIZE; i++) {
         modelInputs.Heartbeats_CAN[i] = heartbeatMessages[i];
     }
-
     hbMutex.put();
-
-    //todo: for testing that heartbeats are still coming through at 3ms pace
-    if (modelInputs.Heartbeats_CAN[0] % 2 == 0) {
-        gpios.ledTwoGPIO.writePin(io::GPIO::State::HIGH);
-    } else {
-        gpios.ledTwoGPIO.writePin(io::GPIO::State::LOW);
-    }
-
-#ifdef EVT_CORE_LOG_ENABLE
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "heartbeats: %lu, %lu, %lu, %lu, %lu",
-                    modelInputs.Heartbeats_CAN[0], modelInputs.Heartbeats_CAN[1], modelInputs.Heartbeats_CAN[2],
-                    modelInputs.Heartbeats_CAN[3], modelInputs.Heartbeats_CAN[4]);
-//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,"EStop: %d, Ignition %d", eStop, ignitionOn);
-#endif
 
 #ifdef EVT_CORE_LOG_ENABLE
 //    halstep = core::time::millis();
@@ -397,18 +376,17 @@ void MCuC::process() {
         mcEnableLast = mcEnableUC;
     }
 
-    static UC_State lastState = UC_State::Preset;
-
     if (ucState.stateEnum != lastState) {
         if (ucState.stateEnum == UC_State::MC_Discharging) {
             powertrainCAN.sendShutdownWarningMessage();
         }
 
-        // todo: SEND NEW STATE OVER CANOPEN here
+        updatedState = true;
+        lastState = ucState.stateEnum;
+
 #ifdef EVT_CORE_LOG_ENABLE
 //        log::LOGGER.log(log::Logger::LogLevel::DEBUG, "%s", stateToString(ucState.stateEnum));
 #endif
-        lastState = ucState.stateEnum;
     }
 
     // todo: If needed, look into speeding up cycle time by only sending powertrain CAN messages if something changes
@@ -481,6 +459,8 @@ void MCuC::process() {
 //                    halend,
 //                    halmotorControllerCan);
 #endif
+
+    return updatedState;
 }
 
 } // namespace vcu
