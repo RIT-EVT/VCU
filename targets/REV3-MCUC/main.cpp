@@ -496,7 +496,6 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 
         // If state has changed, alert canOpen to send the flags when it gets the chance
         if (result) {
-
             io::alertTPDO(args->accessoryCanNode, vcu::MCuC::SIM_STATE_TPDO_NUM);
         }
 
