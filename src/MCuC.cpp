@@ -187,9 +187,6 @@ bool MCuC::process() {
     // Need to send canOpen message on state change, so keep track of lastState
     static UC_State lastState = UC_State::Preset;
 
-    // rollingCounter is CAN message counter to alert it to repeat msgs; will be incremented from 0 to 15 and repeat
-    static int8_t rollingCounter = 0;
-
     // return value
     bool updatedState = false;
 
@@ -397,15 +394,8 @@ bool MCuC::process() {
                            modelOutputs.Inverter_EN_uC_CAN,
                            modelOutputs.Inverter_DC_uC_CAN,
                            modelOutputs.Speed_Mode_Enable_uC_CAN,
-                           rollingCounter,
+                           modelOutputs.Rolling_Counter_uC_CAN,
                            modelOutputs.Torque_Limit_Command_uC_CAN);
-
-    rollingCounter++;
-
-    // Rolling Counter is stored in 4 bits, meaning it is actually 0-15
-    if (rollingCounter >= 16) {
-        rollingCounter = 0;
-    }
 
     io::CAN::CANStatus mcMessageStatus = powertrainCAN.sendMCMessage();
 

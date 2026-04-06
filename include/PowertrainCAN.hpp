@@ -80,7 +80,7 @@ public:
      * @param torqueLimit the value to set torqueLimit to.
      */
     void setMCAll(int16_t torque, int16_t speed, int16_t direction, bool inverterEn, bool inverterDC,
-                  int16_t speedModeEn, int8_t rollingCounter, int16_t torqueLimit);
+                  int16_t speedModeEn, int16_t rollingCounter, int16_t torqueLimit);
 
     /**
      * Sets the contactorCommand value for the BMS CAN message.
