@@ -141,7 +141,12 @@ void MCuC::setGroundFaultFlag() {
 
 void MCuC::setHealthFlags(bool modelSpeedErr, bool modelRanErr, bool ptcanRanErr, bool ptcanISRErr, bool canopenNotRun, bool gfdbReqNotRun) {
     // set the variable that canOpen sends for the health flags
-    healthFlags = modelSpeedErr | modelRanErr << 1 | ptcanRanErr << 2 | ptcanISRErr << 3 | canopenNotRun << 4 | gfdbReqNotRun << 5;
+    healthFlags.modelSpeedErr = modelSpeedErr;
+    healthFlags.modelRanErr = modelRanErr;
+    healthFlags.ptcanRanErr = ptcanRanErr;
+    healthFlags.ptcanISRErr = ptcanISRErr;
+    healthFlags.canopenNotRun = canopenNotRun;
+    healthFlags.gfdbReqNotRun = gfdbReqNotRun;
 }
 
 // todo: for testing purposes; remove when done
@@ -226,8 +231,10 @@ bool MCuC::process() {
 
     // Set CAN inputs (values updated over CAN)
         // From Motor Controller
-    modelInputs.MC_DC_State_CAN   = MC_DC_State::Enabled;
+    modelInputs.MC_DC_State_CAN   = mcDischarge;
     modelInputs.MC_VSM_State_CAN  = mcState;
+
+
         // From HIB
     modelInputs.Forward_EN_CAN    = forwardEnable;
     modelInputs.Start_CAN         = startPressed;
@@ -248,12 +255,13 @@ bool MCuC::process() {
     modelInputs.MC_PS_Present_CAN        = mcPSPresent;
         // From LVSS
     modelInputs.LVSS_ON_CAN              = lvssOn;
-    modelInputs.HIB_ON_CAN               = hibOn;
-    modelInputs.HUDL_ON_CAN              = hudlOn;
-    modelInputs.TMS_ON_CAN               = tmsOn;
-    modelInputs.GUB_ON_CAN               = gubOn;
-    modelInputs.Batt_12V_ON_CAN          = batt12vOn;
-    modelInputs.Vicor_Input_Current_CAN  = vicorInputCurrent;
+    modelInputs.Acc_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.acc;
+    modelInputs.HIB_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hib;
+    modelInputs.HUDL_ON_CAN              = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hudl;
+    modelInputs.TMS_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.tms;
+    modelInputs.GUB_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.gub;
+    modelInputs.Batt_12V_ON_CAN          = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.batt;
+    modelInputs.Vicor_Input_Current_CAN  = accessoryCanDataSafeBuffer.LVSS_in_VicorCurrent;
     memcpy(modelInputs.LVSS_Temps_CAN, lvssTemps, sizeof(lvssTemps));
     memcpy(modelInputs.LVSS_Currents_CAN, lvssCurrents, sizeof(lvssCurrents));
 
@@ -385,6 +393,14 @@ bool MCuC::process() {
 //        log::LOGGER.log(log::Logger::LogLevel::DEBUG, "%s", stateToString(ucState.stateEnum));
 #endif
     }
+
+    // Set CanOpen output data
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.acc = modelOutputs.Acc_EN_uC_CAN;
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.batt = modelOutputs.Batt_12V_EN_uC_CAN;
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.gub = modelOutputs.GUB_EN_uC_CAN;
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hib = modelOutputs.HIB_EN_uC_CAN;
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.tms = modelOutputs.TMS_EN_uC_CAN;
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hudl = modelOutputs.HUDL_EN_uC_CAN;
 
     // todo: If needed, look into speeding up cycle time by only sending powertrain CAN messages if something changes
     // Send the Motor Controller CAN message (set values first)

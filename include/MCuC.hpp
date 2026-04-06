@@ -163,17 +163,56 @@ public:
         };
     };
 
+    typedef union {
+        uint16_t val;
+        struct {
+            // Power Switch 0
+            uint8_t batt : 1;
+            uint8_t hib  : 1;
+
+            // Power Switch 1
+            uint8_t tms  : 1;
+            uint8_t hudl : 1;
+
+            // Power Switch 2
+            uint8_t gub : 1;
+            uint8_t acc : 1;
+        };
+    } LVSSPowerState_t;
+
+    typedef union {
+        uint16_t val;
+        struct {
+            // Power Switch 0
+            uint16_t battCurrentFault : 1;
+            uint16_t hibCurrentFault  : 1;
+
+            // Power Switch 1
+            uint16_t tmsCurrentFault  : 1;
+            uint16_t hudlCurrentFault : 1;
+
+            // Power Switch 2
+            uint16_t accCurrentFault  : 1;
+            uint16_t gubCurrentFault  : 1;
+
+            uint16_t switch0TempFault : 1;
+            uint16_t switch1TempFault : 1;
+            uint16_t switch2TempFault : 1;
+        };
+    } LVSSSwitchFaults_t;
+
     /**
      * Struct that contains all the data that AccessoryCan should read in.
      * Used for double buffering for threadsafety with CANOpen
      */
     typedef union {
         struct {
-            uint16_t LVSS_out_EnableBoardSignal;            ///< LVSS (out) Determines which boards it will send power to
+            LVSSPowerState_t LVSS_out_EnableBoardSignal;    ///< LVSS (out) Determines which boards it will send power to
             uint16_t LVSS_in_PowerSwitchCurrents[6];        ///< LVSS (in) currents
             uint16_t LVSS_in_PowerSwitchTemperatures[3];    ///< LVSS (in) temps
             uint16_t LVSS_in_VicorCurrent;                  ///< LVSS (in) hv vicor current
-            uint16_t LVSS_in_EnableBoardSignal;            ///< LVSS (in) what LVSS is powering
+            LVSSPowerState_t LVSS_in_EnableBoardSignal;            ///< LVSS (in) what LVSS is powering
+            LVSSSwitchFaults_t LVSS_in_SwitchFaults;
         };
         struct {
             uint16_t outputs[1];
@@ -194,6 +233,19 @@ public:
         };
         UC_State stateEnum;
     };
+
+    typedef union {
+        uint16_t flags;
+        struct {
+            int16_t padding   : 10;
+            int16_t gfdbReqNotRun : 1;
+            int16_t canopenNotRun : 1;
+            int16_t ptcanISRErr : 1;
+            int16_t ptcanRanErr : 1;
+            int16_t modelRanErr : 1;
+            int16_t modelSpeedErr : 1;
+        };
+    } HealthFlags_t;
 
     /**
      * Constructor for MCuC object
@@ -324,7 +376,7 @@ private:
     /**
      * Flags from Health Thread to be sent over CANOpen (Accessory CAN)
      */
-    uint16_t healthFlags = 0;
+    HealthFlags_t healthFlags = {0};
 
     /// the gpios
     MCuC_GPIO gpios;
@@ -355,7 +407,7 @@ private:
     int16_t mcCoolingFR          = 0;               ///< CAN (TMS): The MC's cooling flow rate.
     int16_t battCoolingFR        = 0;               ///< CAN (TMS): The battery's cooling flow rate.
     uint8_t mcPSPresent          = 0;               ///< CAN (TMS): The MC pump speed.
-    bool lvssOn                  = false;           ///< CAN (LVSS): Whether or not the LVSS is on.
+    bool lvssOn                  = false;           ///< CAN (LVSS): Whether or not the LVSS is on. todo: this cant be true...
     bool hibOn                   = false;           ///< CAN (LVSS): Whether or not the HIB is on.
     bool hudlOn                  = false;           ///< CAN (LVSS): Whether or not the HUDL is on.
     bool tmsOn                   = false;           ///< CAN (LVSS): Whether or not the TMS is on.
@@ -397,7 +449,7 @@ private:
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 77; // TODO: CANopen set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 79; // TODO: CANopen set size of object dictionary
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -423,11 +475,12 @@ private:
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x03, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x04, PDO_MAPPING_UNSIGNED16),
 
-        // other 2 currents + vicor current
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x01, 0x03),
+        // other 2 currents + vicor current + power switch faults
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x01, 0x04),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x01, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x02, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x03, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x01, 0x04, PDO_MAPPING_UNSIGNED16),
 
         // temperatures 0-3 & board-enabled bit-packed value
         RECEIVE_PDO_MAPPING_START_KEY_16XX(0x02, 0x04),
@@ -455,13 +508,13 @@ private:
         // todo: need to add CANOPEN transmits
         // TPDO Datalinks
         DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(0x00), 0x01),
-        DATA_LINK_21XX(LINK_TPDO_NUMBER(0x00), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal),
+        DATA_LINK_21XX(LINK_TPDO_NUMBER(0x00), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal.val),
 
         DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(SIM_STATE_TPDO_NUM), 0x01),
         DATA_LINK_21XX(LINK_TPDO_NUMBER(SIM_STATE_TPDO_NUM), 0x01, CO_TUNSIGNED16, &ucState),
 
         DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(HEALTH_FLAG_TPDO_NUM), 0x01),
-        DATA_LINK_21XX(LINK_TPDO_NUMBER(HEALTH_FLAG_TPDO_NUM), 0x01, CO_TUNSIGNED16, &healthFlags),
+        DATA_LINK_21XX(LINK_TPDO_NUMBER(HEALTH_FLAG_TPDO_NUM), 0x01, CO_TUNSIGNED16, &healthFlags.flags),
 
         // HV Current Data
         DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x00), 0x04),
@@ -470,16 +523,17 @@ private:
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x00), 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[2]),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x00), 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[3]),
 
-        DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x01), 0x03),
+        DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x01), 0x04),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[4]),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[5]),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_VicorCurrent),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_SwitchFaults),
 
         DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x02), 0x04),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchTemperatures[0]),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchTemperatures[1]),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchTemperatures[2]),
-        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_EnableBoardSignal),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_EnableBoardSignal.val),
 
         // End of dictionary marker
         CO_OBJ_DICT_ENDMARK,
