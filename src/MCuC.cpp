@@ -192,9 +192,6 @@ bool MCuC::process() {
     // Need to send canOpen message on state change, so keep track of lastState
     static UC_State lastState = UC_State::Preset;
 
-    // return value
-    bool updatedState = false;
-
     // todo: debugging static vars for manually tricking simulink model into going through full state machine
     static bool firstStep         = true;
     static bool seenMCInit        = false;
@@ -230,22 +227,29 @@ bool MCuC::process() {
     modelInputs.ESTOP_LS_B        = gpios.eStopBGPIO.readPin() == io::GPIO::State::LOW;    // active low
 
     // Set CAN inputs (values updated over CAN)
+
+        //unused inputs
+    modelInputs.Torque_Limit_Command1;
+    modelInputs.Speed_Mode_Enable1;
+    modelInputs.Speed_Command1;
+    modelInputs.Direction_Command1;
+    modelInputs.Rolling_Counter1;
+
         // From Motor Controller
     modelInputs.MC_DC_State_CAN   = mcDischarge;
     modelInputs.MC_VSM_State_CAN  = mcState;
 
-
-        // From HIB
+        // From HIB over raw CAN
     modelInputs.Forward_EN_CAN    = forwardEnable;
     modelInputs.Start_CAN         = startPressed;
     modelInputs.Brake_CAN         = brakeOn;
     modelInputs.HIB_Comparison_Fault_CAN = hibComparisonFault;
     modelInputs.Throttle_CAN      = throttle;
-        // From BMS
+        // From BMS over raw CAN
     memcpy(modelInputs.BMS_Cell_Temps_CAN, bmsCellTemps, sizeof(bmsCellTemps));
     memcpy(modelInputs.BMS_Cell_Voltages_CAN, bmsCellVoltages, sizeof(bmsCellVoltages));
     modelInputs.BMS_Contactor_Closed_CAN = bmsContactorClosed;
-        // From GFDB
+        // From GFDB over raw CAN
     modelInputs.GFDB_Isolation_State_CAN = gfdbIsolationState;
         // From TMS
     modelInputs.Batt_PS_Present_CAN      = battPSPresent;
@@ -262,8 +266,10 @@ bool MCuC::process() {
     modelInputs.GUB_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.gub;
     modelInputs.Batt_12V_ON_CAN          = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.batt;
     modelInputs.Vicor_Input_Current_CAN  = accessoryCanDataSafeBuffer.LVSS_in_VicorCurrent;
-    memcpy(modelInputs.LVSS_Temps_CAN, lvssTemps, sizeof(lvssTemps));
-    memcpy(modelInputs.LVSS_Currents_CAN, lvssCurrents, sizeof(lvssCurrents));
+
+    memcpy(modelInputs.LVSS_Temps_CAN, accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchTemperatures, sizeof(accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchTemperatures));
+    memcpy(modelInputs.LVSS_Currents_CAN, accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents, sizeof(accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents));
+
 
     // todo: test hardcoding
     modelInputs.Interlock                = interlock;
@@ -343,6 +349,13 @@ bool MCuC::process() {
     mcEnableUC        = modelOutputs.MC_EN_uC;
 
     // use outputs
+
+    // Unused model signals so just ignore them
+    modelOutputs.Batt_PS_Request_uC_CAN;
+    modelOutputs.MC_PS_Request_uC_CAN;
+    modelOutputs.Fault_to_MC_CAN;
+
+
     gpios.ucStateZeroGPIO.writePin(ucState.stateBit0 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ucStateOneGPIO.writePin(ucState.stateBit1 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ucStateTwoGPIO.writePin(ucState.stateBit2 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
@@ -381,17 +394,10 @@ bool MCuC::process() {
         mcEnableLast = mcEnableUC;
     }
 
-    if (ucState.stateEnum != lastState) {
-        if (ucState.stateEnum == UC_State::MC_Discharging) {
-            powertrainCAN.sendShutdownWarningMessage();
-        }
 
-        updatedState = true;
-        lastState = ucState.stateEnum;
-
-#ifdef EVT_CORE_LOG_ENABLE
-//        log::LOGGER.log(log::Logger::LogLevel::DEBUG, "%s", stateToString(ucState.stateEnum));
-#endif
+    // Power is going be gone soon
+    if (modelOutputs.Shutdown) {
+        powertrainCAN.sendShutdownWarningMessage();
     }
 
     // Set CanOpen output data
@@ -466,7 +472,12 @@ bool MCuC::process() {
 //                    halmotorControllerCan);
 #endif
 
-    return updatedState;
+    if (ucState.stateEnum != lastState) {
+        lastState = ucState.stateEnum;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 } // namespace vcu

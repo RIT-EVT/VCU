@@ -216,7 +216,7 @@ public:
         };
         struct {
             uint16_t outputs[1];
-            uint16_t inputs[11];
+            uint16_t inputs[12];
         };
     } AccessoryCanData_t;
 
@@ -407,7 +407,7 @@ private:
     int16_t mcCoolingFR          = 0;               ///< CAN (TMS): The MC's cooling flow rate.
     int16_t battCoolingFR        = 0;               ///< CAN (TMS): The battery's cooling flow rate.
     uint8_t mcPSPresent          = 0;               ///< CAN (TMS): The MC pump speed.
-    bool lvssOn                  = false;           ///< CAN (LVSS): Whether or not the LVSS is on. todo: this cant be true...
+    bool lvssOn                  = false;           ///< CAN (LVSS): Whether or not the LVSS is on. any message from lvss
     bool hibOn                   = false;           ///< CAN (LVSS): Whether or not the HIB is on.
     bool hudlOn                  = false;           ///< CAN (LVSS): Whether or not the HUDL is on.
     bool tmsOn                   = false;           ///< CAN (LVSS): Whether or not the TMS is on.
