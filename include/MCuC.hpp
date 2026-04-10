@@ -210,13 +210,15 @@ public:
             LVSSPowerState_t LVSS_out_EnableBoardSignal;    ///< LVSS (out) Determines which boards it will send power to
             uint16_t LVSS_in_PowerSwitchCurrents[6];        ///< LVSS (in) currents
             uint16_t LVSS_in_PowerSwitchTemperatures[3];    ///< LVSS (in) temps
-            uint16_t LVSS_in_VicorCurrent;                  ///< LVSS (in) hv vicor current
-            LVSSPowerState_t LVSS_in_EnableBoardSignal;            ///< LVSS (in) what LVSS is powering
+            int16_t LVSS_in_VicorCurrent;                  ///< LVSS (in) hv vicor current
             LVSSSwitchFaults_t LVSS_in_SwitchFaults;
+            LVSSPowerState_t LVSS_in_EnableBoardSignal;     ///< LVSS (in) what LVSS is powering
+            uint16_t TMS_in_FlowRates[2];
+            uint16_t TMS_in_Temps[5];
         };
         struct {
             uint16_t outputs[1];
-            uint16_t inputs[12];
+            uint16_t inputs[19];
         };
     } AccessoryCanData_t;
 
@@ -382,14 +384,6 @@ private:
     MCuC_GPIO gpios;
 
     // Model input data
-// TODO: Should i delete? no point to have GPIO inputs put in middle-man var
-//    bool eStopA      = false; ///< GPIO: LS A; Whether or not the emergency stop is enabled.
-//    bool eStopB      = false; ///< GPIO: LS B; Whether or not the emergency stop is enabled.
-//    bool ignitionOnA = false; ///< GPIO: LS A; Whether or not the ignition is on.
-//    bool ignitionOnB = false; ///< GPIO: LS B; Whether or not the ignition is on.
-//    bool interlock   = false; ///< GPIO: if BFC is plugged in.
-//    bool mcOn        = false; ///< GPIO: Whether or not the motor controller is on.
-
     bool powertrainCANSelfTestIn = false;             ///< CAN (Hardmon): If the powertrain CAN network is working.
     MC_DC_State mcDischarge  = MC_DC_State::Disabled; ///< CAN (MC): What state the MC discharger is in. [0,4] range.
     MC_VSM_State mcState     = MC_VSM_State::Start; ///< CAN (MC): What state the MC state machine is in. [0,14] range.
@@ -449,7 +443,7 @@ private:
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 79; // TODO: CANopen set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 128; // TODO: CANopen set size of object dictionary
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -464,10 +458,17 @@ private:
         SDO_CONFIGURATION_1200,
 
         // RPDOS settings
+        //------LVSS Settings--------//
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x00, 0x00, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x01, 0x01, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
         RECEIVE_PDO_SETTINGS_OBJECT_140X(0x02, 0x02, LVSS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC),
 
+        //------TMS Settings--------//
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(0x03, 0x00, TMS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC), // todo: make sure these tpdo nums are correct
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(0x04, 0x01, TMS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC), // todo: make sure these tpdo nums are correct
+        RECEIVE_PDO_SETTINGS_OBJECT_140X(0x05, 0x02, TMS_NODE_ID, RECEIVE_PDO_TRIGGER_ASYNC), // todo: make sure these tpdo nums are correct
+
+        //------LVSS Mapping------//
         // 4 currents
         RECEIVE_PDO_MAPPING_START_KEY_16XX(0x00, 0x04),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
@@ -489,7 +490,25 @@ private:
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x03, PDO_MAPPING_UNSIGNED16),
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x04, PDO_MAPPING_UNSIGNED16),
 
-        // Actual TPDO
+        //------TMS Mapping------//
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x03,0x04),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03,0x01, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03,0x02, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03,0x03, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03,0x04, PDO_MAPPING_UNSIGNED16),
+
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x04,0x04),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x04,0x01, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x04,0x02, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x04,0x03, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x04,0x04, PDO_MAPPING_UNSIGNED16),
+
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x05,0x02),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x05,0x01, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x05,0x02, PDO_MAPPING_UNSIGNED16),
+
+
+        // TPDO Setting
         TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 5000),
         TRANSMIT_PDO_SETTINGS_OBJECT_18XX(SIM_STATE_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
         TRANSMIT_PDO_SETTINGS_OBJECT_18XX(HEALTH_FLAG_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
@@ -526,14 +545,31 @@ private:
         DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x01), 0x04),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[4]),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[5]),
-        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_VicorCurrent),
-        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_SwitchFaults),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x03, CO_TSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_VicorCurrent),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x01), 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_SwitchFaults.val),
 
         DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x02), 0x04),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchTemperatures[0]),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchTemperatures[1]),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x03, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchTemperatures[2]),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x02), 0x04, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_EnableBoardSignal.val),
+
+        //------TMS--------//
+        DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x03), 0x04),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x03), 0x01, CO_TSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_Temps[0]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x03), 0x02, CO_TSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_Temps[1]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x03), 0x03, CO_TSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_Temps[2]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x03), 0x04, CO_TSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_Temps[3]),
+
+        DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x04), 0x04),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x04), 0x01, CO_TSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_Temps[4]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x04), 0x02, CO_TSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_Temps[0]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x04), 0x03, CO_TSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_Temps[0]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x04), 0x04, CO_TSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_Temps[0]),
+
+        DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x05), 0x02),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x05), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_FlowRates[0]),
+        DATA_LINK_21XX(LINK_RPDO_NUMBER(0x05), 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.TMS_in_FlowRates[1]),
 
         // End of dictionary marker
         CO_OBJ_DICT_ENDMARK,

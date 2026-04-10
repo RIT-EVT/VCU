@@ -574,27 +574,12 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 [[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Started");
     args->mcuc->sendOutputDataToUnsafeBuffer();
-    args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal = 63; // todo: temporary
+//  todo:  args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal.val = 63; // todo: temporary
     rtos::TXError error;
     while (true) {
-        // todo: why does this while loop constantly run even when no data is coming in? is it just how canOpen works?
-        //  effectively polling? there must be a way to sleep/block til a message comes in
-
         io::processCANopenNode(args->accessoryCanNode);
 
         args->eventFlags->set(CANOPEN_THREAD_MASK); // Mark as ran
-
-        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-        //                        "Accessory Can Node Processed\n\r\t"
-        //                        "HV Current: %d\n\r\t"
-        //                        "Power Switch Error: %d",
-        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent,
-        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus);
-        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-        //                        "\n\r\tPower Switch Current: %d"
-        //                        "\n\r\tTemps: %d",
-        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents,
-        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures);
 
         rtos::sleep(MS_TO_TICKS(10));
     }

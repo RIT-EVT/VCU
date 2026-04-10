@@ -251,13 +251,16 @@ bool MCuC::process() {
     modelInputs.BMS_Contactor_Closed_CAN = bmsContactorClosed;
         // From GFDB over raw CAN
     modelInputs.GFDB_Isolation_State_CAN = gfdbIsolationState;
-        // From TMS
-    modelInputs.Batt_PS_Present_CAN      = battPSPresent;
-    memcpy(modelInputs.Cooling_Loop_Temps_CAN, coolingLoopTemps, sizeof(coolingLoopTemps));
-    modelInputs.MC_Cooling_FR_CAN        = mcCoolingFR;
-    modelInputs.Batt_Cooling_FR_CAN      = battCoolingFR;
-    modelInputs.MC_PS_Present_CAN        = mcPSPresent;
-        // From LVSS
+
+        // From TMS over CanOpen
+    modelInputs.Batt_PS_Present_CAN      = accessoryCanDataSafeBuffer.TMS_in_battPS;
+    memcpy(modelInputs.Cooling_Loop_Temps_CAN, accessoryCanDataSafeBuffer.TMS_in_Temps, sizeof(accessoryCanDataSafeBuffer.TMS_in_Temps));
+    modelInputs.MC_Cooling_FR_CAN        = accessoryCanDataSafeBuffer.TMS_in_mcCoolingFr;
+    modelInputs.Batt_Cooling_FR_CAN      = accessoryCanDataSafeBuffer.TMS_in_battCoolingFr; // Fr = flow rates
+    modelInputs.MC_PS_Present_CAN        = accessoryCanDataSafeBuffer.TMS_in_mcPSPresent; // PS = pump speed
+
+
+        // From LVSS over CanOpen
     modelInputs.LVSS_ON_CAN              = lvssOn;
     modelInputs.Acc_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.acc;
     modelInputs.HIB_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hib;
@@ -269,7 +272,6 @@ bool MCuC::process() {
 
     memcpy(modelInputs.LVSS_Temps_CAN, accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchTemperatures, sizeof(accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchTemperatures));
     memcpy(modelInputs.LVSS_Currents_CAN, accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents, sizeof(accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents));
-
 
     // todo: test hardcoding
     modelInputs.Interlock                = interlock;
@@ -355,7 +357,6 @@ bool MCuC::process() {
     modelOutputs.MC_PS_Request_uC_CAN;
     modelOutputs.Fault_to_MC_CAN;
 
-
     gpios.ucStateZeroGPIO.writePin(ucState.stateBit0 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ucStateOneGPIO.writePin(ucState.stateBit1 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ucStateTwoGPIO.writePin(ucState.stateBit2 ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
@@ -374,7 +375,7 @@ bool MCuC::process() {
 
     // HUDL LEDs
     gpios.ledOneGPIO.writePin(modelOutputs.LED[0] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-//    gpios.ledTwoGPIO.writePin(modelOutputs.LED[1] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.ledTwoGPIO.writePin(modelOutputs.LED[1] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.ledThreeGPIO.writePin(modelOutputs.LED[2] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
     // set Motor Controller via the two gpios
@@ -394,19 +395,20 @@ bool MCuC::process() {
         mcEnableLast = mcEnableUC;
     }
 
-
     // Power is going be gone soon
     if (modelOutputs.Shutdown) {
         powertrainCAN.sendShutdownWarningMessage();
     }
 
     // Set CanOpen output data
-    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.acc = modelOutputs.Acc_EN_uC_CAN;
-    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.batt = modelOutputs.Batt_12V_EN_uC_CAN;
-    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.gub = modelOutputs.GUB_EN_uC_CAN;
-    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hib = modelOutputs.HIB_EN_uC_CAN;
-    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.tms = modelOutputs.TMS_EN_uC_CAN;
-    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hudl = modelOutputs.HUDL_EN_uC_CAN;
+
+    // todo: probs rework this somehow... Dont send enable signals from model if there was a switch fault (current or temp) on that switch
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.batt = modelOutputs.Batt_12V_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.battCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch0TempFault);
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hib = modelOutputs.HIB_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.hibCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch0TempFault);
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.tms = modelOutputs.TMS_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.tmsCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch1TempFault);
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hudl = modelOutputs.HUDL_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.hudlCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch1TempFault);
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.acc = modelOutputs.Acc_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.accCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.gub = modelOutputs.GUB_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.gubCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
 
     // todo: If needed, look into speeding up cycle time by only sending powertrain CAN messages if something changes
     // Send the Motor Controller CAN message (set values first)
@@ -455,21 +457,6 @@ bool MCuC::process() {
 
 #ifdef EVT_CORE_LOG_ENABLE
     halend = core::time::millis();
-
-//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-//                    "Starting: %d\n\r"
-//                    "Stepping: %d\n\r"
-//                    "Step Done: %d\n\r"
-//                    "Sending PT Can: %d\n\r",
-//                    halstart,
-//                    halstep,
-//                    halstepEnd,
-//                    halpowerTrainCAN);
-//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-//                    "Sending Motor Can: %d\n\r"
-//                    "Ended: %d\n\r",
-//                    halend,
-//                    halmotorControllerCan);
 #endif
 
     if (ucState.stateEnum != lastState) {
