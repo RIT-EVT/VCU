@@ -199,11 +199,6 @@ bool MCuC::process() {
     static bool interlock         = true;
     static int16_t throttleStatic = 0;
 
-    // todo: These 3 below are only for checking process trigger timing using saleae
-//    static io::GPIO::State state = io::GPIO::State::LOW;
-//    gpios.ledTwoGPIO.writePin(state);
-//    state = (state == io::GPIO::State::LOW ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-
 #ifdef EVT_CORE_LOG_ENABLE
     uint32_t halstart, halstep, halstepEnd, halpowerTrainCAN = 0, halmotorControllerCan, halend;
 
@@ -260,7 +255,7 @@ bool MCuC::process() {
     memcpy(modelInputs.Cooling_Loop_Temps_CAN, accessoryCanDataSafeBuffer.TMS_in_Temps, sizeof(accessoryCanDataSafeBuffer.TMS_in_Temps));
 
         // From LVSS over CanOpen
-    modelInputs.LVSS_ON_CAN              = lvssOn; // todo: this needs to be done on whether we are actively receiving messages from lvss ig?
+    modelInputs.LVSS_ON_CAN              = lvssOn; // todo: this needs to be done on whether we are actively receiving messages from lvss
     modelInputs.Acc_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.acc == 1;
     modelInputs.HIB_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hib == 1;
     modelInputs.HUDL_ON_CAN              = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hudl == 1;
