@@ -115,6 +115,9 @@ public:
     static constexpr uint32_t SIM_STATE_TPDO_NUM = 0x01;
     static constexpr uint32_t HEALTH_FLAG_TPDO_NUM = 0x02;
 
+    static constexpr uint32_t MC_FR_IDX = 0; // flowrate index of MC FR from TMS
+    static constexpr uint32_t BATT_FR_IDX = 1; // flowrate index of Battery FR from TMS
+
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
      */
@@ -213,8 +216,8 @@ public:
             int16_t LVSS_in_VicorCurrent;                  ///< LVSS (in) hv vicor current
             LVSSSwitchFaults_t LVSS_in_SwitchFaults;
             LVSSPowerState_t LVSS_in_EnableBoardSignal;     ///< LVSS (in) what LVSS is powering
-            uint16_t TMS_in_FlowRates[2];
-            uint16_t TMS_in_Temps[5];
+            int16_t TMS_in_FlowRates[2];
+            int16_t TMS_in_Temps[5];
         };
         struct {
             uint16_t outputs[1];

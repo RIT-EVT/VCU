@@ -228,12 +228,14 @@ bool MCuC::process() {
 
     // Set CAN inputs (values updated over CAN)
 
-        //unused inputs
+        //unused model inputs, and I dont have access to it, so we ignore
     modelInputs.Torque_Limit_Command1;
     modelInputs.Speed_Mode_Enable1;
     modelInputs.Speed_Command1;
     modelInputs.Direction_Command1;
     modelInputs.Rolling_Counter1;
+    modelInputs.MC_PS_Present_CAN;
+    modelInputs.Batt_PS_Present_CAN;
 
         // From Motor Controller
     modelInputs.MC_DC_State_CAN   = mcDischarge;
@@ -253,21 +255,18 @@ bool MCuC::process() {
     modelInputs.GFDB_Isolation_State_CAN = gfdbIsolationState;
 
         // From TMS over CanOpen
-    modelInputs.Batt_PS_Present_CAN      = accessoryCanDataSafeBuffer.TMS_in_battPS;
+    modelInputs.MC_Cooling_FR_CAN        = accessoryCanDataSafeBuffer.TMS_in_FlowRates[MC_FR_IDX];
+    modelInputs.Batt_Cooling_FR_CAN      = accessoryCanDataSafeBuffer.TMS_in_FlowRates[BATT_FR_IDX];
     memcpy(modelInputs.Cooling_Loop_Temps_CAN, accessoryCanDataSafeBuffer.TMS_in_Temps, sizeof(accessoryCanDataSafeBuffer.TMS_in_Temps));
-    modelInputs.MC_Cooling_FR_CAN        = accessoryCanDataSafeBuffer.TMS_in_mcCoolingFr;
-    modelInputs.Batt_Cooling_FR_CAN      = accessoryCanDataSafeBuffer.TMS_in_battCoolingFr; // Fr = flow rates
-    modelInputs.MC_PS_Present_CAN        = accessoryCanDataSafeBuffer.TMS_in_mcPSPresent; // PS = pump speed
-
 
         // From LVSS over CanOpen
-    modelInputs.LVSS_ON_CAN              = lvssOn;
-    modelInputs.Acc_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.acc;
-    modelInputs.HIB_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hib;
-    modelInputs.HUDL_ON_CAN              = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hudl;
-    modelInputs.TMS_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.tms;
-    modelInputs.GUB_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.gub;
-    modelInputs.Batt_12V_ON_CAN          = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.batt;
+    modelInputs.LVSS_ON_CAN              = lvssOn; // todo: this needs to be done on whether we are actively receiving messages from lvss ig?
+    modelInputs.Acc_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.acc == 1;
+    modelInputs.HIB_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hib == 1;
+    modelInputs.HUDL_ON_CAN              = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hudl == 1;
+    modelInputs.TMS_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.tms == 1;
+    modelInputs.GUB_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.gub == 1;
+    modelInputs.Batt_12V_ON_CAN          = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.batt == 1;
     modelInputs.Vicor_Input_Current_CAN  = accessoryCanDataSafeBuffer.LVSS_in_VicorCurrent;
 
     memcpy(modelInputs.LVSS_Temps_CAN, accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchTemperatures, sizeof(accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchTemperatures));
@@ -352,7 +351,7 @@ bool MCuC::process() {
 
     // use outputs
 
-    // Unused model signals so just ignore them
+    // Currently unused model signals so just ignore them
     modelOutputs.Batt_PS_Request_uC_CAN;
     modelOutputs.MC_PS_Request_uC_CAN;
     modelOutputs.Fault_to_MC_CAN;
