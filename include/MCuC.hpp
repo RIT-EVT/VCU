@@ -52,24 +52,42 @@ public:
     static constexpr io::Pin LS_SELF_TEST_IN_B_PIN = io::Pin::PA_6;
 
     /** Interlock Pin */
-    static constexpr io::Pin INTERLOCK_PIN = io::Pin::PA_7;
+    static constexpr io::Pin INTERLOCK_A_PIN = io::Pin::PA_7;
+    static constexpr io::Pin INTERLOCK_B_PIN = io::Pin::PB_0;
+
+    /** GPS PPS Pin */
+    static constexpr io::Pin GPS_PPS_PIN = io::Pin::PA_8;
 
     /** UART TX Pin */
-    static constexpr io::Pin UART_TX = io::Pin::PB_6;
+    static constexpr io::Pin UART_TX = io::Pin::PA_9;
     /** UART RX Pin */
-    static constexpr io::Pin UART_RX = io::Pin::PB_7;
+    static constexpr io::Pin UART_RX = io::Pin::PA_10;
 
     /** Accessory CAN RX pin */
     static constexpr io::Pin ACCESSORY_CAN_RX_PIN = io::Pin::PA_11;
     /** Accessory CAN TX pin */
     static constexpr io::Pin ACCESSORY_CAN_TX_PIN = io::Pin::PA_12;
 
+    /** SPI CS Pin */
+    static constexpr io::Pin SPI_CS_PIN = io::Pin::PA_15;
+
+    /** INS nRST pin */
+    static constexpr io::Pin INS_nRST_PIN = io::Pin::PB_1;
+
     /** Watchdog pin */
-    static constexpr io::Pin WATCHDOG_PIN = io::Pin::PA_15;
+    static constexpr io::Pin WATCHDOG_PIN = io::Pin::PB_2;
 
     /** LED Pins */
     static constexpr io::Pin FAULT_LED_PIN       = io::Pin::PB_4;
     static constexpr io::Pin SUPER_FAULT_LED_PIN = io::Pin::PB_5;
+
+    /** SYNC OUT pin */
+    static constexpr io::Pin SYNC_OUT_PIN = io::Pin::PB_6;
+
+    /** LED Pins */
+    static constexpr io::Pin LED_THREE_PIN = io::Pin::PC_7;
+    static constexpr io::Pin LED_TWO_PIN   = io::Pin::PC_8;
+    static constexpr io::Pin LED_ONE_PIN   = io::Pin::PC_9;
 
     /** Powertrain CAN RX Pin*/
     static constexpr io::Pin POWERTRAIN_CAN_RX_PIN = io::Pin::PB_12;
@@ -78,6 +96,9 @@ public:
 
     /** CAN Self Test Pin */
     static constexpr io::Pin CAN_SELF_TEST_PIN = io::Pin::PB_14;
+
+    /** INS EN Pin */
+    static constexpr io::Pin INS_EN_PIN = io::Pin::PB_15;
 
     /** Motor Controller Toggle Pins */
     static constexpr io::Pin MC_TOGGLE_NEGATIVE_PIN = io::Pin::PC_0;
@@ -92,16 +113,25 @@ public:
     /** LVSS Enable Pin */
     static constexpr io::Pin LVSS_ENABLE_PIN = io::Pin::PC_4;
 
+    /** Front Spin (F SPN) Pin */
+    static constexpr io::Pin F_SPN_PIN = io::Pin::PC_5;
+
     /** Microcontroller State Pins */
     static constexpr io::Pin UC_STATE_ZERO_PIN  = io::Pin::PC_6;
     static constexpr io::Pin UC_STATE_ONE_PIN   = io::Pin::PC_7;
     static constexpr io::Pin UC_STATE_TWO_PIN   = io::Pin::PC_8;
     static constexpr io::Pin UC_STATE_THREE_PIN = io::Pin::PC_9;
 
-    /** LED Pins */
-    static constexpr io::Pin LED_ONE_PIN   = io::Pin::PC_10;
-    static constexpr io::Pin LED_TWO_PIN   = io::Pin::PC_11;
-    static constexpr io::Pin LED_THREE_PIN = io::Pin::PC_12;
+    /** SPI Clock (SCK), MISO, and MOSI Pin */
+    static constexpr io::Pin SPI_SCK_PIN = io::Pin::PC_10;
+    static constexpr io::Pin SPI_MISO_PIN = io::Pin::PC_11;
+    static constexpr io::Pin SPI_MOSI_PIN = io::Pin::PC_12;
+
+    /** Back Spin (B SPN) Pin */
+    static constexpr io::Pin B_SPN_PIN = io::Pin::PC_13;
+
+    /** SYNC IN Pin */
+    static constexpr io::Pin SYNC_IN_PIN = io::Pin::PD_2;
 
     /**
      * Length of Heartbeat array (number of boards to listen for over CAN)
