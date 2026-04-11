@@ -210,14 +210,14 @@ public:
      */
     typedef union {
         struct {
-            LVSSPowerState_t LVSS_out_EnableBoardSignal;    ///< LVSS (out) Determines which boards it will send power to
-            uint16_t LVSS_in_PowerSwitchCurrents[6];        ///< LVSS (in) currents
-            uint16_t LVSS_in_PowerSwitchTemperatures[3];    ///< LVSS (in) temps
-            int16_t LVSS_in_VicorCurrent;                  ///< LVSS (in) hv vicor current
-            LVSSSwitchFaults_t LVSS_in_SwitchFaults;
-            LVSSPowerState_t LVSS_in_EnableBoardSignal;     ///< LVSS (in) what LVSS is powering
-            int16_t TMS_in_FlowRates[2];
-            int16_t TMS_in_Temps[5];
+            LVSSPowerState_t LVSS_out_EnableBoardSignal;    ///< LVSS (out): Determines which boards it will send power to
+            uint16_t LVSS_in_PowerSwitchCurrents[6];        ///< LVSS (in): switch currents
+            uint16_t LVSS_in_PowerSwitchTemperatures[3];    ///< LVSS (in): switch temps
+            int16_t LVSS_in_VicorCurrent;                  ///< LVSS (in): hv vicor current
+            LVSSSwitchFaults_t LVSS_in_SwitchFaults;        ///< LVSS (in): switch faults
+            LVSSPowerState_t LVSS_in_EnableBoardSignal;     ///< LVSS (in): what LVSS is powering
+            int16_t TMS_in_FlowRates[2]; ///< TMS (in): The cooling loop flow rates.
+            int16_t TMS_in_Temps[5]; ///< TMS (in): The cooling loop temperatures.
         };
         struct {
             uint16_t outputs[1];
@@ -399,20 +399,9 @@ private:
     int16_t bmsCellVoltages[BMS_CELL_VOLT_LEN] = {0};    ///< CAN (BMS): The cell voltages.
     bool bmsContactorClosed      = false;           ///< CAN (BMS): Whether or not the contactor is closed.
     uint8_t gfdbIsolationState   = 0;               ///< CAN (GFDB): The isolation state int value.
-    uint8_t battPSPresent        = 0;               ///< CAN (TMS): The battery's pump speed.
-    int32_t coolingLoopTemps[5]  = {0};             ///< CAN (TMS): The cooling loop temperatures.
-    int16_t mcCoolingFR          = 0;               ///< CAN (TMS): The MC's cooling flow rate.
-    int16_t battCoolingFR        = 0;               ///< CAN (TMS): The battery's cooling flow rate.
-    uint8_t mcPSPresent          = 0;               ///< CAN (TMS): The MC pump speed.
-    bool lvssOn                  = false;           ///< CAN (LVSS): Whether or not the LVSS is on. any message from lvss
-    bool hibOn                   = false;           ///< CAN (LVSS): Whether or not the HIB is on.
-    bool hudlOn                  = false;           ///< CAN (LVSS): Whether or not the HUDL is on.
-    bool tmsOn                   = false;           ///< CAN (LVSS): Whether or not the TMS is on.
-    bool gubOn                   = false;           ///< CAN (LVSS): Whether or not the GUB is on.
-    bool batt12vOn               = false;           ///< CAN (LVSS): Whether or not the 12V battery is on.
-    int16_t vicorInputCurrent    = 0;               ///< CAN (LVSS): The Vicor's input current.
-    int32_t lvssTemps[6]         = {0};             ///< CAN (LVSS): The LVSS temperatures.
-    int16_t lvssCurrents[6]      = {0};             ///< CAN (LVSS): The LVSS currents.
+
+    // lvssOn is decided if any message from LVSS received in last 750ms
+    bool lvssOn                  = false;           ///< LVSS: Whether or not the LVSS is on.
 
     /**
      * Array holding number of messages received from each of the other boards.
