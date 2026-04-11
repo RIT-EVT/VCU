@@ -115,8 +115,8 @@ public:
     static constexpr uint32_t SIM_STATE_TPDO_NUM = 0x01;
     static constexpr uint32_t HEALTH_FLAG_TPDO_NUM = 0x02;
 
-    static constexpr uint32_t MC_FR_IDX = 0; // flowrate index of MC FR from TMS
-    static constexpr uint32_t BATT_FR_IDX = 1; // flowrate index of Battery FR from TMS
+    static constexpr uint32_t MC_FR_IDX = 0; // flowrate index of MC FR from TMS on Accessory CAN
+    static constexpr uint32_t BATT_FR_IDX = 1; // flowrate index of Battery FR from TMS on Accessory CAN
 
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
@@ -515,6 +515,8 @@ private:
         TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 5000),
         TRANSMIT_PDO_SETTINGS_OBJECT_18XX(SIM_STATE_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
         TRANSMIT_PDO_SETTINGS_OBJECT_18XX(HEALTH_FLAG_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
+
+        // Send EnableBoardSignal to LVSS
         TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x00, 0x01),
         TRANSMIT_PDO_MAPPING_ENTRY_1AXX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
 
@@ -525,9 +527,8 @@ private:
         // Send health flags out when triggered by code
         TRANSMIT_PDO_MAPPING_START_KEY_1AXX(HEALTH_FLAG_TPDO_NUM, 0x01),
         TRANSMIT_PDO_MAPPING_ENTRY_1AXX(HEALTH_FLAG_TPDO_NUM, 0x01, PDO_MAPPING_UNSIGNED16),
+
         // data links
-        // LVSS!!!!
-        // todo: need to add CANOPEN transmits
         // TPDO Datalinks
         DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(0x00), 0x01),
         DATA_LINK_21XX(LINK_TPDO_NUMBER(0x00), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal.val),
@@ -538,7 +539,8 @@ private:
         DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(HEALTH_FLAG_TPDO_NUM), 0x01),
         DATA_LINK_21XX(LINK_TPDO_NUMBER(HEALTH_FLAG_TPDO_NUM), 0x01, CO_TUNSIGNED16, &healthFlags.flags),
 
-        // HV Current Data
+        // RPDO Datalinks
+        //------LVSS--------//
         DATA_LINK_START_KEY_21XX(LINK_RPDO_NUMBER(0x00), 0x04),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x00), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[0]),
         DATA_LINK_21XX(LINK_RPDO_NUMBER(0x00), 0x02, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents[1]),
