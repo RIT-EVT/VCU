@@ -267,7 +267,7 @@ bool MCuC::process() {
     memcpy(modelInputs.LVSS_Temps_CAN, accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchTemperatures, sizeof(accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchTemperatures));
     memcpy(modelInputs.LVSS_Currents_CAN, accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents, sizeof(accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents));
 
-    // todo: test hardcoding
+    // todo: hardcoding for testing; remove when done
     modelInputs.Interlock                = interlock;
     modelInputs.LVSS_ON_CAN              = false;
     modelInputs.LVSS_ON_CAN              = false;
@@ -396,7 +396,7 @@ bool MCuC::process() {
 
     // Set CanOpen output data
 
-    // todo: probs rework this somehow... Dont send enable signals from model if there was a switch fault (current or temp) on that switch
+    // todo: maybe clean this up somehow... Dont send enable signals from model if there was a switch fault (current or temp) on that switch
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.batt = modelOutputs.Batt_12V_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.battCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch0TempFault);
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hib = modelOutputs.HIB_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.hibCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch0TempFault);
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.tms = modelOutputs.TMS_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.tmsCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch1TempFault);
@@ -404,7 +404,6 @@ bool MCuC::process() {
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.acc = modelOutputs.Acc_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.accCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.gub = modelOutputs.GUB_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.gubCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
 
-    // todo: If needed, look into speeding up cycle time by only sending powertrain CAN messages if something changes
     // Send the Motor Controller CAN message (set values first)
     powertrainCAN.setMCAll(modelOutputs.Torque_Request_CAN,
                            modelOutputs.Speed_Command_uC_CAN,
