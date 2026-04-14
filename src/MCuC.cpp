@@ -101,6 +101,7 @@ void MCuC::updateCanOpenNodeHeartbeat(uint32_t nodeId) {
     switch (nodeId) {
     case LVSS_NODE_ID:
         slot = 0;
+        lvssLastMessageTick = rtos::getTick();
         break;
     case TMS_NODE_ID:
         slot = 1;
@@ -255,7 +256,9 @@ bool MCuC::process() {
     memcpy(modelInputs.Cooling_Loop_Temps_CAN, accessoryCanDataSafeBuffer.TMS_in_Temps, sizeof(accessoryCanDataSafeBuffer.TMS_in_Temps));
 
         // From LVSS over CanOpen
-    modelInputs.LVSS_ON_CAN              = lvssOn; // todo: this needs to be done on whether we are actively receiving messages from lvss
+    uint32_t tickDiff = rtos::getTick() - lvssLastMessageTick;
+
+    modelInputs.LVSS_ON_CAN              = (tickDiff < MS_TO_TICKS(LVSS_MESSAGE_LIFESPAN));
     modelInputs.Acc_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.acc == 1;
     modelInputs.HIB_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hib == 1;
     modelInputs.HUDL_ON_CAN              = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hudl == 1;

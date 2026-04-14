@@ -400,9 +400,6 @@ private:
     bool bmsContactorClosed      = false;           ///< CAN (BMS): Whether or not the contactor is closed.
     uint8_t gfdbIsolationState   = 0;               ///< CAN (GFDB): The isolation state int value.
 
-    // lvssOn is decided if any message from LVSS received in last 750ms
-    bool lvssOn                  = false;           ///< LVSS: Whether or not the LVSS is on.
-
     /**
      * Array holding number of messages received from each of the other boards.
      * Used to hold data before sending it to Simulink model for heartbeat checking.
@@ -421,6 +418,12 @@ private:
     bool powertrainCanSelfTestOut =
         false; ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over powertrainCAN
 
+    // Tick on which we received most recent message from LVSS on CanOpen
+    uint32_t lvssLastMessageTick = 0;
+
+    // todo: this will need to be figured out what value works
+    static constexpr uint32_t LVSS_MESSAGE_LIFESPAN = 750; // how long after receiving a CanOpen msg from LVSS to consider it "enabled"
+
     // Model output data (struct)
     vcu::MCuC_Model::ExtY_MCuC_T modelOutputs;
 
@@ -431,7 +434,6 @@ private:
     static constexpr uint8_t LVSS_NODE_ID = 1;
     static constexpr uint8_t TMS_NODE_ID  = 2;
     static constexpr uint8_t IMU_NODE_ID  = 5;
-
     /**
      * The size of the Object Dictionary
      */
