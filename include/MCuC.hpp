@@ -89,9 +89,9 @@ public:
     static constexpr io::Pin LED_TWO_PIN   = io::Pin::PC_8;
     static constexpr io::Pin LED_ONE_PIN   = io::Pin::PC_9;
 
-    /** Powertrain CAN RX Pin*/
+    /** Powertrain CAN RX Pin */
     static constexpr io::Pin POWERTRAIN_CAN_RX_PIN = io::Pin::PB_12;
-    /** Powertrain CAN TX Pin*/
+    /** Powertrain CAN TX Pin */
     static constexpr io::Pin POWERTRAIN_CAN_TX_PIN = io::Pin::PB_13;
 
     /** CAN Self Test Pin */
