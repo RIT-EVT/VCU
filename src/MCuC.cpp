@@ -150,7 +150,7 @@ void MCuC::setHealthFlags(bool modelSpeedErr, bool modelRanErr, bool ptcanRanErr
     healthFlags.gfdbReqNotRun = gfdbReqNotRun;
 }
 
-// todo: for testing purposes; remove when done
+/* For debug printing of state */
 inline const char* stateToString(UC_State state) {
     switch (state) {
     case UC_State::Preset:
@@ -204,6 +204,8 @@ bool MCuC::process() {
     uint32_t halstart, halstep, halstepEnd, halpowerTrainCAN = 0, halmotorControllerCan, halend;
 
     halstart = core::time::millis();
+
+//    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "State: %s", stateToString(ucState.stateEnum));
 #endif
 
     bufferMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
@@ -225,11 +227,6 @@ bool MCuC::process() {
     // Set CAN inputs (values updated over CAN)
 
         //unused model inputs, and I dont have access to it, so we ignore
-    modelInputs.Torque_Limit_Command1;
-    modelInputs.Speed_Mode_Enable1;
-    modelInputs.Speed_Command1;
-    modelInputs.Direction_Command1;
-    modelInputs.Rolling_Counter1;
     modelInputs.MC_PS_Present_CAN;
     modelInputs.Batt_PS_Present_CAN;
 
@@ -301,14 +298,18 @@ bool MCuC::process() {
 
         if (modelOutputs.uC_State == UC_State::MC_Ready) {
             modelInputs.Brake_CAN    = true;
-            modelInputs.Throttle_CAN = 0;
+//            modelInputs.Throttle_CAN = 0;
+//            modelInputs.Start_CAN = true;
             forwardStatic            = true;
         }
 
-        modelInputs.Forward_EN_CAN = forwardStatic;
+//        modelInputs.Forward_EN_CAN = forwardStatic;
+
+//        log::LOGGER.log(log::Logger::LogLevel::DEBUG, "state: %s;;; FE: %d;;; ST: %d", stateToString(modelOutputs.uC_State), modelInputs.Forward_EN_CAN, modelInputs.Start_CAN);
 
         if (modelOutputs.uC_State == UC_State::MC_Active) {
-            modelInputs.Throttle_CAN = throttleStatic++;
+//            modelInputs.Throttle_CAN = throttleStatic++;
+            modelInputs.MC_VSM_State_CAN = MC_VSM_State::Motor_Running;
         }
 
         if (modelOutputs.uC_State == UC_State::MC_Discharging) {
@@ -317,7 +318,8 @@ bool MCuC::process() {
 
         if (modelOutputs.uC_State == UC_State::Contactor_Open) {
             forwardStatic                = false;
-            modelInputs.Forward_EN_CAN   = false;
+//            modelInputs.Forward_EN_CAN   = false;
+            modelInputs.MC_DC_State_CAN = MC_DC_State::Active;
             modelInputs.MC_VSM_State_CAN = MC_VSM_State::Start;
             seenMCInit                   = false;
         }
@@ -362,7 +364,6 @@ bool MCuC::process() {
     gpios.lvssEnableGPIO.writePin(modelOutputs.LVSS_EN_uC ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.watchdogGPIO.writePin(modelOutputs.Watchdog ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
-    gpios.canSelfTestGPIO.writePin(modelOutputs.CAN_Self_Test ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.lsSelfTestOutGPIO.writePin(modelOutputs.LS_Self_Test_Out ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.mcSelfTestGPIO.writePin(modelOutputs.MC_Self_Test ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
@@ -393,7 +394,7 @@ bool MCuC::process() {
     }
 
     // Power is going be gone soon
-    if (modelOutputs.Shutdown) {
+    if (modelOutputs.Shutdown_CAN) {
         powertrainCAN.sendShutdownWarningMessage();
     }
 
@@ -416,6 +417,13 @@ bool MCuC::process() {
                            modelOutputs.Speed_Mode_Enable_uC_CAN,
                            modelOutputs.Rolling_Counter_uC_CAN,
                            modelOutputs.Torque_Limit_Command_uC_CAN);
+
+    gpios.faultLEDGPIO.writePin(modelOutputs.uC_State == UC_State::MC_Ready ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.superFaultLEDGPIO.writePin(modelOutputs.uC_State == UC_State::MC_Ready ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+
+//    static io::GPIO::State s = io::GPIO::State::LOW;
+//    gpios.superFaultLEDGPIO.writePin(s);
+//    s = s == io::GPIO::State::LOW ? io::GPIO::State::HIGH : io::GPIO::State::LOW;
 
     io::CAN::CANStatus mcMessageStatus = powertrainCAN.sendMCMessage();
 
