@@ -7,9 +7,9 @@
 //
 // Code generated for Simulink model 'MCuC'.
 //
-// Model version                  : 5.16
+// Model version                  : 5.54
 // Simulink Coder version         : 25.2 (R2025b) 28-Jul-2025
-// C/C++ source code generated on : Mon Nov 17 21:16:21 2025
+// C/C++ source code generated on : Fri Apr 24 15:28:40 2026
 //
 // Target selection: ert.tlc
 // Embedded hardware selection: STMicroelectronics->ST10/Super10
@@ -113,8 +113,6 @@ namespace vcu
             bool MC_Uncharged;         // '<Root>/MCuC_Chart'
             bool Activate_ESTOP;       // '<Root>/MCuC_Chart'
             bool Activate_Fault;       // '<Root>/MCuC_Chart'
-            bool CAN_ST_Complete;      // '<Root>/MCuC_Chart'
-            bool LS_ST_Complete;       // '<Root>/MCuC_Chart'
             bool MC_ST_Complete;       // '<Root>/MCuC_Chart'
             bool Activate_Super_Fault; // '<Root>/MCuC_Chart'
             bool isNotInit;            // '<Root>/MCuC_Chart'
@@ -130,18 +128,18 @@ namespace vcu
             bool Start_CAN;            // '<Root>/Start_CAN'
             bool Interlock;            // '<Root>/Interlock'
             bool LVSS_ON_CAN;          // '<Root>/LVSS_ON_CAN'
-            bool Brake_CAN;            // '<Root>/Brake_CAN'
+            int16_t Brake_CAN;         // '<Root>/Brake_CAN'
             bool Forward_EN_CAN;       // '<Root>/Forward_EN_CAN'
             MC_VSM_State MC_VSM_State_CAN;// '<Root>/MC_VSM_State_CAN'
             MC_DC_State MC_DC_State_CAN;// '<Root>/MC_DC_State_CAN'
             int16_t Throttle_CAN;      // '<Root>/Throttle_CAN'
             bool BMS_Contactor_Closed_CAN;// '<Root>/BMS_Contactor_Closed_CAN'
-            int32_t BMS_Cell_Temps_CAN[45];// '<Root>/BMS_Cell_Temps_CAN'
+            int16_t BMS_Cell_Temps_CAN[45];// '<Root>/BMS_Cell_Temps_CAN'
             int16_t BMS_Cell_Voltages_CAN[100];// '<Root>/BMS_Cell_Voltages_CAN' 
             uint8_t GFDB_Isolation_State_CAN;// '<Root>/GFDB_Isolation_State_CAN' 
             uint8_t MC_PS_Present_CAN; // '<Root>/MC_PS_Present_CAN'
             uint8_t Batt_PS_Present_CAN;// '<Root>/Batt_PS_Present_CAN'
-            int32_t Cooling_Loop_Temps_CAN[5];// '<Root>/Cooling_Loop_Temps_CAN' 
+            uint32_t Cooling_Loop_Temps_CAN[5];// '<Root>/Cooling_Loop_Temps_CAN' 
             int16_t MC_Cooling_FR_CAN; // '<Root>/MC_Cooling_FR_CAN'
             int16_t Batt_Cooling_FR_CAN;// '<Root>/Batt_Cooling_FR_CAN'
             bool HIB_Comparison_Fault_CAN;// '<Root>/HIB_Comparison_Fault_CAN'
@@ -152,16 +150,17 @@ namespace vcu
             bool Acc_ON_CAN;           // '<Root>/Acc_ON_CAN'
             bool Batt_12V_ON_CAN;      // '<Root>/Batt_12V_ON_CAN'
             int16_t Vicor_Input_Current_CAN;// '<Root>/Vicor_Input_Current_CAN'
-            int32_t LVSS_Temps_CAN[6]; // '<Root>/LVSS_Temps_CAN'
+            int16_t LVSS_Temps_CAN[6]; // '<Root>/LVSS_Temps_CAN'
             int16_t LVSS_Currents_CAN[6];// '<Root>/LVSS_Currents_CAN'
             uint32_t Heartbeats_CAN[5];// '<Root>/Heartbeats_CAN'
-            int16_t Direction_Command1;// '<Root>/Direction_Command1'
-            int16_t Rolling_Counter1;  // '<Root>/Rolling_Counter1'
-            int16_t Speed_Command1;    // '<Root>/Speed_Command1'
-            int16_t Speed_Mode_Enable1;// '<Root>/Speed_Mode_Enable1'
-            int16_t Torque_Limit_Command1;// '<Root>/Torque_Limit_Command1'
+            bool Direction_Command;    // '<Root>/Direction_Command'
+            int8_t Rolling_Counter;    // '<Root>/Rolling_Counter'
+            int16_t Speed_Command;     // '<Root>/Speed_Command'
+            bool Speed_Mode_Enable;    // '<Root>/Speed_Mode_Enable'
+            int16_t Torque_Limit_Command;// '<Root>/Torque_Limit_Command'
             bool LS_Self_Test_In_A;    // '<Root>/LS_Self_Test_In_A'
             bool LS_Self_Test_In_B;    // '<Root>/LS_Self_Test_In_B'
+            bool State_Handshake;      // '<Root>/State_Handshake'
         };
 
         // External outputs (root outports fed by signals with default storage)
@@ -174,7 +173,6 @@ namespace vcu
             bool MC_EN_uC;             // '<Root>/MC_EN_uC'
             bool LED[3];               // '<Root>/LED'
             bool LS_Self_Test_Out;     // '<Root>/LS_Self_Test_Out'
-            bool CAN_Self_Test;        // '<Root>/CAN_Self_Test'
             bool MC_Self_Test;         // '<Root>/MC_Self_Test'
             bool Inverter_EN_uC_CAN;   // '<Root>/Inverter_EN_uC_CAN'
             bool Fault_to_MC_CAN;      // '<Root>/Fault_to_MC_CAN'
@@ -189,12 +187,12 @@ namespace vcu
             bool GUB_EN_uC_CAN;        // '<Root>/GUB_EN_uC_CAN'
             bool Acc_EN_uC_CAN;        // '<Root>/Acc_EN_uC_CAN'
             bool Batt_12V_EN_uC_CAN;   // '<Root>/Batt_12V_EN_uC_CAN'
-            int16_t Direction_Command_uC_CAN;// '<Root>/Direction_Command_uC_CAN' 
-            int16_t Rolling_Counter_uC_CAN;// '<Root>/Rolling_Counter_uC_CAN'
+            bool Direction_Command_uC_CAN;// '<Root>/Direction_Command_uC_CAN'
+            int8_t Rolling_Counter_uC_CAN;// '<Root>/Rolling_Counter_uC_CAN'
             int16_t Speed_Command_uC_CAN;// '<Root>/Speed_Command_uC_CAN'
-            int16_t Speed_Mode_Enable_uC_CAN;// '<Root>/Speed_Mode_Enable_uC_CAN' 
+            bool Speed_Mode_Enable_uC_CAN;// '<Root>/Speed_Mode_Enable_uC_CAN'
             int16_t Torque_Limit_Command_uC_CAN;// '<Root>/Torque_Limit_Command_uC_CAN' 
-            bool Shutdown;             // '<Root>/Shutdown'
+            bool Shutdown_CAN;         // '<Root>/Shutdown_CAN'
         };
 
         // Real-time Model Data Structure
@@ -258,11 +256,18 @@ namespace vcu
         DW_MCuC_T MCuC_DW;
 
         // private member function(s) for subsystem '<Root>'
+        void MCuC_Contactor_Closed(void);
+        void MCuC_LVSS_MC_Shutdown(void);
+        void MCuC_LVSS_MC_Startup(void);
         void MCuC_MC_Active(void);
-        void MCuC_MC_Discharging(void);
+        void MCuC_MC_Discharging(const bool *LogicalOperator, const bool *OR);
         void MCuC_MC_Init(void);
+        void MCuC_MC_Ready(const bool *AND);
+        void MCuC_t0(void);
+        void MCuC_t2(void);
         void MCuC_exit_internal_Logic(void);
-        void MCuC_Logic(const bool *AND);
+        void MCuC_Logic(const bool *LogicalOperator, const bool *OR, const bool *
+                        AND);
 
         // Real-Time Model
         RT_MODEL_MCuC_T MCuC_M;
@@ -298,8 +303,9 @@ namespace vcu
 //  '<S6>'   : 'MCuC/Compare To Constant5'
 //  '<S7>'   : 'MCuC/Compare To Zero'
 //  '<S8>'   : 'MCuC/Compare To Zero1'
-//  '<S9>'   : 'MCuC/Cooling_Control_Chart'
-//  '<S10>'  : 'MCuC/MCuC_Chart'
+//  '<S9>'   : 'MCuC/Compare To Zero2'
+//  '<S10>'  : 'MCuC/Cooling_Control_Chart'
+//  '<S11>'  : 'MCuC/MCuC_Chart'
 
 #endif                                 // MCuC_Model_h_
 

@@ -430,7 +430,7 @@ private:
     bool bmsContactorClosed      = false;           ///< CAN (BMS): Whether or not the contactor is closed.
     uint8_t gfdbIsolationState   = 0;               ///< CAN (GFDB): The isolation state int value.
 
-    // lvssOn is decided if any message from LVSS received in last 750ms
+    // lvssOn is decided if any message from LVSS received in last Xms (X being some number)
     bool lvssOn                  = false;           ///< LVSS: Whether or not the LVSS is on.
 
     /**
@@ -450,6 +450,12 @@ private:
         false; ///< GPIO: controls mcTogglePositive and mcToggleNegative to enable or disable the motor controller
     bool powertrainCanSelfTestOut =
         false; ///< CAN (Hardmon): Whether a self-test message should be sent to the Hardmon over powertrainCAN
+
+    // Tick on which we received most recent message from LVSS on CanOpen
+    uint32_t lvssLastMessageTick = 0;
+
+    // todo: this will need to be figured out what value works
+    static constexpr uint32_t LVSS_MESSAGE_LIFESPAN = 250; // how long after receiving a CanOpen msg from LVSS to consider it "enabled" (in ms)
 
     // Model output data (struct)
     vcu::MCuC_Model::ExtY_MCuC_T modelOutputs;
@@ -531,7 +537,7 @@ private:
 
 
         // TPDO Setting
-        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 5000),
+        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 50),
         TRANSMIT_PDO_SETTINGS_OBJECT_18XX(SIM_STATE_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
         TRANSMIT_PDO_SETTINGS_OBJECT_18XX(HEALTH_FLAG_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
 

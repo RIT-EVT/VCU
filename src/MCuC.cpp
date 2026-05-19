@@ -101,6 +101,7 @@ void MCuC::updateCanOpenNodeHeartbeat(uint32_t nodeId) {
     switch (nodeId) {
     case LVSS_NODE_ID:
         slot = 0;
+        lvssLastMessageTick = rtos::getTick();
         break;
     case TMS_NODE_ID:
         slot = 1;
@@ -218,11 +219,6 @@ bool MCuC::process() {
     // Set CAN inputs (values updated over CAN)
 
         //unused model inputs, and I dont have access to it, so we ignore
-    modelInputs.Torque_Limit_Command1;
-    modelInputs.Speed_Mode_Enable1;
-    modelInputs.Speed_Command1;
-    modelInputs.Direction_Command1;
-    modelInputs.Rolling_Counter1;
     modelInputs.MC_PS_Present_CAN;
     modelInputs.Batt_PS_Present_CAN;
 
@@ -249,6 +245,9 @@ bool MCuC::process() {
     memcpy(modelInputs.Cooling_Loop_Temps_CAN, accessoryCanDataSafeBuffer.TMS_in_Temps, sizeof(accessoryCanDataSafeBuffer.TMS_in_Temps));
 
         // From LVSS over CanOpen
+    uint32_t tickDiff = rtos::getTick() - lvssLastMessageTick;
+
+    modelInputs.LVSS_ON_CAN              = (tickDiff < MS_TO_TICKS(LVSS_MESSAGE_LIFESPAN));
     modelInputs.LVSS_ON_CAN              = lvssOn; // todo: this needs to be done on whether we are actively receiving messages from lvss
     modelInputs.Acc_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.acc == 1;
     modelInputs.HIB_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hib == 1;
@@ -268,7 +267,6 @@ bool MCuC::process() {
         modelInputs.Heartbeats_CAN[i] = h[i]++;
     }
     hbMutex.put();
-
 
 //    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, ":::: %d", modelOutputs.LVSS_EN_uC);
 
@@ -305,7 +303,6 @@ bool MCuC::process() {
     gpios.lvssEnableGPIO.writePin(modelOutputs.LVSS_EN_uC ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.watchdogGPIO.writePin(modelOutputs.Watchdog ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
-    gpios.canSelfTestGPIO.writePin(modelOutputs.CAN_Self_Test ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.lsSelfTestOutGPIO.writePin(modelOutputs.LS_Self_Test_Out ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.mcSelfTestGPIO.writePin(modelOutputs.MC_Self_Test ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
@@ -336,7 +333,7 @@ bool MCuC::process() {
     }
 
     // Power is going be gone soon
-    if (modelOutputs.Shutdown) {
+    if (modelOutputs.Shutdown_CAN) {
         powertrainCAN.sendShutdownWarningMessage();
     }
 
