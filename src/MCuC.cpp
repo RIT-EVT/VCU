@@ -63,6 +63,8 @@ void MCuC::handlePowertrainCanMessage(io::CANMessage& message) {
             break;
         }
         case dev::PowertrainCAN::GFDB_INCOMING_ID: {
+            // Only parse if GFDB message received was for Isolation State
+            if (message.getPayload()[0] != 0xE0) { break; }
             gfdbIsolationState = boards::parseGFDBMessage(message).isolationState;
             break;
         }
