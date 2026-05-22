@@ -49,7 +49,7 @@ namespace log  = core::log;
 
 /// How often to send the isolation state request to the ground fault detection board
 #define GFDB_TRIGGER_START              MS_TO_TICKS(100)
-#define GFDB_REQUEST_TIMER_TRIGGER_RATE MS_TO_TICKS(25)
+#define GFDB_REQUEST_TIMER_TRIGGER_RATE MS_TO_TICKS(100)
 
 // Model Thread Parameters
 #define MODEL_THREAD_STACK_SIZE        1024
