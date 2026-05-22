@@ -99,6 +99,9 @@ constexpr uint32_t PT_CAN_ERR_MASK        = 1 << PTCAN_ERR_LS;
 constexpr uint32_t CANOPEN_THREAD_MASK    = 1 << CANOPEN_THREAD_LS;
 constexpr uint32_t GFDB_TIMER_THREAD_MASK = 1 << GFDB_TIMER_THREAD_LS;
 
+constexpr uint32_t LVSS_OUT_CHANGED_MASK = 1 << 14;
+constexpr uint32_t VCU_STATE_CHANGE_MASK = 1 << 15;
+
 constexpr uint32_t FULL_HEALTH_THREAD_MASK = MODEL_THREAD_SLOW_MASK | MODEL_THREAD_MASK
                                             | PT_CAN_THREAD_MASK | PT_CAN_ERR_MASK
                                             | CANOPEN_THREAD_MASK | GFDB_TIMER_THREAD_MASK;
@@ -492,11 +495,20 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         uint32_t flagOutput;
         args->triggerFlag->get(MODEL_TRIGGER_FLAG_MASK, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
 
-        bool result = args->mcuc->process();
+        args->mcuc->process(args->triggerFlag);
 
         // If state has changed, alert canOpen to send the flags when it gets the chance
-        if (result) {
+        uint32_t current;
+        args->triggerFlag->getCurrentFlags(&current);
+        if (current & VCU_STATE_CHANGE_MASK) {
             io::alertTPDO(args->accessoryCanNode, vcu::MCuC::SIM_STATE_TPDO_NUM);
+            args->triggerFlag->clear(VCU_STATE_CHANGE_MASK);
+        }
+
+        // If LVSS enable signal has been changed, alert canOpen
+        if (current & LVSS_OUT_CHANGED_MASK) {
+            io::alertTPDO(args->accessoryCanNode, 0);
+            args->triggerFlag->clear(LVSS_OUT_CHANGED_MASK);
         }
 
         args->triggerFlag->set(MODEL_THREAD_MASK); // Mark as ran

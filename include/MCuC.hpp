@@ -8,6 +8,7 @@
 #include <core/io/types/CANMessage.hpp>
 #include <core/rtos/Initializable.hpp>
 #include <core/rtos/Mutex.hpp>
+#include <core/rtos/eventflags.hpp>
 
 #include <PowertrainCAN.hpp>
 #include <models/MCuC_Model.hpp>
@@ -112,11 +113,15 @@ public:
     static constexpr uint8_t BMS_CELL_TEMP_LEN = 45;
     static constexpr uint8_t BMS_CELL_VOLT_LEN = 100;
 
+    static constexpr uint32_t LVSS_POWER_CMD_TPDO_NUM = 0x00;
     static constexpr uint32_t SIM_STATE_TPDO_NUM = 0x01;
     static constexpr uint32_t HEALTH_FLAG_TPDO_NUM = 0x02;
 
     static constexpr uint32_t MC_FR_IDX = 0; // flowrate index of MC FR from TMS on Accessory CAN
     static constexpr uint32_t BATT_FR_IDX = 1; // flowrate index of Battery FR from TMS on Accessory CAN
+
+    static constexpr uint32_t LVSS_OUT_CHANGED_MASK = 1 << 14;
+    static constexpr uint32_t VCU_STATE_CHANGE_MASK = 1 << 15;
 
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
@@ -288,7 +293,7 @@ public:
      * Runs one step of the Simulink model, including processing and handling inputs and outputs of the model.
      * @return boolean if the state has been updated, and thus needs to be sent over canOpen.
      */
-    bool process();
+    void process(core::rtos::EventFlags* flags);
 
     // override methods from Initializable
     rtos::TXError init(rtos::BytePoolBase& pool) override;
@@ -503,13 +508,13 @@ private:
 
 
         // TPDO Setting
-        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 50),
+        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(LVSS_POWER_CMD_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 1000),
         TRANSMIT_PDO_SETTINGS_OBJECT_18XX(SIM_STATE_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
         TRANSMIT_PDO_SETTINGS_OBJECT_18XX(HEALTH_FLAG_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
 
         // Send EnableBoardSignal to LVSS
-        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x00, 0x01),
-        TRANSMIT_PDO_MAPPING_ENTRY_1AXX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
+        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(LVSS_POWER_CMD_TPDO_NUM, 0x01),
+        TRANSMIT_PDO_MAPPING_ENTRY_1AXX(LVSS_POWER_CMD_TPDO_NUM, 0x01, PDO_MAPPING_UNSIGNED16),
 
         // Send simulink state out when triggered by code
         TRANSMIT_PDO_MAPPING_START_KEY_1AXX(SIM_STATE_TPDO_NUM, 0x01),
@@ -521,8 +526,8 @@ private:
 
         // data links
         // TPDO Datalinks
-        DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(0x00), 0x01),
-        DATA_LINK_21XX(LINK_TPDO_NUMBER(0x00), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal.val),
+        DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(LVSS_POWER_CMD_TPDO_NUM), 0x01),
+        DATA_LINK_21XX(LINK_TPDO_NUMBER(LVSS_POWER_CMD_TPDO_NUM), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal.val),
 
         DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(SIM_STATE_TPDO_NUM), 0x01),
         DATA_LINK_21XX(LINK_TPDO_NUMBER(SIM_STATE_TPDO_NUM), 0x01, CO_TUNSIGNED16, &ucState),

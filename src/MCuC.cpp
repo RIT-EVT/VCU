@@ -186,12 +186,13 @@ inline const char* stateToString(UC_State state) {
     }
 }
 
-bool MCuC::process() {
+void MCuC::process(core::rtos::EventFlags* flags) {
     // The mcEnable needs to do a pulse every time it switches, so keep track of last mcEnable value
     static bool mcEnableLast = false;
 
-    // Need to send canOpen message on state change, so keep track of lastState
+    // Need to send canOpen message on state change & lvss power state change, so keep track of previous states
     static UC_State lastState = UC_State::Preset;
+    static LVSSPowerState_t lvssPowerStateLast = {0};
 
     // todo: debugging static vars for manually tricking simulink model into going through full state machine
     static bool firstStep         = true;
@@ -400,6 +401,11 @@ bool MCuC::process() {
 
     // Set CanOpen output data
 
+    if (ucState.stateEnum != lastState) {
+        lastState = ucState.stateEnum;
+        flags->set(VCU_STATE_CHANGE_MASK);
+    }
+
     // todo: maybe clean this up somehow... Dont send enable signals from model if there was a switch fault (current or temp) on that switch
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.batt = modelOutputs.Batt_12V_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.battCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch0TempFault);
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hib = modelOutputs.HIB_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.hibCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch0TempFault);
@@ -407,6 +413,11 @@ bool MCuC::process() {
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hudl = modelOutputs.HUDL_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.hudlCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch1TempFault);
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.acc = modelOutputs.Acc_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.accCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.gub = modelOutputs.GUB_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.gubCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
+
+    if (accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.val != lvssPowerStateLast.val) {
+        lvssPowerStateLast.val = accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.val;
+        flags->set(LVSS_OUT_CHANGED_MASK);
+    }
 
     // Send the Motor Controller CAN message (set values first)
     powertrainCAN.setMCAll(modelOutputs.Torque_Request_CAN,
@@ -463,12 +474,6 @@ bool MCuC::process() {
     halend = core::time::millis();
 #endif
 
-    if (ucState.stateEnum != lastState) {
-        lastState = ucState.stateEnum;
-        return true;
-    } else {
-        return false;
-    }
 }
 
 } // namespace vcu
