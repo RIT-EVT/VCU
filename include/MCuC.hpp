@@ -8,7 +8,7 @@
 #include <core/io/types/CANMessage.hpp>
 #include <core/rtos/Initializable.hpp>
 #include <core/rtos/Mutex.hpp>
-#include <core/rtos/eventflags.hpp>
+#include <core/rtos/EventFlags.hpp>
 
 #include <PowertrainCAN.hpp>
 #include <models/MCuC_Model.hpp>
