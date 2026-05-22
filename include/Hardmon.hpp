@@ -20,6 +20,9 @@ namespace rtos = core::rtos;
 namespace vcu {
 
 /**
+ * TODO: HARDMON HAS NOT BEEN DONE YET. Waiting for EE's to make a model...
+ *  Will go through n copy n paste the shared stuff soon...
+ *
  * The Hardmon (Hardware Monitor) is one of two microcontrollers on the VCU board.
 It monitors the MCuC (Motor Controller Microcontroller) in order to determine whether or not it is operating safely and
 logically.
@@ -146,7 +149,6 @@ public:
         };
     };
 
-    // todo: haven't even looked at CANOpen stuff yet
     /**
      * Union that contains all the data that AccessoryCan should read in.
      * Used for double buffering for threadsafety with CANOpen
@@ -291,8 +293,6 @@ private:
     /// The gpios (in a union)
     HardmonGPIO gpios;
 
-    // TODO: ask EEs about initial values (i.e. if they should be 0 or whatever)
-
     // Model gpio input data
     ModelGPIOInputs_t modelGPIOInputs;
 
@@ -311,7 +311,7 @@ private:
     /**
      * The node ID used to identify the device on the CAN network.
      */
-    static constexpr uint8_t NODE_ID = 0; // TODO set node ID
+    static constexpr uint8_t NODE_ID = 0;
 
     /**
      * The size of the Object Dictionary
