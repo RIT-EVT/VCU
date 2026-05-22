@@ -1,5 +1,5 @@
-#include <Hardmon.hpp>
 #include <BoardMessageParsers.hpp>
+#include <Hardmon.hpp>
 
 #include <core/rtos/Enums.hpp>
 #include <core/rtos/Threadx.hpp>

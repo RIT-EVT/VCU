@@ -249,15 +249,15 @@ private:
      */
     union ModelGPIOInputs_t {
         struct {
-            bool eStopA;        ///< GPIO: whether the estop is on or off on A
-            bool eStopB;        ///< GPIO: whether the estop is on or off on B
-            bool ignitionA;     ///< GPIO: whether the ignition is on or off A
-            bool ignitionB;     ///< GPIO: whether the ignition is on or off B
-            bool ucState[4];    ///< GPIO: what state the MCuC is in
-            bool mcStatus;      ///< GPIO: whether the Motor Controller is on or off
-            bool interlock;     ///< GPIO: whether the interlock is on or off
-            bool watchdog;      ///< GPIO: alternating on and off signal from the MCUC to the Hardmon
-            bool lvssStatus;    ///< GPIO: whether the lvss is on or not
+            bool eStopA;     ///< GPIO: whether the estop is on or off on A
+            bool eStopB;     ///< GPIO: whether the estop is on or off on B
+            bool ignitionA;  ///< GPIO: whether the ignition is on or off A
+            bool ignitionB;  ///< GPIO: whether the ignition is on or off B
+            bool ucState[4]; ///< GPIO: what state the MCuC is in
+            bool mcStatus;   ///< GPIO: whether the Motor Controller is on or off
+            bool interlock;  ///< GPIO: whether the interlock is on or off
+            bool watchdog;   ///< GPIO: alternating on and off signal from the MCUC to the Hardmon
+            bool lvssStatus; ///< GPIO: whether the lvss is on or not
         };
         bool arr[12];
     };
@@ -274,7 +274,7 @@ private:
             bool mcTogglePos;       ///< GPIO: Together with MCToggleNeg commands the Motor Controller being on or not
             bool ucReset;           ///< GPIO: Whether or not the Hardmon is commanding the MCUC to reset (0 = reset)
             bool lvssEnableHardMon; ///< GPIO: Whether or not the Hardmon is commanding the LVSS to be enabled
-            bool hmFault;           ///< GPIO: Whether or not the Hardmon is commanding the MCUC to go into a fault state
+            bool hmFault; ///< GPIO: Whether or not the Hardmon is commanding the MCUC to go into a fault state
         };
         Hardmon_Model::ExtY_Hardmon_T modelOutputStruct;
     };
