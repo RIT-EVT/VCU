@@ -47,7 +47,7 @@ struct HardmonParsed {
 };
 
 /**
- * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
+ * todo NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
  * Parses the BMS values from the BMS CAN message.
  *  (message with id = BMS_MESSAGE_ID)
  *
@@ -57,7 +57,6 @@ struct HardmonParsed {
  BMSParsed parseBMSMessage(io::CANMessage& message);
 
 /**
- * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
  * Parses the necessary HIB values from the HIB CAN message.
  *  (message with id = HIB_MESSAGE_ID)
  *
@@ -67,9 +66,8 @@ struct HardmonParsed {
 HIBParsed parseHIBMessage(io::CANMessage& message);
 
 /**
- * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
- * Parses the necessary GFDB values from the GFDB message.
- *  (message with id = GFDB_MESSAGE_ID)
+ * Parses the isolation state from the GFDB message.
+ *  (message with id = GFDB_MESSAGE_ID && proper iso state msg identifier)
  *
  * @param message[in] a CAN message from the GFDB.
  * @return the parsed GFDB values.
@@ -86,7 +84,7 @@ GFDBParsed parseGFDBMessage(io::CANMessage& message);
 MCInternalParsed parseMCInternalMessage(io::CANMessage& message);
 
 /**
- * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
+ * todo NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
  * Parses the necessary Hardmon values from the Hardmon message.
  *  (message with id = HARDMON_SELF_TEST_MESSAGE_ID)
  *
