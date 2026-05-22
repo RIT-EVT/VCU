@@ -231,8 +231,8 @@ int main() {
     // UART for testing not on VCU
     //    io::UART& uart = io::getUART<io::Pin::UART_TX, io::Pin::UART_RX>(9600);
 
-//    log::LOGGER.setUART(&uart);
-//    log::LOGGER.setLogLevel(log::Logger::LogLevel::DEBUG);
+    log::LOGGER.setUART(&uart);
+    log::LOGGER.setLogLevel(log::Logger::LogLevel::DEBUG);
 
     // Initialize MCuC and Powertrain CAN
     vcu::MCuC::MCuC_GPIO gpios = {{
