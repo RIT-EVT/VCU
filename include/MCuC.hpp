@@ -291,7 +291,7 @@ public:
 
     /**
      * Runs one step of the Simulink model, including processing and handling inputs and outputs of the model.
-     * @return boolean if the state has been updated, and thus needs to be sent over canOpen.
+     * @param[in] flags the rtos EventFlags so we can set flags for the thread to alert canOpen to send messages.
      */
     void process(core::rtos::EventFlags* flags);
 
@@ -442,7 +442,7 @@ private:
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 114; // TODO: CANopen set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 114;
 
     /**
      * The object dictionary itself. Will be populated by this object during
