@@ -171,6 +171,10 @@ public:
         };
     };
 
+    /**
+     * Union to hold which switches are being powered from LVSS. Used to receive currently enabled boards from LVSS,
+     * and also used to send to LVSS to turn on / off switches.
+     */
     typedef union {
         uint16_t val;
         struct {
@@ -188,6 +192,9 @@ public:
         };
     } LVSSPowerState_t;
 
+    /**
+     * Union to hold the fault status' from the LVSS for the switches currents and temperatures
+     */
     typedef union {
         uint16_t val;
         struct {
@@ -244,6 +251,12 @@ public:
         UC_State stateEnum;
     };
 
+    /**
+     * Union to hold the VCU's internal status, in the form of error flags. This is the payload that is sent over CanOpen.
+     * *NotRun -> * was not run in the last health check period.
+     * *RanErr -> * had an error in the running of the code in the last health check period.
+     * *SpeedErr -> * did not run fast enough in the last health check period.
+     */
     typedef union {
         uint16_t flags;
         struct {
@@ -388,7 +401,7 @@ private:
      */
     HealthFlags_t healthFlags = {0};
 
-    /// the gpios
+    /// Instance of the struct that contains all the GPIOs that an instance of this class requires.
     MCuC_GPIO gpios;
 
     // Model input data
