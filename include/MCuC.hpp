@@ -252,10 +252,9 @@ public:
     };
 
     /**
-     * Union to hold the VCU's internal status, in the form of error flags. This is the payload that is sent over CanOpen.
-     * *NotRun -> * was not run in the last health check period.
-     * *RanErr -> * had an error in the running of the code in the last health check period.
-     * *SpeedErr -> * did not run fast enough in the last health check period.
+     * Union to hold the VCU's internal status, in the form of error flags. This is the payload that is sent over
+     * CanOpen. *NotRun -> * was not run in the last health check period. *RanErr -> * had an error in the running of
+     * the code in the last health check period. *SpeedErr -> * did not run fast enough in the last health check period.
      */
     typedef union {
         uint16_t flags;

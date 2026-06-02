@@ -293,53 +293,40 @@ int main() {
 
     ptCAN.addIRQHandler(reinterpret_cast<void (*)(io::CANMessage&, void*)>(powertrainCANInterrupt), &ptCanISRArgs);
 
-
-
-
-
-
-
-
-
-//
-//    io::GPIO::State stat = io::GPIO::State::LOW;
-//
-//    auto& pos = io::getGPIO<vcu::MCuC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT);
-//    auto& neg = io::getGPIO<vcu::MCuC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT);
-//
-//    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "stloop");
-//    while (1) {
-//        pos.writePin(io::GPIO::State::HIGH);
-//        neg.writePin(io::GPIO::State::LOW);
-//        time::wait(1000);
-//
-//        pos.writePin(io::GPIO::State::LOW);
-//        neg.writePin(io::GPIO::State::HIGH);
-//        time::wait(1000);
-//
-//        gpios.faultLEDGPIO.writePin(stat);
-//        stat = (stat == io::GPIO::State::LOW ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-//        //        pos.writePin(io::GPIO::State::LOW);
-//        //        neg.writePin(io::GPIO::State::LOW);
-//        //        time::wait(100);
-//        //
-//        //
-//        //        pos.writePin(io::GPIO::State::LOW);
-//        //        neg.writePin(io::GPIO::State::HIGH);
-//        //        time::wait(300);
-//        log::LOGGER.log(log::Logger::LogLevel::DEBUG, "eol");
-//    }
-//
-//
-//
-//
-//
-//
-
-
-
-
-
+    //
+    //    io::GPIO::State stat = io::GPIO::State::LOW;
+    //
+    //    auto& pos = io::getGPIO<vcu::MCuC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT);
+    //    auto& neg = io::getGPIO<vcu::MCuC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT);
+    //
+    //    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "stloop");
+    //    while (1) {
+    //        pos.writePin(io::GPIO::State::HIGH);
+    //        neg.writePin(io::GPIO::State::LOW);
+    //        time::wait(1000);
+    //
+    //        pos.writePin(io::GPIO::State::LOW);
+    //        neg.writePin(io::GPIO::State::HIGH);
+    //        time::wait(1000);
+    //
+    //        gpios.faultLEDGPIO.writePin(stat);
+    //        stat = (stat == io::GPIO::State::LOW ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    //        //        pos.writePin(io::GPIO::State::LOW);
+    //        //        neg.writePin(io::GPIO::State::LOW);
+    //        //        time::wait(100);
+    //        //
+    //        //
+    //        //        pos.writePin(io::GPIO::State::LOW);
+    //        //        neg.writePin(io::GPIO::State::HIGH);
+    //        //        time::wait(300);
+    //        log::LOGGER.log(log::Logger::LogLevel::DEBUG, "eol");
+    //    }
+    //
+    //
+    //
+    //
+    //
+    //
 
     io::CAN::CANStatus ptRes = ptCAN.connect(true);
 
