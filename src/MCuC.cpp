@@ -359,23 +359,27 @@ void MCuC::process(core::rtos::EventFlags* flags) {
         flags->set(VCU_STATE_CHANGE_MASK);
     }
 
-    // todo: maybe clean this up somehow... Dont send enable signals from model if there was a switch fault (current or
-    //  temp) on that switch
+    // todo: maybe clean this up somehow...
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.batt = modelOutputs.Batt_12V_EN_uC_CAN
         && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.battCurrentFault
             && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch0TempFault);
+
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hib = modelOutputs.HIB_EN_uC_CAN
         && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.hibCurrentFault
             && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch0TempFault);
+
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.tms = modelOutputs.TMS_EN_uC_CAN
         && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.tmsCurrentFault
             && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch1TempFault);
+
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hudl = modelOutputs.HUDL_EN_uC_CAN
         && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.hudlCurrentFault
             && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch1TempFault);
+
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.acc = modelOutputs.Acc_EN_uC_CAN
         && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.accCurrentFault
             && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
+
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.gub = modelOutputs.GUB_EN_uC_CAN
         && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.gubCurrentFault
             && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
