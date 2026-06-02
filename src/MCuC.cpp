@@ -196,13 +196,21 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     static UC_State lastState = UC_State::Preset;
     static LVSSPowerState_t lvssPowerStateLast = {0};
 
+    // todo: debugging static vars for manually tricking simulink model into going through full state machine
+
+    static bool firstStep         = true;
+    static bool seenMCInit        = false;
+    static bool forwardStatic     = false;
+    static bool interlock         = true;
+    static int16_t throttleStatic = 0;
+
 
 #ifdef EVT_CORE_LOG_ENABLE
     uint32_t halstart, halstep, halstepEnd, halpowerTrainCAN = 0, halmotorControllerCan, halend;
 
     halstart = core::time::millis();
 
-    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "State: %s", stateToString(ucState.stateEnum));
+//    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "State: %s", stateToString(ucState.stateEnum));
 #endif
 
     bufferMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
@@ -264,14 +272,80 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     memcpy(modelInputs.LVSS_Temps_CAN, accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchTemperatures, sizeof(accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchTemperatures));
     memcpy(modelInputs.LVSS_Currents_CAN, accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents, sizeof(accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents));
 
+    // todo: hardcoding for testing; remove when done
+    modelInputs.Interlock                = interlock;
+    modelInputs.LVSS_ON_CAN              = false;
+    modelInputs.LVSS_ON_CAN              = false;
+    modelInputs.MC_ON                    = false;
+    modelInputs.BMS_Contactor_Closed_CAN = false;
+    modelInputs.GFDB_Isolation_State_CAN = 0;
+    modelInputs.MC_VSM_State_CAN         = MC_VSM_State::Start;
+    modelInputs.HIB_Comparison_Fault_CAN = false;
+
+    if (firstStep) {
+        firstStep = false;
+    } else {
+        modelInputs.BMS_Contactor_Closed_CAN = static_cast<int>(modelOutputs.BMS_Contactor_Command_uC_CAN) != 0;
+        modelInputs.LVSS_ON_CAN              = modelOutputs.LVSS_EN_uC;
+        modelInputs.MC_ON                    = modelOutputs.MC_EN_uC;
+    }
+
+    // Big ass code block to fake inputs to test simulink model
+    if (!firstStep) {
+        if (modelOutputs.uC_State == UC_State::MC_Init || seenMCInit) {
+            modelInputs.MC_VSM_State_CAN = MC_VSM_State::Ready;
+            seenMCInit                   = true;
+        }
+
+        if (modelOutputs.uC_State == UC_State::Contactor_Closed) {
+            modelInputs.Start_CAN = true;
+        }
+
+        if (modelOutputs.uC_State == UC_State::MC_Ready) {
+            modelInputs.Brake_CAN    = true;
+            modelInputs.Throttle_CAN = 0;
+            modelInputs.Start_CAN = true;
+            forwardStatic            = true;
+        }
+
+        modelInputs.Forward_EN_CAN = forwardStatic;
+
+        if (modelOutputs.uC_State == UC_State::MC_Active) {
+//            modelInputs.Throttle_CAN = throttleStatic++;
+            modelInputs.MC_VSM_State_CAN = MC_VSM_State::Motor_Running;
+            modelInputs.Ignition_LS_A = true;
+        }
+
+        if (modelOutputs.uC_State == UC_State::MC_Discharging) {
+            modelInputs.MC_DC_State_CAN = MC_DC_State::Complete;
+        }
+
+        if (modelOutputs.uC_State == UC_State::Contactor_Open) {
+            forwardStatic                = false;
+            modelInputs.Forward_EN_CAN   = false;
+            modelInputs.MC_DC_State_CAN = MC_DC_State::Active;
+            modelInputs.MC_VSM_State_CAN = MC_VSM_State::Start;
+            seenMCInit                   = false;
+        }
+    }
+
+    // Increment GFDB & HIB heartbeats
+    modelInputs.Heartbeats_CAN[2]++;
+    modelInputs.Heartbeats_CAN[3]++;
+    modelInputs.State_Handshake = true;
+    modelInputs.Direction_Command = true;
 
     hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     for (int i = 0; i < HB_SIZE; i++) {
-        modelInputs.Heartbeats_CAN[i] = heartbeatMessages[i];
+        if (modelOutputs.LVSS_EN_uC) { // if we say lvss should be on, increment LVSS heartbeat
+            modelInputs.Heartbeats_CAN[0]++;
+        }
+//        modelInputs.Heartbeats_CAN[i] = heartbeatMessages[i];
     }
     hbMutex.put();
 
 #ifdef EVT_CORE_LOG_ENABLE
+//    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "State: %s; throt: %d", stateToString(ucState.stateEnum), modelInputs.Throttle_CAN);
 //    halstep = core::time::millis();
 #endif
 
@@ -308,8 +382,8 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     gpios.mcSelfTestGPIO.writePin(modelOutputs.MC_Self_Test ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
     // Fault LEDs
-    gpios.faultLEDGPIO.writePin(modelOutputs.Fault ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    gpios.superFaultLEDGPIO.writePin(modelOutputs.Super_Fault ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+//    gpios.faultLEDGPIO.writePin(modelOutputs.Fault ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+//    gpios.superFaultLEDGPIO.writePin(modelOutputs.Super_Fault ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
     // HUDL LEDs
     gpios.ledOneGPIO.writePin(modelOutputs.LED[0] ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
@@ -357,6 +431,8 @@ void MCuC::process(core::rtos::EventFlags* flags) {
         lvssPowerStateLast.val = accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.val;
         flags->set(LVSS_OUT_CHANGED_MASK);
     }
+
+    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "State: %s; tor: %d; brk: %d", stateToString(ucState.stateEnum), modelOutputs.Torque_Request_CAN, modelInputs.Brake_CAN);
 
     // Send the Motor Controller CAN message (set values first)
     powertrainCAN.setMCAll(modelOutputs.Torque_Request_CAN,
