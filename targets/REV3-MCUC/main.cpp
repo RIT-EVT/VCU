@@ -102,9 +102,8 @@ constexpr uint32_t GFDB_TIMER_THREAD_MASK = 1 << GFDB_TIMER_THREAD_LS;
 constexpr uint32_t LVSS_OUT_CHANGED_MASK = 1 << 14;
 constexpr uint32_t VCU_STATE_CHANGE_MASK = 1 << 15;
 
-constexpr uint32_t FULL_HEALTH_THREAD_MASK = MODEL_THREAD_SLOW_MASK | MODEL_THREAD_MASK
-                                            | PT_CAN_THREAD_MASK | PT_CAN_ERR_MASK
-                                            | CANOPEN_THREAD_MASK | GFDB_TIMER_THREAD_MASK;
+constexpr uint32_t FULL_HEALTH_THREAD_MASK = MODEL_THREAD_SLOW_MASK | MODEL_THREAD_MASK | PT_CAN_THREAD_MASK
+    | PT_CAN_ERR_MASK | CANOPEN_THREAD_MASK | GFDB_TIMER_THREAD_MASK;
 
 // Thread Structs
 
@@ -290,7 +289,7 @@ int main() {
     /// eventflag that stores between thread flags, and most importantly has flag to trigger the main thread to run
     rtos::EventFlags sharedFlags((char*) "Shared Flags");
 
-    powertrainCANReceiveISRArgs_t ptCanISRArgs = { &mcuc, &sharedFlags };
+    powertrainCANReceiveISRArgs_t ptCanISRArgs = {&mcuc, &sharedFlags};
 
     ptCAN.addIRQHandler(reinterpret_cast<void (*)(io::CANMessage&, void*)>(powertrainCANInterrupt), &ptCanISRArgs);
 
@@ -365,10 +364,7 @@ int main() {
 
     // Actual CAN init
     io::CAN& accessoryCAN = io::getCAN<vcu::MCuC::ACCESSORY_CAN_TX_PIN, vcu::MCuC::ACCESSORY_CAN_RX_PIN>();
-    canOpenInterruptArgs_t canOpenIntArgs = {
-        &mcuc,
-        &canOpenQueue
-    };
+    canOpenInterruptArgs_t canOpenIntArgs = {&mcuc, &canOpenQueue};
     accessoryCAN.addIRQHandler(accessoryCANOpenInterrupt, reinterpret_cast<void*>(&canOpenIntArgs));
 
     // Reserved memory for CANopen stack usage
@@ -436,11 +432,7 @@ int main() {
                                               true);
 
     /// Argument struct the modelThread takes in
-    modelThreadArgs_t modelThreadArgs = {
-        &mcuc,
-        &canNode,
-        &sharedFlags
-    };
+    modelThreadArgs_t modelThreadArgs = {&mcuc, &canNode, &sharedFlags};
 
     /// Thread that runs the model
     rtos::Thread<modelThreadArgs_t*> modelThread((char*) "Model Thread",
@@ -617,8 +609,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         bool gfdbReqNotRun = !(flagOutput & GFDB_TIMER_THREAD_MASK);
 
         // set canOpen data values
-        args->mcuc->setHealthFlags(modelTooSlow, modelNotRun, ptcanNotRun,
-                                    ptcanISRErr, canopenNotRun, gfdbReqNotRun);
+        args->mcuc->setHealthFlags(modelTooSlow, modelNotRun, ptcanNotRun, ptcanISRErr, canopenNotRun, gfdbReqNotRun);
 
         // alert canOpen to send the flags when it gets the chance
         io::alertTPDO(args->accessoryCanNode, vcu::MCuC::HEALTH_FLAG_TPDO_NUM);
@@ -638,7 +629,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 [[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Started");
     args->mcuc->sendOutputDataToUnsafeBuffer();
-//  todo:  args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal.val = 63; // todo: temporary
+    //  todo:  args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal.val = 63; // todo: temporary
     rtos::TXError error;
     while (true) {
         io::processCANopenNode(args->accessoryCanNode);
