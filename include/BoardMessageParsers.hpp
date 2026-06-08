@@ -1,35 +1,35 @@
 #ifndef VCU_BOARD_MSG_PARSER
 #define VCU_BOARD_MSG_PARSER
 
-#include <core/io/types/CANMessage.hpp>
 #include <MCuC.hpp>
+#include <core/io/types/CANMessage.hpp>
 
 namespace io = core::io;
 
 namespace boards {
 struct BMSParsed {
-    int32_t cellTemps[vcu::MCuC::BMS_CELL_TEMP_LEN];    ///< Array of Cell Temperatures
-    int16_t cellVolts[vcu::MCuC::BMS_CELL_VOLT_LEN];    ///< Array of Cell Voltages
-    bool contactorClosed;                               ///< Whether the contactor is closed or not
+    int32_t cellTemps[vcu::MCuC::BMS_CELL_TEMP_LEN]; ///< Array of Cell Temperatures
+    int16_t cellVolts[vcu::MCuC::BMS_CELL_VOLT_LEN]; ///< Array of Cell Voltages
+    bool contactorClosed;                            ///< Whether the contactor is closed or not
 };
 
 /**
  * Struct for important data to pull from HIB CAN messages
  */
 struct HIBParsed {
-    int16_t throttle;       ///< The throttle value
-    bool forwardEn;         ///< Whether the forwardEn is on or not
-    bool startPressed;      ///< Whether the start is pressed or not
-    bool brakeOn;           ///< Whether the brake is on or not
-    bool comparisonFault;   ///< Whether there is a comparison fault or not
+    int16_t throttle;     ///< The throttle value
+    bool forwardEn;       ///< Whether the forwardEn is on or not
+    bool startPressed;    ///< Whether the start is pressed or not
+    bool brakeOn;         ///< Whether the brake is on or not
+    bool comparisonFault; ///< Whether there is a comparison fault or not
 };
 
 /**
  * Struct for important data to pull from MC Internal State CAN messages
  */
 struct MCInternalParsed {
-    int16_t mcDischarge;    ///< The discharge value
-    int16_t mcState;        ///< The state the motor controller is in
+    int16_t mcDischarge; ///< The discharge value
+    int16_t mcState;     ///< The state the motor controller is in
 };
 
 /**
@@ -47,17 +47,16 @@ struct HardmonParsed {
 };
 
 /**
- * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
+ * todo NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
  * Parses the BMS values from the BMS CAN message.
  *  (message with id = BMS_MESSAGE_ID)
  *
  * @param message[in] a CAN message from the BMS.
  * @return the parsed BMS values.
  */
- BMSParsed parseBMSMessage(io::CANMessage& message);
+BMSParsed parseBMSMessage(io::CANMessage& message);
 
 /**
- * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
  * Parses the necessary HIB values from the HIB CAN message.
  *  (message with id = HIB_MESSAGE_ID)
  *
@@ -67,9 +66,8 @@ struct HardmonParsed {
 HIBParsed parseHIBMessage(io::CANMessage& message);
 
 /**
- * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
- * Parses the necessary GFDB values from the GFDB message.
- *  (message with id = GFDB_MESSAGE_ID)
+ * Parses the isolation state from the GFDB message.
+ *  (message with id = GFDB_MESSAGE_ID && proper iso state msg identifier)
  *
  * @param message[in] a CAN message from the GFDB.
  * @return the parsed GFDB values.
@@ -86,7 +84,7 @@ GFDBParsed parseGFDBMessage(io::CANMessage& message);
 MCInternalParsed parseMCInternalMessage(io::CANMessage& message);
 
 /**
- * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
+ * todo NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
  * Parses the necessary Hardmon values from the Hardmon message.
  *  (message with id = HARDMON_SELF_TEST_MESSAGE_ID)
  *
@@ -94,6 +92,6 @@ MCInternalParsed parseMCInternalMessage(io::CANMessage& message);
  * @return the parsed Hardmon values.
  */
 HardmonParsed parseHardmonMessage(io::CANMessage& message);
-}
+} // namespace boards
 
 #endif // VCU_BOARD_MSG_PARSER

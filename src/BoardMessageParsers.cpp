@@ -17,16 +17,15 @@ HIBParsed parseHIBMessage(io::CANMessage& message) {
 
     uint16_t brakeMillivolts = payload[2];
     brakeMillivolts <<= 8;
-    brakeMillivolts |= payload[3];  // 0 to 12_000 (millivolts)
+    brakeMillivolts |= payload[3]; // 0 to 12_000 (millivolts)
 
-    bool brakeOn         = brakeMillivolts > 6000;  // Completely magical number decided by EE's (50% of max)
+    bool brakeOn = brakeMillivolts > 6000; // Completely magical number decided by EE's (50% of max)
 
     bool comparisonFault = ((payload[4] & 0b00000100) | (payload[5] & 0b00000100)) != 0;
-    bool forwardEnable   = (payload[6] & 0b00000001) != 0;  // todo: double check these once HIB code is merged
+    bool forwardEnable   = (payload[6] & 0b00000001) != 0; // todo: double check these once HIB code is merged
     bool startPressed    = (payload[6] & 0b00000010) != 0;
 
-    return HIBParsed{static_cast<int16_t>(throttle), forwardEnable,
-                     startPressed, brakeOn, comparisonFault};
+    return HIBParsed{static_cast<int16_t>(throttle), forwardEnable, startPressed, brakeOn, comparisonFault};
 }
 
 GFDBParsed parseGFDBMessage(io::CANMessage& message) {
@@ -48,4 +47,4 @@ HardmonParsed parseHardmonMessage(io::CANMessage& message) {
     bool selfTestMode = ((payload[0] & 0b10000000) != 0);
     return HardmonParsed{selfTestMode};
 }
-}
+} // namespace boards

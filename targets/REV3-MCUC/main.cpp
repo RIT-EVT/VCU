@@ -102,9 +102,8 @@ constexpr uint32_t GFDB_TIMER_THREAD_MASK = 1 << GFDB_TIMER_THREAD_LS;
 constexpr uint32_t LVSS_OUT_CHANGED_MASK = 1 << 14;
 constexpr uint32_t VCU_STATE_CHANGE_MASK = 1 << 15;
 
-constexpr uint32_t FULL_HEALTH_THREAD_MASK = MODEL_THREAD_SLOW_MASK | MODEL_THREAD_MASK
-                                            | PT_CAN_THREAD_MASK | PT_CAN_ERR_MASK
-                                            | CANOPEN_THREAD_MASK | GFDB_TIMER_THREAD_MASK;
+constexpr uint32_t FULL_HEALTH_THREAD_MASK = MODEL_THREAD_SLOW_MASK | MODEL_THREAD_MASK | PT_CAN_THREAD_MASK
+    | PT_CAN_ERR_MASK | CANOPEN_THREAD_MASK | GFDB_TIMER_THREAD_MASK;
 
 // Thread Structs
 
@@ -360,66 +359,6 @@ int main() {
     // Initialize Threadx //
     ////////////////////////
 
-//    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "start");
-//
-//    io::GPIO::State stat = io::GPIO::State::HIGH;
-//
-//    auto& ptt1 = io::getGPIO<vcu::MCuC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT);
-//    auto& ptt2 = io::getGPIO<vcu::MCuC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT);
-//    io::GPIO& out = io::getGPIO<vcu::MCuC::LS_SELF_TEST_OUT_PIN>(io::GPIO::Direction::OUTPUT);
-//
-//
-//    io::GPIO& inA = io::getGPIO<vcu::MCuC::IGNITION_A_PIN>(io::GPIO::Direction::INPUT);
-//    io::GPIO& inB = io::getGPIO<vcu::MCuC::LS_SELF_TEST_IN_B_PIN>(io::GPIO::Direction::INPUT);
-//
-//    io::GPIO& inC = io::getGPIO<vcu::MCuC::ESTOP_A_PIN>(io::GPIO::Direction::INPUT);
-//    io::GPIO& inD = io::getGPIO<vcu::MCuC::ESTOP_B_PIN>(io::GPIO::Direction::INPUT);
-//
-//    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "stloop");
-
-//    out.writePin(io::GPIO::State::LOW);
-//    while (1) {        gpios.superFaultLEDGPIO.writePin(inB.readPin());
-//    }
-//    while (1) {
-//        stat = (stat == io::GPIO::State::LOW ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-//        out.writePin(stat);
-//
-//
-////        ptt1.writePin(io::GPIO::State::HIGH);
-////        ptt2.writePin(io::GPIO::State::LOW);
-////
-////        time::wait(10);
-////
-////
-////        ptt1.writePin(io::GPIO::State::LOW);
-////        ptt2.writePin(io::GPIO::State::LOW);
-////
-////        time::wait(1000);
-////
-////        ptt1.writePin(io::GPIO::State::LOW);
-////        ptt2.writePin(io::GPIO::State::HIGH);
-////
-////        time::wait(10);
-////
-////
-////        ptt1.writePin(io::GPIO::State::LOW);
-////        ptt2.writePin(io::GPIO::State::LOW);
-////        time::wait(1000);
-//
-//
-//
-//        // lifeline LED to show it is running
-////        gpios.faultLEDGPIO.writePin(stat);
-//
-//        gpios.faultLEDGPIO.writePin(stat);
-//        gpios.superFaultLEDGPIO.writePin(inB.readPin());
-//
-//        time::wait(5000);
-//    }
-
-
-
-
     // Initialize Bytepool
 
     rtos::BytePool<TX_APP_MEM_POOL_SIZE> txPool((char*) "txBytePool");
@@ -555,11 +494,20 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         uint32_t flagOutput;
         args->triggerFlag->get(MODEL_TRIGGER_FLAG_MASK, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
 
-        bool result = args->mcuc->process();
+        args->mcuc->process(args->triggerFlag);
 
         // If state has changed, alert canOpen to send the flags when it gets the chance
-        if (result) {
+        uint32_t current;
+        args->triggerFlag->getCurrentFlags(&current);
+        if (current & VCU_STATE_CHANGE_MASK) {
             io::alertTPDO(args->accessoryCanNode, vcu::MCuC::SIM_STATE_TPDO_NUM);
+            args->triggerFlag->clear(VCU_STATE_CHANGE_MASK);
+        }
+
+        // If LVSS enable signal has been changed, alert canOpen
+        if (current & LVSS_OUT_CHANGED_MASK) {
+            io::alertTPDO(args->accessoryCanNode, 0);
+            args->triggerFlag->clear(LVSS_OUT_CHANGED_MASK);
         }
 
         args->triggerFlag->set(MODEL_THREAD_MASK); // Mark as ran
@@ -616,8 +564,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         bool gfdbReqNotRun = !(flagOutput & GFDB_TIMER_THREAD_MASK);
 
         // set canOpen data values
-        args->mcuc->setHealthFlags(modelTooSlow, modelNotRun, ptcanNotRun,
-                                    ptcanISRErr, canopenNotRun, gfdbReqNotRun);
+        args->mcuc->setHealthFlags(modelTooSlow, modelNotRun, ptcanNotRun, ptcanISRErr, canopenNotRun, gfdbReqNotRun);
 
         // alert canOpen to send the flags when it gets the chance
         io::alertTPDO(args->accessoryCanNode, vcu::MCuC::HEALTH_FLAG_TPDO_NUM);
@@ -637,7 +584,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 [[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Started");
     args->mcuc->sendOutputDataToUnsafeBuffer();
-//  todo:  args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal.val = 63; // todo: temporary
+    //  todo:  args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal.val = 63; // todo: temporary
     rtos::TXError error;
     while (true) {
         io::processCANopenNode(args->accessoryCanNode);

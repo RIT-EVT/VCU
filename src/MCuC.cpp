@@ -34,41 +34,45 @@ uint8_t MCuC::getNodeID() {
 void MCuC::handlePowertrainCanMessage(io::CANMessage& message) {
     bufferMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     switch (message.getId()) {
-        case dev::PowertrainCAN::MC_INTERNAL_STATES_ID: {
-            boards::MCInternalParsed ps = boards::parseMCInternalMessage(message);
-            mcState = static_cast<MC_VSM_State>(ps.mcState);
-            mcDischarge = static_cast<MC_DC_State>(ps.mcDischarge);
+    case dev::PowertrainCAN::MC_INTERNAL_STATES_ID: {
+        boards::MCInternalParsed ps = boards::parseMCInternalMessage(message);
+        mcState                     = static_cast<MC_VSM_State>(ps.mcState);
+        mcDischarge                 = static_cast<MC_DC_State>(ps.mcDischarge);
+        break;
+    }
+    case dev::PowertrainCAN::HIB_MESSAGE_ID: {
+        boards::HIBParsed ps = boards::parseHIBMessage(message);
+        throttle             = ps.throttle;
+        forwardEnable        = ps.forwardEn;
+        startPressed         = ps.startPressed;
+        brakeOn              = ps.brakeOn;
+        hibComparisonFault   = ps.comparisonFault;
+        break;
+    }
+    case dev::PowertrainCAN::HARDMON_SELF_TEST_MESSAGE_ID: {
+        boards::HardmonParsed ps = boards::parseHardmonMessage(message);
+        powertrainCANSelfTestIn  = ps.powertrainCANSelfTest;
+        break;
+    }
+    case dev::PowertrainCAN::BMS_MESSAGE_ID: {
+        boards::BMSParsed ps = boards::parseBMSMessage(message);
+        bmsContactorClosed   = ps.contactorClosed;
+        // todo: V these will most def be sent in across multiple messages, figure out how to receive them
+        memcpy(bmsCellTemps, ps.cellTemps, sizeof(bmsCellTemps));
+        memcpy(bmsCellVoltages, ps.cellVolts, sizeof(bmsCellVoltages));
+        break;
+    }
+    case dev::PowertrainCAN::GFDB_INCOMING_ID: {
+        // Only parse if GFDB message received was for Isolation State
+        if (message.getPayload()[0] != 0xE0) {
             break;
         }
-        case dev::PowertrainCAN::HIB_MESSAGE_ID: {
-            boards::HIBParsed ps = boards::parseHIBMessage(message);
-            throttle = ps.throttle;
-            forwardEnable = ps.forwardEn;
-            startPressed = ps.startPressed;
-            brakeOn = ps.brakeOn;
-            hibComparisonFault = ps.comparisonFault;
-            break;
-        }
-        case dev::PowertrainCAN::HARDMON_SELF_TEST_MESSAGE_ID: {
-            boards::HardmonParsed ps = boards::parseHardmonMessage(message);
-            powertrainCANSelfTestIn = ps.powertrainCANSelfTest;
-            break;
-        }
-        case dev::PowertrainCAN::BMS_MESSAGE_ID: {
-            boards::BMSParsed ps = boards::parseBMSMessage(message);
-            bmsContactorClosed = ps.contactorClosed;
-            // todo: V these will most def be sent in across multiple messages, figure out how to receive them
-            memcpy(bmsCellTemps, ps.cellTemps, sizeof(bmsCellTemps));
-            memcpy(bmsCellVoltages, ps.cellVolts, sizeof(bmsCellVoltages));
-            break;
-        }
-        case dev::PowertrainCAN::GFDB_INCOMING_ID: {
-            gfdbIsolationState = boards::parseGFDBMessage(message).isolationState;
-            break;
-        }
-        default:
-            // do nothing, we don't care about this message
-            break;
+        gfdbIsolationState = boards::parseGFDBMessage(message).isolationState;
+        break;
+    }
+    default:
+        // do nothing, we don't care about this message
+        break;
     }
     bufferMutex.put();
 }
@@ -100,7 +104,7 @@ void MCuC::updateCanOpenNodeHeartbeat(uint32_t nodeId) {
     int slot;
     switch (nodeId) {
     case LVSS_NODE_ID:
-        slot = 0;
+        slot                = 0;
         lvssLastMessageTick = rtos::getTick();
         break;
     case TMS_NODE_ID:
@@ -131,7 +135,7 @@ void MCuC::updateCanNodeHeartbeat(uint32_t nodeId) {
         return;
     }
 
-    hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);    // todo: idk if a mutex is even needed here
+    hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER); // todo: idk if a mutex is even needed here
     heartbeatMessages[slot]++;
     hbMutex.put();
 }
@@ -140,17 +144,18 @@ void MCuC::setGroundFaultFlag() {
     groundFaultRequestFlag = true;
 }
 
-void MCuC::setHealthFlags(bool modelSpeedErr, bool modelRanErr, bool ptcanRanErr, bool ptcanISRErr, bool canopenNotRun, bool gfdbReqNotRun) {
+void MCuC::setHealthFlags(bool modelSpeedErr, bool modelRanErr, bool ptcanRanErr, bool ptcanISRErr, bool canopenNotRun,
+                          bool gfdbReqNotRun) {
     // set the variable that canOpen sends for the health flags
     healthFlags.modelSpeedErr = modelSpeedErr;
-    healthFlags.modelRanErr = modelRanErr;
-    healthFlags.ptcanRanErr = ptcanRanErr;
-    healthFlags.ptcanISRErr = ptcanISRErr;
+    healthFlags.modelRanErr   = modelRanErr;
+    healthFlags.ptcanRanErr   = ptcanRanErr;
+    healthFlags.ptcanISRErr   = ptcanISRErr;
     healthFlags.canopenNotRun = canopenNotRun;
     healthFlags.gfdbReqNotRun = gfdbReqNotRun;
 }
 
-// todo: for testing purposes; remove when done
+/* For debug printing of state */
 inline const char* stateToString(UC_State state) {
     switch (state) {
     case UC_State::Preset:
@@ -186,12 +191,13 @@ inline const char* stateToString(UC_State state) {
     }
 }
 
-bool MCuC::process() {
+void MCuC::process(core::rtos::EventFlags* flags) {
     // The mcEnable needs to do a pulse every time it switches, so keep track of last mcEnable value
     static bool mcEnableLast = false;
 
     // Need to send canOpen message on state change, so keep track of lastState
     static UC_State lastState = UC_State::Preset;
+    static LVSSPowerState_t lvssPowerStateLast = {0};
 
     // todo: debugging static vars for manually tricking simulink model into going through full state machine
     static bool firstStep         = true;
@@ -220,58 +226,60 @@ bool MCuC::process() {
     modelInputs.Interlock         = gpios.interlockGPIO.readPin() == io::GPIO::State::HIGH;
     modelInputs.Ignition_LS_A     = gpios.ignitionAGPIO.readPin() == io::GPIO::State::LOW; // active low
     modelInputs.Ignition_LS_B     = gpios.ignitionBGPIO.readPin() == io::GPIO::State::LOW; // active low
-    modelInputs.ESTOP_LS_A        = gpios.eStopAGPIO.readPin() == io::GPIO::State::HIGH;    // todo: imagine but actually -> active low
-    modelInputs.ESTOP_LS_B        = gpios.eStopBGPIO.readPin() == io::GPIO::State::HIGH;    // todo: imagine but actually -> active low
+    modelInputs.ESTOP_LS_A        = gpios.eStopAGPIO.readPin() == io::GPIO::State::LOW;    // active low
+    modelInputs.ESTOP_LS_B        = gpios.eStopBGPIO.readPin() == io::GPIO::State::LOW;    // active low
 
     // Set CAN inputs (values updated over CAN)
 
-        //unused model inputs, and I dont have access to it, so we ignore
+    // unused model inputs, and I dont have access to it, so we ignore
     modelInputs.MC_PS_Present_CAN;
     modelInputs.Batt_PS_Present_CAN;
 
-        // From Motor Controller
-    modelInputs.MC_DC_State_CAN   = mcDischarge;
-    modelInputs.MC_VSM_State_CAN  = mcState;
+    // From Motor Controller
+    modelInputs.MC_DC_State_CAN  = mcDischarge;
+    modelInputs.MC_VSM_State_CAN = mcState;
 
-        // From HIB over raw CAN
-    modelInputs.Forward_EN_CAN    = forwardEnable;
-    modelInputs.Start_CAN         = startPressed;
-    modelInputs.Brake_CAN         = brakeOn;
+    // From HIB over raw CAN
+    modelInputs.Forward_EN_CAN           = forwardEnable;
+    modelInputs.Start_CAN                = startPressed;
+    modelInputs.Brake_CAN                = brakeOn;
     modelInputs.HIB_Comparison_Fault_CAN = hibComparisonFault;
-    modelInputs.Throttle_CAN      = throttle;
-        // From BMS over raw CAN
+    modelInputs.Throttle_CAN             = throttle;
+    // From BMS over raw CAN
     memcpy(modelInputs.BMS_Cell_Temps_CAN, bmsCellTemps, sizeof(bmsCellTemps));
     memcpy(modelInputs.BMS_Cell_Voltages_CAN, bmsCellVoltages, sizeof(bmsCellVoltages));
     modelInputs.BMS_Contactor_Closed_CAN = bmsContactorClosed;
-        // From GFDB over raw CAN
+    // From GFDB over raw CAN
     modelInputs.GFDB_Isolation_State_CAN = gfdbIsolationState;
 
-        // From TMS over CanOpen
-    modelInputs.MC_Cooling_FR_CAN        = accessoryCanDataSafeBuffer.TMS_in_FlowRates[MC_FR_IDX];
-    modelInputs.Batt_Cooling_FR_CAN      = accessoryCanDataSafeBuffer.TMS_in_FlowRates[BATT_FR_IDX];
-    memcpy(modelInputs.Cooling_Loop_Temps_CAN, accessoryCanDataSafeBuffer.TMS_in_Temps, sizeof(accessoryCanDataSafeBuffer.TMS_in_Temps));
+    // From TMS over CanOpen
+    modelInputs.MC_Cooling_FR_CAN   = accessoryCanDataSafeBuffer.TMS_in_FlowRates[MC_FR_IDX];
+    modelInputs.Batt_Cooling_FR_CAN = accessoryCanDataSafeBuffer.TMS_in_FlowRates[BATT_FR_IDX];
+    memcpy(modelInputs.Cooling_Loop_Temps_CAN,
+           accessoryCanDataSafeBuffer.TMS_in_Temps,
+           sizeof(accessoryCanDataSafeBuffer.TMS_in_Temps));
 
-        // From LVSS over CanOpen
+    // From LVSS over CanOpen
     uint32_t tickDiff = rtos::getTick() - lvssLastMessageTick;
 
-    modelInputs.LVSS_ON_CAN              = (tickDiff < MS_TO_TICKS(LVSS_MESSAGE_LIFESPAN));
-    modelInputs.LVSS_ON_CAN              = lvssOn; // todo: this needs to be done on whether we are actively receiving messages from lvss
-    modelInputs.Acc_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.acc == 1;
-    modelInputs.HIB_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hib == 1;
-    modelInputs.HUDL_ON_CAN              = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hudl == 1;
-    modelInputs.TMS_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.tms == 1;
-    modelInputs.GUB_ON_CAN               = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.gub == 1;
-    modelInputs.Batt_12V_ON_CAN          = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.batt == 1;
-    modelInputs.Vicor_Input_Current_CAN  = accessoryCanDataSafeBuffer.LVSS_in_VicorCurrent;
+    modelInputs.LVSS_ON_CAN             = (tickDiff < MS_TO_TICKS(LVSS_MESSAGE_LIFESPAN));
+    modelInputs.Acc_ON_CAN              = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.acc == 1;
+    modelInputs.HIB_ON_CAN              = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hib == 1;
+    modelInputs.HUDL_ON_CAN             = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.hudl == 1;
+    modelInputs.TMS_ON_CAN              = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.tms == 1;
+    modelInputs.GUB_ON_CAN              = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.gub == 1;
+    modelInputs.Batt_12V_ON_CAN         = accessoryCanDataSafeBuffer.LVSS_in_EnableBoardSignal.batt == 1;
+    modelInputs.Vicor_Input_Current_CAN = accessoryCanDataSafeBuffer.LVSS_in_VicorCurrent;
 
     memcpy(modelInputs.LVSS_Temps_CAN, accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchTemperatures, sizeof(accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchTemperatures));
     memcpy(modelInputs.LVSS_Currents_CAN, accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents, sizeof(accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents));
 
-    // todo: hardcoding for tests; remove when done
+    // todo: test hardcoding
     modelInputs.Interlock                = true;
     modelInputs.LVSS_ON_CAN              = false;
+    modelInputs.LVSS_ON_CAN              = false;
     modelInputs.MC_ON                    = false;
-    modelInputs.BMS_Contactor_Closed_CAN = true;
+    modelInputs.BMS_Contactor_Closed_CAN = false;
     modelInputs.GFDB_Isolation_State_CAN = 0;
     modelInputs.MC_VSM_State_CAN         = MC_VSM_State::Start;
     modelInputs.HIB_Comparison_Fault_CAN = false;
@@ -340,9 +348,8 @@ bool MCuC::process() {
     }
     hbMutex.put();
 
-//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, ":::: %d", modelOutputs.LVSS_EN_uC);
-
 #ifdef EVT_CORE_LOG_ENABLE
+//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, ":::: %d", modelOutputs.LVSS_EN_uC);
 //    halstep = core::time::millis();
 #endif
 
@@ -375,6 +382,7 @@ bool MCuC::process() {
     gpios.lvssEnableGPIO.writePin(modelOutputs.LVSS_EN_uC ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.watchdogGPIO.writePin(modelOutputs.Watchdog ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
+    gpios.canSelfTestGPIO.writePin(modelOutputs.CAN_Self_Test ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.lsSelfTestOutGPIO.writePin(modelOutputs.LS_Self_Test_Out ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.mcSelfTestGPIO.writePin(modelOutputs.MC_Self_Test ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
@@ -410,6 +418,10 @@ bool MCuC::process() {
     }
 
     // Set CanOpen output data
+    if (ucState.stateEnum != lastState) {
+        lastState = ucState.stateEnum;
+        flags->set(VCU_STATE_CHANGE_MASK);
+    }
 
     // todo: probs clean this up somehow... Dont send enable signals from model if there was a switch fault (current or temp) on that switch
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.batt = modelOutputs.Batt_12V_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.battCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch0TempFault);
@@ -428,6 +440,11 @@ bool MCuC::process() {
 
 
 //    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "stat: %s, hud: %d", stateToString(modelOutputs.uC_State), modelOutputs.HUDL_EN_uC_CAN);
+
+    if (accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.val != lvssPowerStateLast.val) {
+        lvssPowerStateLast.val = accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.val;
+        flags->set(LVSS_OUT_CHANGED_MASK);
+    }
 
 
     // Send the Motor Controller CAN message (set values first)
@@ -457,19 +474,21 @@ bool MCuC::process() {
 //    }
 //#endif
 
-    io::CAN::CANStatus gfdbMessageStatus = io::CAN::CANStatus::OK;
+//    io::CAN::CANStatus gfdbMessageStatus = io::CAN::CANStatus::OK;
 
     // Flag is set by RTOS gfdbTimer
-    if (groundFaultRequestFlag) {
-        gfdbMessageStatus = powertrainCAN.sendGFDBStateRequest();
-        groundFaultRequestFlag = false;
-    }
-
-#ifdef EVT_CORE_LOG_ENABLE
-    if (gfdbMessageStatus != io::CAN::CANStatus::OK) {
-        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "GFDB Isolation State Message Failed with error %d", gfdbMessageStatus);
-    }
-#endif
+//    if (groundFaultRequestFlag) {
+//        gfdbMessageStatus      = powertrainCAN.sendGFDBStateRequest();
+//        groundFaultRequestFlag = false;
+//    }
+//
+//#ifdef EVT_CORE_LOG_ENABLE
+//    if (gfdbMessageStatus != io::CAN::CANStatus::OK) {
+//        log::LOGGER.log(core::log::Logger::LogLevel::WARNING,
+//                        "GFDB Isolation State Message Failed with error %d",
+//                        gfdbMessageStatus);
+//    }
+//#endif
 
     sendOutputDataToUnsafeBuffer();
     bufferMutex.put();
@@ -477,13 +496,6 @@ bool MCuC::process() {
 #ifdef EVT_CORE_LOG_ENABLE
     halend = core::time::millis();
 #endif
-
-    if (ucState.stateEnum != lastState) {
-        lastState = ucState.stateEnum;
-        return true;
-    } else {
-        return false;
-    }
 }
 
 } // namespace vcu

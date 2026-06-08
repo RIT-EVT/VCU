@@ -6,6 +6,7 @@
 #include <core/io/GPIO.hpp>
 #include <core/io/pin.hpp>
 #include <core/io/types/CANMessage.hpp>
+#include <core/rtos/EventFlags.hpp>
 #include <core/rtos/Initializable.hpp>
 #include <core/rtos/Mutex.hpp>
 
@@ -142,11 +143,15 @@ public:
     static constexpr uint8_t BMS_CELL_TEMP_LEN = 45;
     static constexpr uint8_t BMS_CELL_VOLT_LEN = 100;
 
-    static constexpr uint32_t SIM_STATE_TPDO_NUM = 0x01;
-    static constexpr uint32_t HEALTH_FLAG_TPDO_NUM = 0x02;
+    static constexpr uint32_t LVSS_POWER_CMD_TPDO_NUM = 0x00;
+    static constexpr uint32_t SIM_STATE_TPDO_NUM      = 0x01;
+    static constexpr uint32_t HEALTH_FLAG_TPDO_NUM    = 0x02;
 
-    static constexpr uint32_t MC_FR_IDX = 0; // flowrate index of MC FR from TMS on Accessory CAN
+    static constexpr uint32_t MC_FR_IDX   = 0; // flowrate index of MC FR from TMS on Accessory CAN
     static constexpr uint32_t BATT_FR_IDX = 1; // flowrate index of Battery FR from TMS on Accessory CAN
+
+    static constexpr uint32_t LVSS_OUT_CHANGED_MASK = 1 << 14;
+    static constexpr uint32_t VCU_STATE_CHANGE_MASK = 1 << 15;
 
     /**
      * Struct that contains all the GPIOs that an instance of this class requires.
@@ -196,6 +201,10 @@ public:
         };
     };
 
+    /**
+     * Union to hold which switches are being powered from LVSS. Used to receive currently enabled boards from LVSS,
+     * and also used to send to LVSS to turn on / off switches.
+     */
     typedef union {
         uint16_t val;
         struct {
@@ -213,6 +222,9 @@ public:
         };
     } LVSSPowerState_t;
 
+    /**
+     * Union to hold the fault status' from the LVSS for the switches currents and temperatures
+     */
     typedef union {
         uint16_t val;
         struct {
@@ -225,8 +237,8 @@ public:
             uint16_t hudlCurrentFault : 1;
 
             // Power Switch 2
-            uint16_t accCurrentFault  : 1;
-            uint16_t gubCurrentFault  : 1;
+            uint16_t accCurrentFault : 1;
+            uint16_t gubCurrentFault : 1;
 
             uint16_t switch0TempFault : 1;
             uint16_t switch1TempFault : 1;
@@ -240,14 +252,14 @@ public:
      */
     typedef union {
         struct {
-            LVSSPowerState_t LVSS_out_EnableBoardSignal;    ///< LVSS (out): Determines which boards it will send power to
-            uint16_t LVSS_in_PowerSwitchCurrents[6];        ///< LVSS (in): switch currents
-            uint16_t LVSS_in_PowerSwitchTemperatures[3];    ///< LVSS (in): switch temps
-            int16_t LVSS_in_VicorCurrent;                  ///< LVSS (in): hv vicor current
-            LVSSSwitchFaults_t LVSS_in_SwitchFaults;        ///< LVSS (in): switch faults
-            LVSSPowerState_t LVSS_in_EnableBoardSignal;     ///< LVSS (in): what LVSS is powering
-            int16_t TMS_in_FlowRates[2]; ///< TMS (in): The cooling loop flow rates.
-            int16_t TMS_in_Temps[5]; ///< TMS (in): The cooling loop temperatures.
+            LVSSPowerState_t LVSS_out_EnableBoardSignal; ///< LVSS (out): Determines which boards it will send power to
+            uint16_t LVSS_in_PowerSwitchCurrents[6];     ///< LVSS (in): switch currents
+            uint16_t LVSS_in_PowerSwitchTemperatures[3]; ///< LVSS (in): switch temps
+            int16_t LVSS_in_VicorCurrent;                ///< LVSS (in): hv vicor current
+            LVSSSwitchFaults_t LVSS_in_SwitchFaults;     ///< LVSS (in): switch faults
+            LVSSPowerState_t LVSS_in_EnableBoardSignal;  ///< LVSS (in): what LVSS is powering
+            int16_t TMS_in_FlowRates[2];                 ///< TMS (in): The cooling loop flow rates.
+            int16_t TMS_in_Temps[5];                     ///< TMS (in): The cooling loop temperatures.
         };
         struct {
             uint16_t outputs[1];
@@ -269,15 +281,20 @@ public:
         UC_State stateEnum;
     };
 
+    /**
+     * Union to hold the VCU's internal status, in the form of error flags. This is the payload that is sent over
+     * CanOpen. *NotRun -> * was not run in the last health check period. *RanErr -> * had an error in the running of
+     * the code in the last health check period. *SpeedErr -> * did not run fast enough in the last health check period.
+     */
     typedef union {
         uint16_t flags;
         struct {
-            int16_t padding   : 10;
+            int16_t padding       : 10;
             int16_t gfdbReqNotRun : 1;
             int16_t canopenNotRun : 1;
-            int16_t ptcanISRErr : 1;
-            int16_t ptcanRanErr : 1;
-            int16_t modelRanErr : 1;
+            int16_t ptcanISRErr   : 1;
+            int16_t ptcanRanErr   : 1;
+            int16_t modelRanErr   : 1;
             int16_t modelSpeedErr : 1;
         };
     } HealthFlags_t;
@@ -316,9 +333,9 @@ public:
 
     /**
      * Runs one step of the Simulink model, including processing and handling inputs and outputs of the model.
-     * @return boolean if the state has been updated, and thus needs to be sent over canOpen.
+     * @param[in] flags the rtos EventFlags so we can set flags for the thread to alert canOpen to send messages.
      */
-    bool process();
+    void process(core::rtos::EventFlags* flags);
 
     // override methods from Initializable
     rtos::TXError init(rtos::BytePoolBase& pool) override;
@@ -374,7 +391,8 @@ public:
      * @param canopenNotRun true if canopen thread has NOT run since last health thread cycle, else false
      * @param gfdbReqNotRun true if GFDB Request thread has NOT run since last health thread cycle, else false
      */
-    void setHealthFlags(bool modelSpeedErr, bool modelRanErr, bool ptcanRanErr, bool ptcanISRErr, bool canopenNotRun, bool gfdbReqNotRun);
+    void setHealthFlags(bool modelSpeedErr, bool modelRanErr, bool ptcanRanErr, bool ptcanISRErr, bool canopenNotRun,
+                        bool gfdbReqNotRun);
 
 private:
     /**
@@ -413,31 +431,29 @@ private:
      */
     HealthFlags_t healthFlags = {0};
 
-    /// the gpios
+    /// Instance of the struct that contains all the GPIOs that an instance of this class requires.
     MCuC_GPIO gpios;
 
     // Model input data
-    bool powertrainCANSelfTestIn = false;             ///< CAN (Hardmon): If the powertrain CAN network is working.
-    MC_DC_State mcDischarge  = MC_DC_State::Disabled; ///< CAN (MC): What state the MC discharger is in. [0,4] range.
-    MC_VSM_State mcState     = MC_VSM_State::Start; ///< CAN (MC): What state the MC state machine is in. [0,14] range.
-    bool forwardEnable       = false;               ///< CAN (HIB): Whether or not the bike is commanded to go forward.
-    bool startPressed        = false;               ///< CAN (HIB): Whether or not the bike is starting.
-    bool brakeOn             = false;               ///< CAN (HIB): Whether or not the brake is on.
-    bool hibComparisonFault  = false;               ///< CAN (HIB): Whether or not there is a HIB comparison fault.
-    int16_t throttle         = 0;                   ///< CAN (HIB): Signal state of the throttle.
-    int32_t bmsCellTemps[BMS_CELL_TEMP_LEN] = {0};       ///< CAN (BMS): The cell temperatures.
-    int16_t bmsCellVoltages[BMS_CELL_VOLT_LEN] = {0};    ///< CAN (BMS): The cell voltages.
-    bool bmsContactorClosed      = false;           ///< CAN (BMS): Whether or not the contactor is closed.
-    uint8_t gfdbIsolationState   = 0;               ///< CAN (GFDB): The isolation state int value.
-
-    // lvssOn is decided if any message from LVSS received in last Xms (X being some number)
-    bool lvssOn                  = false;           ///< LVSS: Whether or not the LVSS is on.
+    bool powertrainCANSelfTestIn = false;            ///< CAN (Hardmon): If the powertrain CAN network is working.
+    MC_DC_State mcDischarge = MC_DC_State::Disabled; ///< CAN (MC): What state the MC discharger is in. [0,4] range.
+    MC_VSM_State mcState    = MC_VSM_State::Start;   ///< CAN (MC): What state the MC state machine is in. [0,14] range.
+    bool forwardEnable      = false;                 ///< CAN (HIB): Whether or not the bike is commanded to go forward.
+    bool startPressed       = false;                 ///< CAN (HIB): Whether or not the bike is starting.
+    bool brakeOn            = false;                 ///< CAN (HIB): Whether or not the brake is on.
+    bool hibComparisonFault = false;                 ///< CAN (HIB): Whether or not there is a HIB comparison fault.
+    int16_t throttle        = 0;                     ///< CAN (HIB): Signal state of the throttle.
+    int32_t bmsCellTemps[BMS_CELL_TEMP_LEN]    = {0};   ///< CAN (BMS): The cell temperatures.
+    int16_t bmsCellVoltages[BMS_CELL_VOLT_LEN] = {0};   ///< CAN (BMS): The cell voltages.
+    bool bmsContactorClosed                    = false; ///< CAN (BMS): Whether or not the contactor is closed.
+    uint8_t gfdbIsolationState                 = 0;     ///< CAN (GFDB): The isolation state int value.
 
     /**
      * Array holding number of messages received from each of the other boards.
      * Used to hold data before sending it to Simulink model for heartbeat checking.
      *
-     * Volatile because it is updated from the canOpen interrupt, as that is the only place we have access to CanOpen Node ID's.
+     * Volatile because it is updated from the canOpen interrupt, as that is the only place we have access to CanOpen
+     * Node ID's.
      */
     volatile uint32_t heartbeatMessages[HB_SIZE] = {0};
 
@@ -455,7 +471,7 @@ private:
     uint32_t lvssLastMessageTick = 0;
 
     // todo: this will need to be figured out what value works
-    static constexpr uint32_t LVSS_MESSAGE_LIFESPAN = 250; // how long after receiving a CanOpen msg from LVSS to consider it "enabled" (in ms)
+    static constexpr uint32_t LVSS_MESSAGE_LIFESPAN = 750; // how long after receiving a CanOpen msg from LVSS to consider it "enabled"
 
     // Model output data (struct)
     vcu::MCuC_Model::ExtY_MCuC_T modelOutputs;
@@ -471,7 +487,7 @@ private:
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 114; // TODO: CANopen set size of object dictionary
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 114;
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -519,31 +535,33 @@ private:
         RECEIVE_PDO_MAPPING_ENTRY_16XX(0x02, 0x04, PDO_MAPPING_UNSIGNED16),
 
         //------TMS Mapping------//
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x03,0x04),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03,0x01, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03,0x02, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03,0x03, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03,0x04, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x03, 0x04),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x01, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x02, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x03, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x03, 0x04, PDO_MAPPING_UNSIGNED16),
 
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x04,0x04),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x04,0x01, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x04,0x02, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x04,0x03, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x04,0x04, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x04, 0x04),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x04, 0x01, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x04, 0x02, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x04, 0x03, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x04, 0x04, PDO_MAPPING_UNSIGNED16),
 
-        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x05,0x02),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x05,0x01, PDO_MAPPING_UNSIGNED16),
-        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x05,0x02, PDO_MAPPING_UNSIGNED16),
-
+        RECEIVE_PDO_MAPPING_START_KEY_16XX(0x05, 0x02),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x05, 0x01, PDO_MAPPING_UNSIGNED16),
+        RECEIVE_PDO_MAPPING_ENTRY_16XX(0x05, 0x02, PDO_MAPPING_UNSIGNED16),
 
         // TPDO Setting
-        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(0x00, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 50),
-        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(SIM_STATE_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
-        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(HEALTH_FLAG_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER, TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
+        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(LVSS_POWER_CMD_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER,
+                                          TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 1000),
+        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(SIM_STATE_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER,
+                                          TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
+        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(HEALTH_FLAG_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER,
+                                          TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
 
         // Send EnableBoardSignal to LVSS
-        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(0x00, 0x01),
-        TRANSMIT_PDO_MAPPING_ENTRY_1AXX(0x00, 0x01, PDO_MAPPING_UNSIGNED16),
+        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(LVSS_POWER_CMD_TPDO_NUM, 0x01),
+        TRANSMIT_PDO_MAPPING_ENTRY_1AXX(LVSS_POWER_CMD_TPDO_NUM, 0x01, PDO_MAPPING_UNSIGNED16),
 
         // Send simulink state out when triggered by code
         TRANSMIT_PDO_MAPPING_START_KEY_1AXX(SIM_STATE_TPDO_NUM, 0x01),
@@ -555,8 +573,9 @@ private:
 
         // data links
         // TPDO Datalinks
-        DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(0x00), 0x01),
-        DATA_LINK_21XX(LINK_TPDO_NUMBER(0x00), 0x01, CO_TUNSIGNED16, &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal.val),
+        DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(LVSS_POWER_CMD_TPDO_NUM), 0x01),
+        DATA_LINK_21XX(LINK_TPDO_NUMBER(LVSS_POWER_CMD_TPDO_NUM), 0x01, CO_TUNSIGNED16,
+                       &accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal.val),
 
         DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(SIM_STATE_TPDO_NUM), 0x01),
         DATA_LINK_21XX(LINK_TPDO_NUMBER(SIM_STATE_TPDO_NUM), 0x01, CO_TUNSIGNED16, &ucState),

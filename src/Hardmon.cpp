@@ -1,11 +1,12 @@
-#include <Hardmon.hpp>
 #include <BoardMessageParsers.hpp>
+#include <Hardmon.hpp>
 
 #include <core/rtos/Enums.hpp>
 #include <core/rtos/Threadx.hpp>
 
 namespace vcu {
 
+// todo: Again, hardmon isn't done yet, so this stuff is effectively placeholder and not to be looked at
 Hardmon::Hardmon(HardmonGPIO gpio, io::CAN& ptCAN)
     : Initializable("Hardmon"), mutex((char*) "Hardmon Mutex", true), powertrainCAN(ptCAN), gpios(gpio) {
     model.initialize();
@@ -28,7 +29,7 @@ uint8_t Hardmon::getNodeID() {
     return NODE_ID;
 }
 
-void Hardmon::handlePowertrainCanMessage(io::CANMessage& message) { // todo: we want to handle more messages now
+void Hardmon::handlePowertrainCanMessage(io::CANMessage& message) {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     switch (message.getId()) {
     case dev::PowertrainCAN::HIB_MESSAGE_ID:
@@ -72,7 +73,7 @@ void Hardmon::process() {
     // update inputs
     // forwardEnable has been updated over CAN
     // update the gpio inputs in a loop using the unions
-    for (int i = 0; i < 12; i++) {  // todo: check this still matches
+    for (int i = 0; i < 12; i++) {
         modelGPIOInputs.arr[i] = gpios.inputArr[i]->readPin() == io::GPIO::State::HIGH;
     }
 
@@ -121,9 +122,6 @@ void Hardmon::process() {
     gpios.mcTogglePositiveGPIO.writePin(modelOutputs.mcTogglePos ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.mcucResetGPIO.writePin(modelOutputs.ucReset ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.lvssEnableHardmonGPIO.writePin(modelOutputs.lvssEnableHardMon ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    // TODO: right now the message sets all values but inverter discharge to be 0. This might be REALLY BAD,
-    //  discuss it more with the EES and maybe Matt. Also make sure that this is okay to send in terms of
-    //  determining if the MCuC is untrustworthy.
     if (modelOutputs.inverterDischarge) {
         powertrainCAN.setMCInverterDischarge(true);
         powertrainCAN.sendMCMessage();
