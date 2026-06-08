@@ -243,6 +243,8 @@ int main() {
         io::getGPIO<vcu::MCuC::IGNITION_B_PIN>(io::GPIO::Direction::INPUT),
 
         io::getGPIO<vcu::MCuC::INTERLOCK_A_PIN>(io::GPIO::Direction::INPUT),
+        io::getGPIO<vcu::MCuC::INTERLOCK_B_PIN>(io::GPIO::Direction::INPUT),
+
         io::getGPIO<vcu::MCuC::MC_STATUS_PIN>(io::GPIO::Direction::INPUT),
 
         io::getGPIO<vcu::MCuC::LS_SELF_TEST_IN_A_PIN>(io::GPIO::Direction::INPUT),

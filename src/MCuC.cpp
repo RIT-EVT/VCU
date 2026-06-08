@@ -223,7 +223,8 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     modelInputs.LS_Self_Test_In_A = gpios.lsSelfTestInAGPIO.readPin() == io::GPIO::State::HIGH;
     modelInputs.LS_Self_Test_In_B = gpios.lsSelfTestInBGPIO.readPin() == io::GPIO::State::HIGH;
     modelInputs.MC_ON             = gpios.mcStatusGPIO.readPin() == io::GPIO::State::HIGH;
-    modelInputs.Interlock         = gpios.interlockGPIO.readPin() == io::GPIO::State::HIGH;
+    modelInputs.Interlock        = gpios.interlockAGPIO.readPin() == io::GPIO::State::HIGH;
+//    modelInputs.InterlockB       = gpios.interlockBGPIO.readPin() == io::GPIO::State::HIGH;
     modelInputs.Ignition_LS_A     = gpios.ignitionAGPIO.readPin() == io::GPIO::State::LOW; // active low
     modelInputs.Ignition_LS_B     = gpios.ignitionBGPIO.readPin() == io::GPIO::State::LOW; // active low
     modelInputs.ESTOP_LS_A        = gpios.eStopAGPIO.readPin() == io::GPIO::State::LOW;    // active low
@@ -339,7 +340,6 @@ void MCuC::process(core::rtos::EventFlags* flags) {
         modelInputs.Heartbeats_CAN[0]++;
     }
 
-
     hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     for (int i = 0; i < HB_SIZE; i++) {
         if (modelOutputs.uC_State == UC_State::MC_Active) {
@@ -382,7 +382,6 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     gpios.lvssEnableGPIO.writePin(modelOutputs.LVSS_EN_uC ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.watchdogGPIO.writePin(modelOutputs.Watchdog ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 
-    gpios.canSelfTestGPIO.writePin(modelOutputs.CAN_Self_Test ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.lsSelfTestOutGPIO.writePin(modelOutputs.LS_Self_Test_Out ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.mcSelfTestGPIO.writePin(modelOutputs.MC_Self_Test ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
 

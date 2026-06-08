@@ -165,7 +165,8 @@ public:
             io::GPIO& ignitionAGPIO;
             io::GPIO& ignitionBGPIO;
 
-            io::GPIO& interlockGPIO;
+            io::GPIO& interlockAGPIO;
+            io::GPIO& interlockBGPIO;
             io::GPIO& mcStatusGPIO;
 
             io::GPIO& lsSelfTestInAGPIO;
