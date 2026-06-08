@@ -99,6 +99,9 @@ constexpr uint32_t PT_CAN_ERR_MASK        = 1 << PTCAN_ERR_LS;
 constexpr uint32_t CANOPEN_THREAD_MASK    = 1 << CANOPEN_THREAD_LS;
 constexpr uint32_t GFDB_TIMER_THREAD_MASK = 1 << GFDB_TIMER_THREAD_LS;
 
+constexpr uint32_t LVSS_OUT_CHANGED_MASK = 1 << 14;
+constexpr uint32_t VCU_STATE_CHANGE_MASK = 1 << 15;
+
 constexpr uint32_t FULL_HEALTH_THREAD_MASK = MODEL_THREAD_SLOW_MASK | MODEL_THREAD_MASK
                                             | PT_CAN_THREAD_MASK | PT_CAN_ERR_MASK
                                             | CANOPEN_THREAD_MASK | GFDB_TIMER_THREAD_MASK;
@@ -228,8 +231,8 @@ int main() {
     // UART for testing not on VCU
     //    io::UART& uart = io::getUART<io::Pin::UART_TX, io::Pin::UART_RX>(9600);
 
-//    log::LOGGER.setUART(&uart);
-//    log::LOGGER.setLogLevel(log::Logger::LogLevel::DEBUG);
+    log::LOGGER.setUART(&uart);
+    log::LOGGER.setLogLevel(log::Logger::LogLevel::DEBUG);
 
     // Initialize MCuC and Powertrain CAN
     vcu::MCuC::MCuC_GPIO gpios = {{
@@ -240,7 +243,7 @@ int main() {
         io::getGPIO<vcu::MCuC::IGNITION_A_PIN>(io::GPIO::Direction::INPUT),
         io::getGPIO<vcu::MCuC::IGNITION_B_PIN>(io::GPIO::Direction::INPUT),
 
-        io::getGPIO<vcu::MCuC::INTERLOCK_PIN>(io::GPIO::Direction::INPUT),
+        io::getGPIO<vcu::MCuC::INTERLOCK_A_PIN>(io::GPIO::Direction::INPUT),
         io::getGPIO<vcu::MCuC::MC_STATUS_PIN>(io::GPIO::Direction::INPUT),
 
         io::getGPIO<vcu::MCuC::LS_SELF_TEST_IN_A_PIN>(io::GPIO::Direction::INPUT),
@@ -356,6 +359,66 @@ int main() {
     ////////////////////////
     // Initialize Threadx //
     ////////////////////////
+
+//    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "start");
+//
+//    io::GPIO::State stat = io::GPIO::State::HIGH;
+//
+//    auto& ptt1 = io::getGPIO<vcu::MCuC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT);
+//    auto& ptt2 = io::getGPIO<vcu::MCuC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT);
+//    io::GPIO& out = io::getGPIO<vcu::MCuC::LS_SELF_TEST_OUT_PIN>(io::GPIO::Direction::OUTPUT);
+//
+//
+//    io::GPIO& inA = io::getGPIO<vcu::MCuC::IGNITION_A_PIN>(io::GPIO::Direction::INPUT);
+//    io::GPIO& inB = io::getGPIO<vcu::MCuC::LS_SELF_TEST_IN_B_PIN>(io::GPIO::Direction::INPUT);
+//
+//    io::GPIO& inC = io::getGPIO<vcu::MCuC::ESTOP_A_PIN>(io::GPIO::Direction::INPUT);
+//    io::GPIO& inD = io::getGPIO<vcu::MCuC::ESTOP_B_PIN>(io::GPIO::Direction::INPUT);
+//
+//    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "stloop");
+
+//    out.writePin(io::GPIO::State::LOW);
+//    while (1) {        gpios.superFaultLEDGPIO.writePin(inB.readPin());
+//    }
+//    while (1) {
+//        stat = (stat == io::GPIO::State::LOW ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+//        out.writePin(stat);
+//
+//
+////        ptt1.writePin(io::GPIO::State::HIGH);
+////        ptt2.writePin(io::GPIO::State::LOW);
+////
+////        time::wait(10);
+////
+////
+////        ptt1.writePin(io::GPIO::State::LOW);
+////        ptt2.writePin(io::GPIO::State::LOW);
+////
+////        time::wait(1000);
+////
+////        ptt1.writePin(io::GPIO::State::LOW);
+////        ptt2.writePin(io::GPIO::State::HIGH);
+////
+////        time::wait(10);
+////
+////
+////        ptt1.writePin(io::GPIO::State::LOW);
+////        ptt2.writePin(io::GPIO::State::LOW);
+////        time::wait(1000);
+//
+//
+//
+//        // lifeline LED to show it is running
+////        gpios.faultLEDGPIO.writePin(stat);
+//
+//        gpios.faultLEDGPIO.writePin(stat);
+//        gpios.superFaultLEDGPIO.writePin(inB.readPin());
+//
+//        time::wait(5000);
+//    }
+
+
+
 
     // Initialize Bytepool
 

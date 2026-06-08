@@ -193,9 +193,16 @@ bool MCuC::process() {
     // Need to send canOpen message on state change, so keep track of lastState
     static UC_State lastState = UC_State::Preset;
 
+    // todo: debugging static vars for manually tricking simulink model into going through full state machine
+    static bool firstStep         = true;
+    static bool seenMCInit        = false;
+    static bool forwardStatic     = false;
+    static bool interlock         = true;
+    static int16_t throttleStatic = 0;
+
 #ifdef EVT_CORE_LOG_ENABLE
     uint32_t halstart, halstep, halstepEnd, halpowerTrainCAN = 0, halmotorControllerCan, halend;
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "state %s", stateToString(lastState));
+//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "state %s", stateToString(lastState));
 
     halstart = core::time::millis();
 #endif
@@ -213,8 +220,8 @@ bool MCuC::process() {
     modelInputs.Interlock         = gpios.interlockGPIO.readPin() == io::GPIO::State::HIGH;
     modelInputs.Ignition_LS_A     = gpios.ignitionAGPIO.readPin() == io::GPIO::State::LOW; // active low
     modelInputs.Ignition_LS_B     = gpios.ignitionBGPIO.readPin() == io::GPIO::State::LOW; // active low
-    modelInputs.ESTOP_LS_A        = gpios.eStopAGPIO.readPin() == io::GPIO::State::LOW;    // active low
-    modelInputs.ESTOP_LS_B        = gpios.eStopBGPIO.readPin() == io::GPIO::State::LOW;    // active low
+    modelInputs.ESTOP_LS_A        = gpios.eStopAGPIO.readPin() == io::GPIO::State::HIGH;    // todo: imagine but actually -> active low
+    modelInputs.ESTOP_LS_B        = gpios.eStopBGPIO.readPin() == io::GPIO::State::HIGH;    // todo: imagine but actually -> active low
 
     // Set CAN inputs (values updated over CAN)
 
@@ -260,11 +267,76 @@ bool MCuC::process() {
     memcpy(modelInputs.LVSS_Temps_CAN, accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchTemperatures, sizeof(accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchTemperatures));
     memcpy(modelInputs.LVSS_Currents_CAN, accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents, sizeof(accessoryCanDataSafeBuffer.LVSS_in_PowerSwitchCurrents));
 
+    // todo: hardcoding for tests; remove when done
+    modelInputs.Interlock                = true;
+    modelInputs.LVSS_ON_CAN              = false;
+    modelInputs.MC_ON                    = false;
+    modelInputs.BMS_Contactor_Closed_CAN = true;
+    modelInputs.GFDB_Isolation_State_CAN = 0;
+    modelInputs.MC_VSM_State_CAN         = MC_VSM_State::Start;
+    modelInputs.HIB_Comparison_Fault_CAN = false;
+
+    if (firstStep) {
+        firstStep = false;
+    } else {
+        modelInputs.BMS_Contactor_Closed_CAN = static_cast<int>(modelOutputs.BMS_Contactor_Command_uC_CAN) != 0;
+        modelInputs.LVSS_ON_CAN              = modelOutputs.LVSS_EN_uC;
+        modelInputs.MC_ON                    = modelOutputs.MC_EN_uC;
+        modelInputs.LS_Self_Test_In_A = true;
+        modelInputs.LS_Self_Test_In_A = true;
+    }
+
+    // Big ass code block to fake inputs to test simulink model
+    if (!firstStep) {
+        if (modelOutputs.uC_State == UC_State::MC_Init || seenMCInit) {
+            modelInputs.MC_VSM_State_CAN = MC_VSM_State::Ready;
+            seenMCInit                   = true;
+        }
+
+        if (modelOutputs.uC_State == UC_State::Contactor_Closed) {
+            modelInputs.Start_CAN = true;
+        }
+
+        if (modelOutputs.uC_State == UC_State::MC_Ready) {
+            modelInputs.Brake_CAN    = true;
+            modelInputs.Throttle_CAN = 0;
+            forwardStatic            = true;
+        }
+
+        modelInputs.Forward_EN_CAN = forwardStatic;
+
+        if (modelOutputs.uC_State == UC_State::MC_Active) {
+            modelInputs.Throttle_CAN = throttleStatic++;
+            modelInputs.MC_VSM_State_CAN = MC_VSM_State::Motor_Running;
+        }
+
+        if (modelOutputs.uC_State == UC_State::MC_Discharging) {
+            modelInputs.MC_DC_State_CAN = MC_DC_State::Complete;
+        }
+
+        if (modelOutputs.uC_State == UC_State::Contactor_Open) {
+            forwardStatic                = false;
+            modelInputs.Forward_EN_CAN   = false;
+            modelInputs.MC_VSM_State_CAN = MC_VSM_State::Start;
+            modelInputs.MC_DC_State_CAN = MC_DC_State::Active;
+            seenMCInit                   = false;
+        }
+    }
+
+    // Increment GFDB & HIB heartbeats
+    modelInputs.Heartbeats_CAN[2]++;
+    modelInputs.Heartbeats_CAN[3]++;
+
+    if (modelOutputs.LVSS_EN_uC) { // if we say lvss should be on, increment LVSS heartbeat
+        modelInputs.Heartbeats_CAN[0]++;
+    }
+
+
     hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
-    static int h[HB_SIZE] = {0};
     for (int i = 0; i < HB_SIZE; i++) {
-//        modelInputs.Heartbeats_CAN[i] = heartbeatMessages[i];
-        modelInputs.Heartbeats_CAN[i] = h[i]++;
+        if (modelOutputs.uC_State == UC_State::MC_Active) {
+            modelInputs.Heartbeats_CAN[i]++;
+        }
     }
     hbMutex.put();
 
@@ -347,32 +419,43 @@ bool MCuC::process() {
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.acc = modelOutputs.Acc_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.accCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.gub = modelOutputs.GUB_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.gubCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
 
+//    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.batt = modelOutputs.Batt_12V_EN_uC_CAN;
+//    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hib = modelOutputs.HIB_EN_uC_CAN;
+//    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.tms = modelOutputs.TMS_EN_uC_CAN;
+//    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hudl = modelOutputs.HUDL_EN_uC_CAN;
+//    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.acc = modelOutputs.Acc_EN_uC_CAN;
+//    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.gub = modelOutputs.GUB_EN_uC_CAN;
+
+
+//    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "stat: %s, hud: %d", stateToString(modelOutputs.uC_State), modelOutputs.HUDL_EN_uC_CAN);
+
+
     // Send the Motor Controller CAN message (set values first)
-    powertrainCAN.setMCAll(modelOutputs.Torque_Request_CAN,
-                           modelOutputs.Speed_Command_uC_CAN,
-                           modelOutputs.Direction_Command_uC_CAN,
-                           modelOutputs.Inverter_EN_uC_CAN,
-                           modelOutputs.Inverter_DC_uC_CAN,
-                           modelOutputs.Speed_Mode_Enable_uC_CAN,
-                           modelOutputs.Rolling_Counter_uC_CAN,
-                           modelOutputs.Torque_Limit_Command_uC_CAN);
-
-    io::CAN::CANStatus mcMessageStatus = powertrainCAN.sendMCMessage();
-
-#ifdef EVT_CORE_LOG_ENABLE
-    if (mcMessageStatus != io::CAN::CANStatus::OK) {
-        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "MC Message Failed with error %d", mcMessageStatus);
-    }
-#endif
-
-    powertrainCAN.setBMSContactor(static_cast<int16_t>(modelOutputs.BMS_Contactor_Command_uC_CAN));
-    io::CAN::CANStatus bmsMessageStatus = powertrainCAN.sendBMSMessage();
+//    powertrainCAN.setMCAll(modelOutputs.Torque_Request_CAN,
+//                           modelOutputs.Speed_Command_uC_CAN,
+//                           modelOutputs.Direction_Command_uC_CAN,
+//                           modelOutputs.Inverter_EN_uC_CAN,
+//                           modelOutputs.Inverter_DC_uC_CAN,
+//                           modelOutputs.Speed_Mode_Enable_uC_CAN,
+//                           modelOutputs.Rolling_Counter_uC_CAN,
+//                           modelOutputs.Torque_Limit_Command_uC_CAN);
+//
+//    io::CAN::CANStatus mcMessageStatus = powertrainCAN.sendMCMessage();
 
 #ifdef EVT_CORE_LOG_ENABLE
-    if (bmsMessageStatus != io::CAN::CANStatus::OK) {
-        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "BMS Message Failed with error %d", bmsMessageStatus);
-    }
+//    if (mcMessageStatus != io::CAN::CANStatus::OK) {
+//        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "MC Message Failed with error %d", mcMessageStatus);
+//    }
 #endif
+
+//    powertrainCAN.setBMSContactor(static_cast<int16_t>(modelOutputs.BMS_Contactor_Command_uC_CAN));
+//    io::CAN::CANStatus bmsMessageStatus = powertrainCAN.sendBMSMessage();
+//
+//#ifdef EVT_CORE_LOG_ENABLE
+//    if (bmsMessageStatus != io::CAN::CANStatus::OK) {
+//        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "BMS Message Failed with error %d", bmsMessageStatus);
+//    }
+//#endif
 
     io::CAN::CANStatus gfdbMessageStatus = io::CAN::CANStatus::OK;
 
