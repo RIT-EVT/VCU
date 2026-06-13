@@ -328,7 +328,7 @@ void MCuC_Model::MCuC_MC_Discharging(const bool* LogicalOperator, const bool* OR
         // Entry 'LVSS_MC_Shutdown': '<S11>:531'
         MCuC_Y.LVSS_EN_uC = false;
         MCuC_Y.MC_EN_uC   = false;
-    } else if (static_cast<uint16_t>(MCuC_DW.temporalCounter_i1) >= 1) {
+    } else if (static_cast<uint16_t>(MCuC_DW.temporalCounter_i1) >= 34) { // todo: this is
         // Transition: '<S11>:524'
         MCuC_DW.is_MC_Discharging = MCuC_IN_Shutdown;
 

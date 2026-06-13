@@ -472,7 +472,7 @@ private:
     uint32_t lvssLastMessageTick = 0;
 
     // todo: this will need to be figured out what value works
-    static constexpr uint32_t LVSS_MESSAGE_LIFESPAN = 750; // how long after receiving a CanOpen msg from LVSS to consider it "enabled"
+    static constexpr uint32_t LVSS_MESSAGE_LIFESPAN = 500; // how long after receiving a CanOpen msg from LVSS to consider it "enabled"
 
     // Model output data (struct)
     vcu::MCuC_Model::ExtY_MCuC_T modelOutputs;

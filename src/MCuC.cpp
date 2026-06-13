@@ -278,12 +278,15 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     // todo: test hardcoding
     modelInputs.Interlock                = true;
     modelInputs.LVSS_ON_CAN              = false;
-    modelInputs.LVSS_ON_CAN              = false;
     modelInputs.MC_ON                    = false;
     modelInputs.BMS_Contactor_Closed_CAN = false;
     modelInputs.GFDB_Isolation_State_CAN = 0;
     modelInputs.MC_VSM_State_CAN         = MC_VSM_State::Start;
     modelInputs.HIB_Comparison_Fault_CAN = false;
+
+    modelInputs.LS_Self_Test_In_A = false;
+    modelInputs.LS_Self_Test_In_B = false;
+    modelInputs.MC_DC_State_CAN = MC_DC_State::Disabled;
 
     if (firstStep) {
         firstStep = false;
@@ -292,7 +295,7 @@ void MCuC::process(core::rtos::EventFlags* flags) {
         modelInputs.LVSS_ON_CAN              = modelOutputs.LVSS_EN_uC;
         modelInputs.MC_ON                    = modelOutputs.MC_EN_uC;
         modelInputs.LS_Self_Test_In_A = true;
-        modelInputs.LS_Self_Test_In_A = true;
+        modelInputs.LS_Self_Test_In_B = true;
     }
 
     // Big ass code block to fake inputs to test simulink model
@@ -340,6 +343,8 @@ void MCuC::process(core::rtos::EventFlags* flags) {
         modelInputs.Heartbeats_CAN[0]++;
     }
 
+    modelInputs.State_Handshake = true;
+
     hbMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     for (int i = 0; i < HB_SIZE; i++) {
         if (modelOutputs.uC_State == UC_State::MC_Active) {
@@ -349,7 +354,7 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     hbMutex.put();
 
 #ifdef EVT_CORE_LOG_ENABLE
-//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, ":::: %d", modelOutputs.LVSS_EN_uC);
+//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "%d : %d       %d : %d", modelInputs.Ignition_LS_A, modelInputs.Ignition_LS_B, modelInputs.ESTOP_LS_A, modelInputs.ESTOP_LS_B);
 //    halstep = core::time::millis();
 #endif
 
@@ -436,9 +441,6 @@ void MCuC::process(core::rtos::EventFlags* flags) {
 //    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hudl = modelOutputs.HUDL_EN_uC_CAN;
 //    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.acc = modelOutputs.Acc_EN_uC_CAN;
 //    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.gub = modelOutputs.GUB_EN_uC_CAN;
-
-
-//    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "stat: %s, hud: %d", stateToString(modelOutputs.uC_State), modelOutputs.HUDL_EN_uC_CAN);
 
     if (accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.val != lvssPowerStateLast.val) {
         lvssPowerStateLast.val = accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.val;

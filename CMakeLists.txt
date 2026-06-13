@@ -24,6 +24,8 @@ endif()
 
 # Increase ThreadX update time to support VCU cycle time
 add_compile_definitions(TX_TIMER_TICKS_PER_SECOND=1000UL)
+# Enable sending health thread flags (errors) over CanOpen
+add_compile_definitions(SEND_HEALTH_THREAD_CAN)
 
 if (TARGET_DEV STREQUAL "STM32F446xx")
     add_compile_definitions(STM32F446)

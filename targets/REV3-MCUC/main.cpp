@@ -550,7 +550,6 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         uint32_t flagOutput;
         args->eventFlags->getCurrentFlags(&flagOutput);
 
-#define SEND_HEALTH_THREAD_CAN // todo: decide where to put this define. prolly in the cmake
 #ifdef SEND_HEALTH_THREAD_CAN
         // This flag will be set up to 3 times every time the device goes through contactor opening / closing states
         bool modelTooSlow = (flagOutput & MODEL_THREAD_SLOW_MASK);
@@ -586,7 +585,6 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 [[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Started");
     args->mcuc->sendOutputDataToUnsafeBuffer();
-    //  todo:  args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal.val = 63; // todo: temporary
     rtos::TXError error;
     while (true) {
         io::processCANopenNode(args->accessoryCanNode);
