@@ -39,9 +39,21 @@ public:
         // HIB message
         HIB_MESSAGE_ID = 0x0D0,
 
+        // BMS message
+        BMS_MESSAGE_ID = 0x202,
+
+        // Ground Fault recieve message
+        GFDB_INCOMING_ID = 0xA100100,
+
+        // Ground Fault outgoing message
+        GFDB_OUTGOING_ID = 0xA100101,
+
+        // Early shutdown warning for the GUB message
+        GUB_EARLY_SHUTDOWN_WARNING_ID = 0x0FF, // it spells off :)
+
         // self test message ids
         HARDMON_SELF_TEST_MESSAGE_ID = 0x044, // TODO: This is not the correct ID, will not work!
-        UC_SELF_TEST_MESSAGE_ID      = 0x045  // TODO: This is not the correct ID, will not work!
+        UC_SELF_TEST_MESSAGE_ID      = 0x045, // TODO: This is not the correct ID, will not work!
     };
 
     /**
@@ -57,55 +69,24 @@ public:
     PowertrainCAN(io::CAN& can);
 
     /**
-     * Parses the motor controller state from the motor controller internal state message
-     *  (message with id = MC_INTERNAL_STATES_ID)
-     *
-     * @param message[in] a message from the motor controller describing its internal state
-     * @return the state of the motor controller state machine
+     * Sets the Motor Controller Command message values.
+     * @param torque the value to set torque to.
+     * @param speed the value to set speed to.
+     * @param direction the value to set direction to.
+     * @param inverterEn the value to set inverterEn to.
+     * @param inverterDC the value to set interverDC to.
+     * @param speedModeEn the value to set speedModeEn to.
+     * @param rollingCounter the value to set rollingCounter to.
+     * @param torqueLimit the value to set torqueLimit to.
      */
-    uint8_t parseMCState(io::CANMessage& message);
+    void setMCAll(int16_t torque, int16_t speed, int16_t direction, bool inverterEn, bool inverterDC,
+                  int16_t speedModeEn, int16_t rollingCounter, int16_t torqueLimit);
 
     /**
-     * Parses the motor controller discharge machine state from the motor controller internal state message
-     *  (message with id = MC_INTERNAL_STATES_ID)
-     *
-     * @param message[in] a message from the motor controller describing its internal state.
-     * @return the state of the motor controller's discharger internal state machine.
+     * Sets the contactorCommand value for the BMS CAN message.
+     * @param contactorCommand the value to set contactorCommand to.
      */
-    uint8_t parseMCDischarge(io::CANMessage& message);
-
-    /**
-     * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
-     * Parses the HIB throttle value from the HIB message.
-     *  (message with id = HIB_MESSAGE_ID)
-     *
-     * @param message[in] a message from the HIB that contains throttle information.
-     * @return the value of the throttle.
-     */
-    int16_t parseHIBThrottle(io::CANMessage& message);
-
-    // TODO: Heller's point about moving all of this parsing to
-    //  separate board classes that takes in a CAN message from that respective board and extracts the relevant data
-    /**
-     * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
-     * Parses the HIB forward enable value from the HIB message.
-     *  (message with id = HIB_MESSAGE_ID)
-     *
-     * @param message[in] a message from the HIB that contains forward enable information.
-     * @return whether or not forward enable is on.
-     */
-    bool parseHIBForwardEnable(io::CANMessage& message);
-
-    // TODO: All HIB parsing needs to be updated to match actual messages
-    /**
-     * NOTE: EXAMPLE IMPLEMENTATION THAT MUST BE UPDATED
-     * Parses the HIB start pressed value from the HIB message.
-     *  (message with id = HIB_MESSAGE_ID)
-     *
-     * @param message[in] a message from the HIB that contains start pressed information.
-     * @return whether or not start is pressed
-     */
-    bool parseHIBStartPressed(io::CANMessage& message);
+    void setBMSContactor(int16_t contactorCommand);
 
     /**
      * Sets the inverterEnable value of the Motor Controller Command message.
@@ -133,19 +114,42 @@ public:
      * NOTE: sending the message DOES NOT reset the contents of the message;
      *  i.e. calling this function twice will send two identical messages.
      */
-    void sendMCMessage();
+    io::CAN::CANStatus sendMCMessage();
+
+    /**
+     * Sends the BMS message.
+     * NOTE: sending the message DOES NOT reset the contents of the message;
+     *  i.e. calling this function twice will send two identical messages.
+     */
+    io::CAN::CANStatus sendBMSMessage();
+
+    /**
+     * Sends the request to the GFDB for its isolation state.
+     * (Message is the same every time)
+     * @return CAN status of the send
+     */
+    io::CAN::CANStatus sendGFDBStateRequest();
 
     /**
      * Sends a UC Self Test Message that the Hardmon will respond to.
      *  (Message is the same every time)
+     *  Returns CAN status of the attempted send
      */
-    void sendUCSelfTestMessage();
+    io::CAN::CANStatus sendUCSelfTestMessage();
+
+    /**
+     * Sends a Shutdown Message to the GUB. This message is sent ~100ms before power will be cut!
+     *  (Message is the same every time)
+     *  Returns CAN status of the attempted send
+     */
+    io::CAN::CANStatus sendShutdownWarningMessage();
 
     /**
      * Sends the Hardmon Response to the UC Self Test Message.
      *  (Message is the same every time).
+     *  Returns CAN status of the attempted send
      */
-    void sendHardmonSelfTestResponse();
+    io::CAN::CANStatus sendHardmonSelfTestResponse();
 
     core::rtos::TXError init(rtos::BytePoolBase& pool) override;
 
@@ -160,12 +164,23 @@ private:
         uint8_t inverterEnable    : 1;
         uint8_t inverterDischarge : 1;
         uint8_t speedModeEnable   : 1;
-        uint8_t padding           : 5;
+        uint8_t padding           : 1;
+        uint8_t rollingCounter    : 4;
         int16_t CommandedTorqueLimit;
     } __attribute__((packed));
 
     /// Local instantiation of the command payload.
-    MCCommandPayload mcCommandPayload = {0, 0, 1, 0, 0, 0, 0, 0};
+    MCCommandPayload mcCommandPayload = {0, 0, 1, 0, 0, 0, 0, 0, 0};
+
+    /**
+     * Struct that represents the structure of the BMS Output Message.
+     */
+    struct BMSPayload {
+        int16_t contactorCommand;
+    } __attribute__((packed));
+
+    /// Local instantiation of the BMS payload.
+    BMSPayload bmsPayload = {0};
 
     /// Can Driver
     io::CAN& can;
@@ -175,6 +190,18 @@ private:
     uint8_t UCSelfTestPayload = 4;
     /// the uc self test message
     io::CANMessage UCSelfTestMessage = io::CANMessage(UC_SELF_TEST_MESSAGE_ID, 1, &UCSelfTestPayload, false);
+
+    /// Payload for gub to be warned about power about to turn off
+    uint8_t GUBShutdownPayload = 255;
+    /// the pre-shutdown warning message for the GUB
+    io::CANMessage GUBShutdownWarningMessage =
+        io::CANMessage(GUB_EARLY_SHUTDOWN_WARNING_ID, 1, &GUBShutdownPayload, false);
+
+    /// Payload for GFDB to tell it to send the current isolation state
+    uint8_t GFDBStateRequestPayload = 0xE0;
+    /// Message for the GFDB to request isolation state; According to SIM200 CAN Spreadsheet, all requests need to have
+    /// datalength of 3
+    io::CANMessage GFDBStateRequestMessage = io::CANMessage(GFDB_OUTGOING_ID, 3, &GFDBStateRequestPayload, false);
 
     /// Example payload for the Hardmon selfTest Response Message.
     /// In the future, could be replaced by a more meaningful payload

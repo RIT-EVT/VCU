@@ -1,3 +1,4 @@
+#include <BoardMessageParsers.hpp>
 #include <Hardmon.hpp>
 
 #include <core/rtos/Enums.hpp>
@@ -5,6 +6,7 @@
 
 namespace vcu {
 
+// todo: Again, hardmon isn't done yet, so this stuff is effectively placeholder and not to be looked at
 Hardmon::Hardmon(HardmonGPIO gpio, io::CAN& ptCAN)
     : Initializable("Hardmon"), mutex((char*) "Hardmon Mutex", true), powertrainCAN(ptCAN), gpios(gpio) {
     model.initialize();
@@ -31,7 +33,7 @@ void Hardmon::handlePowertrainCanMessage(io::CANMessage& message) {
     mutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
     switch (message.getId()) {
     case dev::PowertrainCAN::HIB_MESSAGE_ID:
-        forwardEnable = powertrainCAN.parseHIBForwardEnable(message);
+        forwardEnable = boards::parseHIBMessage(message).forwardEn;
         break;
     case dev::PowertrainCAN::UC_SELF_TEST_MESSAGE_ID:
         powertrainCAN.sendHardmonSelfTestResponse();
@@ -71,9 +73,10 @@ void Hardmon::process() {
     // update inputs
     // forwardEnable has been updated over CAN
     // update the gpio inputs in a loop using the unions
-    for (int i = 0; i < 11; i++) {
+    for (int i = 0; i < 12; i++) {
         modelGPIOInputs.arr[i] = gpios.inputArr[i]->readPin() == io::GPIO::State::HIGH;
     }
+
     // lvssEnableUC should be a pin, but electrical forgot to add it,
     // so instead we are calculating it based on the microcontroller state.
     // ucStates 1 through 5 should make this true
@@ -86,19 +89,20 @@ void Hardmon::process() {
     state += modelGPIOInputs.ucState[2];
     state <<= 1;
     state += modelGPIOInputs.ucState[3];
-    lvssEnableUC = (state >= 1 && state <= 5);
+
+    lvssEnableUC = gpios.lvssEnableHardmonGPIO.readPin() == io::GPIO::State::HIGH;
     ucState      = static_cast<UC_State>(state);
     // step the model
     const Hardmon_Model::ExtU_Hardmon_T modelInputs = {forwardEnable,
-                                                       modelGPIOInputs.ignitionCheck,
-                                                       modelGPIOInputs.ignition3v3,
+                                                       modelGPIOInputs.ignitionB,
+                                                       modelGPIOInputs.ignitionA,
                                                        modelGPIOInputs.lvssStatus,
                                                        modelGPIOInputs.mcStatus,
                                                        ucState,
-                                                       modelGPIOInputs.eStopCheck,
+                                                       modelGPIOInputs.eStopB,
                                                        discharge,
                                                        modelGPIOInputs.watchdog,
-                                                       modelGPIOInputs.eStop3v3,
+                                                       modelGPIOInputs.eStopA,
                                                        lvssEnableUC};
 
     mutex.put();
@@ -116,12 +120,8 @@ void Hardmon::process() {
     // inverter discharge will be handled over CAN
     gpios.mcToggleNegativeGPIO.writePin(modelOutputs.mcToggleNeg ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.mcTogglePositiveGPIO.writePin(modelOutputs.mcTogglePos ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    gpios.ucResetGPIO.writePin(modelOutputs.ucReset ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    gpios.mcucResetGPIO.writePin(modelOutputs.ucReset ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
     gpios.lvssEnableHardmonGPIO.writePin(modelOutputs.lvssEnableHardMon ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    gpios.hmFaultGPIO.writePin(modelOutputs.hmFault ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    // TODO: right now the message sets all values but inverter discharge to be 0. This might be REALLY BAD,
-    //  discuss it more with the EES and maybe Matt. Also make sure that this is okay to send in terms of
-    //  determining if the MCuC is untrustworthy.
     if (modelOutputs.inverterDischarge) {
         powertrainCAN.setMCInverterDischarge(true);
         powertrainCAN.sendMCMessage();

@@ -25,7 +25,6 @@
 #include <core/rtos/BytePool.hpp>
 #include <core/rtos/Enums.hpp>
 #include <core/rtos/EventFlags.hpp>
-#include <core/rtos/Queue.hpp>
 #include <core/rtos/Semaphore.hpp>
 #include <core/rtos/Thread.hpp>
 #include <core/rtos/Timer.hpp>
@@ -43,7 +42,14 @@ namespace log  = core::log;
 /// The size of the memory pool for the tx application
 #define TX_APP_MEM_POOL_SIZE 65536
 /// How often the model should take 1 step.
-#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(500)
+#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(200)
+
+/// How long until start the model trigger rates (give long enough to start)
+#define MODEL_THREAD_TRIGGER_START MS_TO_TICKS(75)
+
+/// How often to send the isolation state request to the ground fault detection board
+#define GFDB_TRIGGER_START              MS_TO_TICKS(100)
+#define GFDB_REQUEST_TIMER_TRIGGER_RATE MS_TO_TICKS(100)
 
 // Model Thread Parameters
 #define MODEL_THREAD_STACK_SIZE        1024
@@ -73,11 +79,31 @@ namespace log  = core::log;
 #define ACC_CAN_RECEIVE_THREAD_TIME_SLICE        MS_TO_TICKS(10)
 #define ACC_CAN_RECEIVE_THREAD_AUTOSTART         true
 
-// Threadsafe UART Thread parameters
-#define UART_THREAD_STACK_SIZE        1024
-#define UART_THREAD_PRIORITY          3
-#define UART_THREAD_PREEMPT_THRESHOLD 3
-#define UART_THREAD_TIME_SLICE        MS_TO_TICKS(15)
+#define CANOPEN_NODE_ID_MASK 0x7F
+
+// Model Thread sharedFlag Mask
+constexpr uint32_t MODEL_TRIGGER_FLAG_MASK = 0x01;
+
+// Constexpr's for sharedFlag masks for Health thread related flags
+constexpr int MODEL_THREAD_SLOW_LS = 1;
+constexpr int MODEL_THREAD_LS      = 2;
+constexpr int PT_CAN_THREAD_LS     = 3;
+constexpr int PTCAN_ERR_LS         = 4;
+constexpr int CANOPEN_THREAD_LS    = 5;
+constexpr int GFDB_TIMER_THREAD_LS = 6;
+
+constexpr uint32_t MODEL_THREAD_SLOW_MASK = 1 << MODEL_THREAD_SLOW_LS;
+constexpr uint32_t MODEL_THREAD_MASK      = 1 << MODEL_THREAD_LS;
+constexpr uint32_t PT_CAN_THREAD_MASK     = 1 << PT_CAN_THREAD_LS;
+constexpr uint32_t PT_CAN_ERR_MASK        = 1 << PTCAN_ERR_LS;
+constexpr uint32_t CANOPEN_THREAD_MASK    = 1 << CANOPEN_THREAD_LS;
+constexpr uint32_t GFDB_TIMER_THREAD_MASK = 1 << GFDB_TIMER_THREAD_LS;
+
+constexpr uint32_t LVSS_OUT_CHANGED_MASK = 1 << 14;
+constexpr uint32_t VCU_STATE_CHANGE_MASK = 1 << 15;
+
+constexpr uint32_t FULL_HEALTH_THREAD_MASK = MODEL_THREAD_SLOW_MASK | MODEL_THREAD_MASK | PT_CAN_THREAD_MASK
+    | PT_CAN_ERR_MASK | CANOPEN_THREAD_MASK | GFDB_TIMER_THREAD_MASK;
 
 // Thread Structs
 
@@ -86,21 +112,41 @@ namespace log  = core::log;
  */
 typedef struct {
     vcu::MCuC* mcuc;
+    CO_NODE* accessoryCanNode;
     rtos::EventFlags* triggerFlag;
 } modelThreadArgs_t;
+
+/**
+ * Struct that holds information needed for the canopen interrupt
+ */
+typedef struct {
+    vcu::MCuC* mcuc;
+    core::types::FixedQueue<CANOPEN_QUEUE_SIZE, io::CANMessage>* queue;
+} canOpenInterruptArgs_t;
 
 /**
  * Struct that holds information needed for the powertrain CAN thread
  */
 typedef struct {
     vcu::MCuC* mcuc;
+    rtos::EventFlags* eventFlags;
 } powertrainCANReceiveThreadArgs_t;
+
+/**
+ * Struct that holds information needed for the powertrain CAN ISR
+ */
+typedef struct {
+    vcu::MCuC* mcuc;
+    rtos::EventFlags* eventFlags;
+} powertrainCANReceiveISRArgs_t;
 
 /**
  * Struct that holds information needed for the health thread
  */
 typedef struct {
     vcu::MCuC* mcuc;
+    CO_NODE* accessoryCanNode;
+    rtos::EventFlags* eventFlags;
 } healthThreadArgs_t;
 
 /**
@@ -109,10 +155,22 @@ typedef struct {
 typedef struct {
     vcu::MCuC* mcuc;
     CO_NODE* accessoryCanNode;
+    rtos::EventFlags* eventFlags;
 } accessoryCanReceiveThreadArgs_t;
 
-// Timer expiration function
+/**
+ * Struct that holds information needed for the gfdb timer expiration function
+ */
+typedef struct {
+    vcu::MCuC* mcuc;
+    rtos::EventFlags* eventFlags;
+} gfdbArgs_t;
+
+// Timer expiration function for model trigger
 void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag);
+
+// Timer expiration function for gfdb isolation state request
+void gfdbTimerExpiration(gfdbArgs_t* args);
 
 // Thread Function Prototypes-- implementation below main.
 [[noreturn]] void modelThreadEntry(modelThreadArgs_t* args);
@@ -130,15 +188,16 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag);
  * will be passed to the EVT-core CAN interface which will in turn call this
  * function each time a new CAN message comes in.
  *
- * NOTE: For this sample, every non-extended (so 11 bit CAN IDs) will be
- * assumed to be intended to be passed as a CANopen message.
- *
  * @param message[in] The passed in CAN message that was read.
+ * @param priv[in] The canOpenInterruptArgs instance that holds the mcuc & canOpen queue
  */
 void accessoryCANOpenInterrupt(io::CANMessage& message, void* priv) {
-    auto* queue = (core::types::FixedQueue<CANOPEN_QUEUE_SIZE, io::CANMessage>*) priv;
-    if (queue != nullptr)
-        queue->append(message);
+    auto* args = (canOpenInterruptArgs_t*) priv;
+    if (args != nullptr) {
+        args->queue->append(message);
+        uint32_t nodeID = message.getId() & CANOPEN_NODE_ID_MASK;
+        args->mcuc->updateCanOpenNodeHeartbeat(nodeID);
+    }
 }
 
 /**
@@ -147,10 +206,18 @@ void accessoryCANOpenInterrupt(io::CANMessage& message, void* priv) {
  * @param priv[in] The MCuC instance that contains the queue the message is to be added to. Must be an vcu::MCuC*
  */
 void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
-    auto* mcuc = (vcu::MCuC*) priv;
-    if (mcuc != nullptr) {
-        // TODO: determine if WaitForever is what we want to do in the interrupt- could be bad
-        mcuc->sendToPowertrainQueue(&message, rtos::TXWait::TXW_WAIT_FOREVER);
+    auto* args = (powertrainCANReceiveISRArgs_t*) priv;
+
+    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_6);
+    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
+
+    if (args != nullptr) {
+        // must be tx_no_wait as it's in an ISR
+        rtos::TXError response = args->mcuc->sendToPowertrainQueue(&message, rtos::TXWait::TXW_NO_WAIT);
+        if (response != rtos::TXError::TXE_SUCCESS) {
+            // Will run if queue is full & message wasn't added; or if there is something seriously wrong with the queue
+            args->eventFlags->set(PT_CAN_ERR_MASK);
+        }
     }
 }
 
@@ -170,39 +237,44 @@ int main() {
     log::LOGGER.setUART(&uart);
     log::LOGGER.setLogLevel(log::Logger::LogLevel::DEBUG);
 
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "MCuC Debug Logger Started.");
-
     // Initialize MCuC and Powertrain CAN
-
     vcu::MCuC::MCuC_GPIO gpios = {{
-        io::getGPIO<vcu::MCuC::ESTOP_IN_PIN>(io::GPIO::Direction::INPUT, io::GPIO::Pull::PULL_UP),
-        io::getGPIO<vcu::MCuC::IGNITION_IN_PIN>(io::GPIO::Direction::INPUT, io::GPIO::Pull::PULL_UP),
+        // Inputs
+        io::getGPIO<vcu::MCuC::ESTOP_A_PIN>(io::GPIO::Direction::INPUT),
+        io::getGPIO<vcu::MCuC::ESTOP_B_PIN>(io::GPIO::Direction::INPUT),
+
+        io::getGPIO<vcu::MCuC::IGNITION_A_PIN>(io::GPIO::Direction::INPUT),
+        io::getGPIO<vcu::MCuC::IGNITION_B_PIN>(io::GPIO::Direction::INPUT),
+
+        io::getGPIO<vcu::MCuC::INTERLOCK_PIN>(io::GPIO::Direction::INPUT),
         io::getGPIO<vcu::MCuC::MC_STATUS_PIN>(io::GPIO::Direction::INPUT),
 
         io::getGPIO<vcu::MCuC::LS_SELF_TEST_IN_A_PIN>(io::GPIO::Direction::INPUT),
         io::getGPIO<vcu::MCuC::LS_SELF_TEST_IN_B_PIN>(io::GPIO::Direction::INPUT),
 
-        io::getGPIO<vcu::MCuC::LVSS_ENABLE_PIN>(io::GPIO::Direction::OUTPUT),
+        // Outputs
+        io::getGPIO<vcu::MCuC::LS_SELF_TEST_OUT_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::WATCHDOG_PIN>(io::GPIO::Direction::OUTPUT),
+
+        io::getGPIO<vcu::MCuC::FAULT_LED_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCuC::SUPER_FAULT_LED_PIN>(io::GPIO::Direction::OUTPUT),
+
+        io::getGPIO<vcu::MCuC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
+
+        io::getGPIO<vcu::MCuC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCuC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCuC::MC_RELAY_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
+
+        io::getGPIO<vcu::MCuC::LVSS_ENABLE_PIN>(io::GPIO::Direction::OUTPUT),
 
         io::getGPIO<vcu::MCuC::UC_STATE_ZERO_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::UC_STATE_ONE_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::UC_STATE_TWO_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::UC_STATE_THREE_PIN>(io::GPIO::Direction::OUTPUT),
 
-        io::getGPIO<vcu::MCuC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCuC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCuC::MC_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCuC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
-
-        io::getGPIO<vcu::MCuC::FAULT_LED_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCuC::SUPER_FAULT_LED_PIN>(io::GPIO::Direction::OUTPUT),
-
-        io::getGPIO<vcu::MCuC::ESTOP_OUT_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCuC::IGNITION_OUT_PIN>(io::GPIO::Direction::OUTPUT),
-
-        io::getGPIO<vcu::MCuC::LS_SELF_TEST_OUT_PIN>(io::GPIO::Direction::OUTPUT),
-        io::getGPIO<vcu::MCuC::INTERLOCK_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCuC::LED_ONE_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCuC::LED_TWO_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCuC::LED_THREE_PIN>(io::GPIO::Direction::OUTPUT),
     }};
 
     ///////////////////////////////////////////////////////////
@@ -214,9 +286,55 @@ int main() {
 
     vcu::MCuC mcuc(gpios, ptCAN);
 
-    ptCAN.addIRQHandler(reinterpret_cast<void (*)(io::CANMessage&, void*)>(powertrainCANInterrupt), &mcuc);
+    /// eventflag that stores between thread flags, and most importantly has flag to trigger the main thread to run
+    rtos::EventFlags sharedFlags((char*) "Shared Flags");
 
-    // TODO: CANopen uncomment when we add in Accessory CAN configuration
+    powertrainCANReceiveISRArgs_t ptCanISRArgs = {&mcuc, &sharedFlags};
+
+    ptCAN.addIRQHandler(reinterpret_cast<void (*)(io::CANMessage&, void*)>(powertrainCANInterrupt), &ptCanISRArgs);
+
+    //
+    //    io::GPIO::State stat = io::GPIO::State::LOW;
+    //
+    //    auto& pos = io::getGPIO<vcu::MCuC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT);
+    //    auto& neg = io::getGPIO<vcu::MCuC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT);
+    //
+    //    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "stloop");
+    //    while (1) {
+    //        pos.writePin(io::GPIO::State::HIGH);
+    //        neg.writePin(io::GPIO::State::LOW);
+    //        time::wait(1000);
+    //
+    //        pos.writePin(io::GPIO::State::LOW);
+    //        neg.writePin(io::GPIO::State::HIGH);
+    //        time::wait(1000);
+    //
+    //        gpios.faultLEDGPIO.writePin(stat);
+    //        stat = (stat == io::GPIO::State::LOW ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
+    //        //        pos.writePin(io::GPIO::State::LOW);
+    //        //        neg.writePin(io::GPIO::State::LOW);
+    //        //        time::wait(100);
+    //        //
+    //        //
+    //        //        pos.writePin(io::GPIO::State::LOW);
+    //        //        neg.writePin(io::GPIO::State::HIGH);
+    //        //        time::wait(300);
+    //        log::LOGGER.log(log::Logger::LogLevel::DEBUG, "eol");
+    //    }
+    //
+    //
+    //
+    //
+    //
+    //
+
+    io::CAN::CANStatus ptRes = ptCAN.connect(true);
+
+    // test that the board is connected to the can network
+    if (ptRes != io::CAN::CANStatus::OK) {
+        log::LOGGER.log(log::Logger::LogLevel::ERROR, "Failed to connect to Powertrain CAN network");
+        return 1;
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     // Setup ACCESSORY CAN configuration, this handles making drivers, applying settings.
@@ -228,12 +346,13 @@ int main() {
     core::types::FixedQueue<CANOPEN_QUEUE_SIZE, io::CANMessage> canOpenQueue;
 
     // Initialize CAN, add an IRQ which will add messages to the queue above
-    // Can init for testing not on VCU
+    // CAN init for testing not on VCU
     //    io::CAN& accessoryCAN = io::getCAN<io::Pin::PA_12, io::Pin::PA_11>();
 
     // Actual CAN init
     io::CAN& accessoryCAN = io::getCAN<vcu::MCuC::ACCESSORY_CAN_TX_PIN, vcu::MCuC::ACCESSORY_CAN_RX_PIN>();
-    accessoryCAN.addIRQHandler(accessoryCANOpenInterrupt, reinterpret_cast<void*>(&canOpenQueue));
+    canOpenInterruptArgs_t canOpenIntArgs = {&mcuc, &canOpenQueue};
+    accessoryCAN.addIRQHandler(accessoryCANOpenInterrupt, reinterpret_cast<void*>(&canOpenIntArgs));
 
     // Reserved memory for CANopen stack usage
     uint8_t sdoBuffer[CO_SSDO_N * CO_SDO_BUF_BYTE];
@@ -249,11 +368,11 @@ int main() {
     CO_NODE canNode;
 
     // Attempt to join the CAN network
-    io::CAN::CANStatus result = accessoryCAN.connect();
+    io::CAN::CANStatus result = accessoryCAN.connect(true);
 
     // test that the board is connected to the can network
     if (result != io::CAN::CANStatus::OK) {
-        uart.printf("Failed to connect to CAN network\r\n");
+        log::LOGGER.log(log::Logger::LogLevel::ERROR, "Failed to connect to Accessory CAN network");
         return 1;
     }
 
@@ -270,7 +389,7 @@ int main() {
     time::wait(500);
 
     // print any CANopen errors
-    uart.printf("CanOpen Error: %d\r\n", CONodeGetErr(&canNode));
+    log::LOGGER.log(log::Logger::LogLevel::WARNING, "CanOpen Error: %d\r\n", CONodeGetErr(&canNode));
 
     ////////////////////////
     // Initialize Threadx //
@@ -281,23 +400,26 @@ int main() {
     rtos::BytePool<TX_APP_MEM_POOL_SIZE> txPool((char*) "txBytePool");
 
     // Initialize Threads
-
-    /// eventflag that triggers the model to run
-    rtos::EventFlags modelTriggerFlag((char*) "Model Trigger Flag");
-
-    /// timer that triggers the model eventflag (and thus steps the model)
+    /// timer that triggers the main threads eventflag bit (and thus steps the model)
     rtos::Timer<rtos::EventFlags*> modelTriggerTimer((char*) "Model Trigger Timer",
                                                      modelTimerExpiration,
-                                                     &modelTriggerFlag,
-                                                     MODEL_THREAD_TRIGGER_RATE,
+                                                     &sharedFlags,
+                                                     MODEL_THREAD_TRIGGER_START,
                                                      MODEL_THREAD_TRIGGER_RATE,
                                                      true);
 
+    gfdbArgs_t gfdbArgs = {&mcuc, &sharedFlags};
+
+    /// timer that triggers the gfdb request message
+    rtos::Timer<gfdbArgs_t*> gfdbTriggerTimer((char*) "GFDB Trigger Timer",
+                                              gfdbTimerExpiration,
+                                              &gfdbArgs,
+                                              GFDB_TRIGGER_START,
+                                              GFDB_REQUEST_TIMER_TRIGGER_RATE,
+                                              true);
+
     /// Argument struct the modelThread takes in
-    modelThreadArgs_t modelThreadArgs = {
-        &mcuc,
-        &modelTriggerFlag,
-    };
+    modelThreadArgs_t modelThreadArgs = {&mcuc, &canNode, &sharedFlags};
 
     /// Thread that runs the model
     rtos::Thread<modelThreadArgs_t*> modelThread((char*) "Model Thread",
@@ -311,7 +433,7 @@ int main() {
 
     // PowerTrain CAN input Thread
     /// argument struct the thread takes in
-    powertrainCANReceiveThreadArgs_t powertrainCANReceiveThreadArgs = {&mcuc};
+    powertrainCANReceiveThreadArgs_t powertrainCANReceiveThreadArgs = {&mcuc, &sharedFlags};
 
     /// Thread that processes the Powertrain CAN Receive queue
     rtos::Thread<powertrainCANReceiveThreadArgs_t*> powertrainCANReceiveThread((char*) "Powertrain CAN Receive Thread",
@@ -324,7 +446,7 @@ int main() {
                                                                                PT_CAN_RECEIVE_AUTOSTART);
 
     /// Argument struct the healthThread takes in
-    healthThreadArgs_t healthThreadArgs{&mcuc};
+    healthThreadArgs_t healthThreadArgs{&mcuc, &canNode, &sharedFlags};
 
     /// Thread that checks the health of the other threads
     rtos::Thread<healthThreadArgs_t*> healthThread((char*) "MCuC Health Monitoring Thread",
@@ -337,7 +459,7 @@ int main() {
                                                    HEALTH_THREAD_AUTOSTART);
 
     /// Argument struct the Accessory Can Receive takes in
-    accessoryCanReceiveThreadArgs_t accessoryCanReceiveThreadArgs{&mcuc, &canNode};
+    accessoryCanReceiveThreadArgs_t accessoryCanReceiveThreadArgs{&mcuc, &canNode, &sharedFlags};
 
     /// Thread that checks the health of the other threads
     rtos::Thread<accessoryCanReceiveThreadArgs_t*> accessoryCanReceiveThread(
@@ -354,14 +476,26 @@ int main() {
     rtos::Initializable* initArr[] = {
         &mcuc,
         &modelThread,
-        &modelTriggerFlag,
+        &sharedFlags,
         &modelTriggerTimer,
+        &gfdbTriggerTimer,
         &powertrainCANReceiveThread,
         &healthThread,
-        &accessoryCanReceiveThread, //&threadUART
+        &accessoryCanReceiveThread,
     };
+
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Starting Kernel");
     rtos::startKernel(initArr, sizeof(initArr) / sizeof(initArr[0]), txPool);
+}
+
+/**
+ * Triggers every time the gfdb timer expires
+ *
+ * @param args the arguments for this timer expiration function
+ */
+void gfdbTimerExpiration(gfdbArgs_t* args) {
+    args->mcuc->setGroundFaultFlag();
+    args->eventFlags->set(GFDB_TIMER_THREAD_MASK); // Mark as ran
 }
 
 /**
@@ -372,13 +506,11 @@ int main() {
 void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     uint32_t flags;
     modelTriggerFlag->getCurrentFlags(&flags);
-    if ((flags & 0x01) == 0x01) {
-
-        // the model is not running fast enough- this is very bad!!!!
-        // todo: determine what error to throw
-        log::LOGGER.log(core::log::Logger::LogLevel::ERROR, "Model Thread Not Running Fast Enough!");
+    if ((flags & MODEL_TRIGGER_FLAG_MASK) == MODEL_TRIGGER_FLAG_MASK) {
+        // If last trigger flag hasn't been cleared yet (model missed a run)
+        modelTriggerFlag->set(MODEL_THREAD_SLOW_LS);
     }
-    modelTriggerFlag->set(0x01);
+    modelTriggerFlag->set(MODEL_TRIGGER_FLAG_MASK);
 }
 
 /**
@@ -389,17 +521,28 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
  */
 [[noreturn]] void modelThreadEntry(modelThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Started");
-    rtos::TXError error;
+
     while (true) {
         uint32_t flagOutput;
-        args->triggerFlag->get(0x01, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Triggered");
-        args->mcuc->process();
-        // TODO: IMAGINE STUFF
-        //         bool ignition = args->IgnitionInGPIO->readPin() == io::GPIO::State::LOW;
-        //         bool eStop = args->eStopInGPIO->readPin() == io::GPIO::State::HIGH;
-        //         args->mcuc->imagineNeuteredProcess(eStop, ignition);
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Model Thread Completed");
+        args->triggerFlag->get(MODEL_TRIGGER_FLAG_MASK, true, true, rtos::TXWait::TXW_WAIT_FOREVER, &flagOutput);
+
+        args->mcuc->process(args->triggerFlag);
+
+        // If state has changed, alert canOpen to send the flags when it gets the chance
+        uint32_t current;
+        args->triggerFlag->getCurrentFlags(&current);
+        if (current & VCU_STATE_CHANGE_MASK) {
+            io::alertTPDO(args->accessoryCanNode, vcu::MCuC::SIM_STATE_TPDO_NUM);
+            args->triggerFlag->clear(VCU_STATE_CHANGE_MASK);
+        }
+
+        // If LVSS enable signal has been changed, alert canOpen
+        if (current & LVSS_OUT_CHANGED_MASK) {
+            io::alertTPDO(args->accessoryCanNode, 0);
+            args->triggerFlag->clear(LVSS_OUT_CHANGED_MASK);
+        }
+
+        args->triggerFlag->set(MODEL_THREAD_MASK); // Mark as ran
     }
 }
 
@@ -412,10 +555,16 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Powertrain CAN Receive Thread started");
     io::CANMessage message;
     while (true) {
-        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Powertrain CAN Receive Thread Triggered");
         // suspends if there are no messages to receive
         args->mcuc->receiveFromPowertrainQueue(&message, rtos::TXWait::TXW_WAIT_FOREVER);
+
+        // save that this node has sent a message
+        args->mcuc->updateCanNodeHeartbeat(message.getId());
+
+        // process the message
         args->mcuc->handlePowertrainCanMessage(message);
+
+        args->eventFlags->set(PT_CAN_THREAD_MASK); // mark as ran
     }
 }
 
@@ -428,10 +577,34 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Started");
     rtos::TXError error;
     while (true) {
-        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Health Thread Triggered");
+        uint32_t flagOutput;
+        args->eventFlags->getCurrentFlags(&flagOutput);
 
-        // do health thread stuff
-        error = rtos::sleep(MS_TO_TICKS(120));
+#define SEND_HEALTH_THREAD_CAN // todo: decide where to put this define. prolly in the cmake
+#ifdef SEND_HEALTH_THREAD_CAN
+        // This flag will be set up to 3 times every time the device goes through contactor opening / closing states
+        bool modelTooSlow = (flagOutput & MODEL_THREAD_SLOW_MASK);
+
+        bool modelNotRun = !(flagOutput & MODEL_THREAD_MASK);
+
+        bool ptcanNotRun = !(flagOutput & PT_CAN_THREAD_MASK);
+
+        bool ptcanISRErr = (flagOutput & PT_CAN_ERR_MASK);
+
+        bool canopenNotRun = !(flagOutput & CANOPEN_THREAD_MASK);
+
+        bool gfdbReqNotRun = !(flagOutput & GFDB_TIMER_THREAD_MASK);
+
+        // set canOpen data values
+        args->mcuc->setHealthFlags(modelTooSlow, modelNotRun, ptcanNotRun, ptcanISRErr, canopenNotRun, gfdbReqNotRun);
+
+        // alert canOpen to send the flags when it gets the chance
+        io::alertTPDO(args->accessoryCanNode, vcu::MCuC::HEALTH_FLAG_TPDO_NUM);
+
+#endif
+        // clear flags for fresh data next loop
+        args->eventFlags->clear(FULL_HEALTH_THREAD_MASK);
+        rtos::sleep(MS_TO_TICKS(250));
     }
 }
 
@@ -443,29 +616,13 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 [[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Started");
     args->mcuc->sendOutputDataToUnsafeBuffer();
-    args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal = 63; // todo: temporary
+    //  todo:  args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal.val = 63; // todo: temporary
     rtos::TXError error;
     while (true) {
-        // process accessory CAN
-        //         log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Triggered");
-        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-                        "\tSending %d to LVSS",
-                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_out_EnableBoardSignal);
-
         io::processCANopenNode(args->accessoryCanNode);
 
-        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-        //                        "Accessory Can Node Processed\n\r\t"
-        //                        "HV Current: %d\n\r\t"
-        //                        "Power Switch Error: %d",
-        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_HVCurrent,
-        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchErrorStatus);
-        //        log::LOGGER.log(core::log::Logger::LogLevel::DEBUG,
-        //                        "\n\r\tPower Switch Current: %d"
-        //                        "\n\r\tTemps: %d",
-        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_PowerSwitchCurrents,
-        //                        args->mcuc->accessoryCanDataUnsafeBuffer.LVSS_in_Temperatures);
-        //
-        rtos::sleep(MS_TO_TICKS(400));
+        args->eventFlags->set(CANOPEN_THREAD_MASK); // Mark as ran
+
+        rtos::sleep(MS_TO_TICKS(10));
     }
 }

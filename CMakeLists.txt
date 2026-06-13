@@ -1,5 +1,5 @@
 ###############################################################################
-# Top level CMakeList for building the *EVT_BOARD_NAME* source code
+# Top level CMakeList for building the VCU source code
 ###############################################################################
 cmake_minimum_required(VERSION 3.15)
 
@@ -22,6 +22,8 @@ if(NOT USE_RTOS)
     set(USE_RTOS 1)
 endif()
 
+# Increase ThreadX update time to support VCU cycle time
+add_compile_definitions(TX_TIMER_TICKS_PER_SECOND=1000UL)
 
 if (TARGET_DEV STREQUAL "STM32F446xx")
     add_compile_definitions(STM32F446)
@@ -76,6 +78,7 @@ target_sources(${PROJECT_NAME} PRIVATE
         src/models/MCuC_Model.cpp
         src/MCuC.cpp
         src/Hardmon.cpp
+        src/BoardMessageParsers.cpp
         )
 
 ###############################################################################
