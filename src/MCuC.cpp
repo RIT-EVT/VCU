@@ -208,7 +208,7 @@ void MCuC::process(core::rtos::EventFlags* flags) {
 
 #ifdef EVT_CORE_LOG_ENABLE
     uint32_t halstart, halstep, halstepEnd, halpowerTrainCAN = 0, halmotorControllerCan, halend;
-//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "state %s", stateToString(lastState));
+    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "state %s", stateToString(lastState));
 
     halstart = core::time::millis();
 #endif
