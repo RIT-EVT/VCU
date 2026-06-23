@@ -418,7 +418,7 @@ void MCuC::process(core::rtos::EventFlags* flags) {
 
     // Power is going be gone soon
     if (modelOutputs.Shutdown_CAN) {
-        powertrainCAN.sendShutdownWarningMessage();
+        flags->set(SHUTDOWN_ALERT_MASK);
     }
 
     // Set CanOpen output data
@@ -434,13 +434,6 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hudl = modelOutputs.HUDL_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.hudlCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch1TempFault);
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.acc = modelOutputs.Acc_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.accCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
     accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.gub = modelOutputs.GUB_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.gubCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
-
-//    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.batt = modelOutputs.Batt_12V_EN_uC_CAN;
-//    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hib = modelOutputs.HIB_EN_uC_CAN;
-//    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.tms = modelOutputs.TMS_EN_uC_CAN;
-//    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hudl = modelOutputs.HUDL_EN_uC_CAN;
-//    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.acc = modelOutputs.Acc_EN_uC_CAN;
-//    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.gub = modelOutputs.GUB_EN_uC_CAN;
 
     if (accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.val != lvssPowerStateLast.val) {
         lvssPowerStateLast.val = accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.val;

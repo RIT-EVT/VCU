@@ -146,10 +146,13 @@ public:
     static constexpr uint32_t LVSS_POWER_CMD_TPDO_NUM = 0x00;
     static constexpr uint32_t SIM_STATE_TPDO_NUM      = 0x01;
     static constexpr uint32_t HEALTH_FLAG_TPDO_NUM    = 0x02;
+    static constexpr uint32_t SHUTDOWN_ALERT_TPDO_NUM = 0x03;
 
     static constexpr uint32_t MC_FR_IDX   = 0; // flowrate index of MC FR from TMS on Accessory CAN
     static constexpr uint32_t BATT_FR_IDX = 1; // flowrate index of Battery FR from TMS on Accessory CAN
 
+
+    static constexpr uint32_t SHUTDOWN_ALERT_MASK = 1 << 13;
     static constexpr uint32_t LVSS_OUT_CHANGED_MASK = 1 << 14;
     static constexpr uint32_t VCU_STATE_CHANGE_MASK = 1 << 15;
 
@@ -432,6 +435,8 @@ private:
      */
     HealthFlags_t healthFlags = {0};
 
+    uint16_t powerAlertMsg = 0x0FF; // spells "OFF" :P
+
     /// Instance of the struct that contains all the GPIOs that an instance of this class requires.
     MCuC_GPIO gpios;
 
@@ -488,7 +493,7 @@ private:
     /**
      * The size of the Object Dictionary
      */
-    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 114;
+    static constexpr uint8_t OBJECT_DICTIONARY_SIZE = 123;
 
     /**
      * The object dictionary itself. Will be populated by this object during
@@ -559,6 +564,8 @@ private:
                                           TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
         TRANSMIT_PDO_SETTINGS_OBJECT_18XX(HEALTH_FLAG_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER,
                                           TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
+        TRANSMIT_PDO_SETTINGS_OBJECT_18XX(SHUTDOWN_ALERT_TPDO_NUM, TRANSMIT_PDO_TRIGGER_TIMER,
+                                          TRANSMIT_PDO_INHIBIT_TIME_DISABLE, 0),
 
         // Send EnableBoardSignal to LVSS
         TRANSMIT_PDO_MAPPING_START_KEY_1AXX(LVSS_POWER_CMD_TPDO_NUM, 0x01),
@@ -572,6 +579,10 @@ private:
         TRANSMIT_PDO_MAPPING_START_KEY_1AXX(HEALTH_FLAG_TPDO_NUM, 0x01),
         TRANSMIT_PDO_MAPPING_ENTRY_1AXX(HEALTH_FLAG_TPDO_NUM, 0x01, PDO_MAPPING_UNSIGNED16),
 
+        // Send health flags out when triggered by code
+        TRANSMIT_PDO_MAPPING_START_KEY_1AXX(SHUTDOWN_ALERT_TPDO_NUM, 0x01),
+        TRANSMIT_PDO_MAPPING_ENTRY_1AXX(SHUTDOWN_ALERT_TPDO_NUM, 0x01, PDO_MAPPING_UNSIGNED16),
+
         // data links
         // TPDO Datalinks
         DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(LVSS_POWER_CMD_TPDO_NUM), 0x01),
@@ -583,6 +594,9 @@ private:
 
         DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(HEALTH_FLAG_TPDO_NUM), 0x01),
         DATA_LINK_21XX(LINK_TPDO_NUMBER(HEALTH_FLAG_TPDO_NUM), 0x01, CO_TUNSIGNED16, &healthFlags.flags),
+
+        DATA_LINK_START_KEY_21XX(LINK_TPDO_NUMBER(SHUTDOWN_ALERT_TPDO_NUM), 0x01),
+        DATA_LINK_21XX(LINK_TPDO_NUMBER(SHUTDOWN_ALERT_TPDO_NUM), 0x01, CO_TUNSIGNED16, &powerAlertMsg),
 
         // RPDO Datalinks
         //------LVSS--------//
