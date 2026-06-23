@@ -42,7 +42,7 @@ namespace log  = core::log;
 /// The size of the memory pool for the tx application
 #define TX_APP_MEM_POOL_SIZE 65536
 /// How often the model should take 1 step.
-#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(200)
+#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(3)
 
 /// How long until start the model trigger rates (give long enough to start)
 #define MODEL_THREAD_TRIGGER_START MS_TO_TICKS(75)
@@ -208,9 +208,6 @@ void accessoryCANOpenInterrupt(io::CANMessage& message, void* priv) {
 void powertrainCANInterrupt(io::CANMessage& message, void* priv) {
     auto* args = (powertrainCANReceiveISRArgs_t*) priv;
 
-    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_6);
-    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
-
     if (args != nullptr) {
         // must be tx_no_wait as it's in an ISR
         rtos::TXError response = args->mcuc->sendToPowertrainQueue(&message, rtos::TXWait::TXW_NO_WAIT);
@@ -292,41 +289,6 @@ int main() {
     powertrainCANReceiveISRArgs_t ptCanISRArgs = {&mcuc, &sharedFlags};
 
     ptCAN.addIRQHandler(reinterpret_cast<void (*)(io::CANMessage&, void*)>(powertrainCANInterrupt), &ptCanISRArgs);
-
-    //
-    //    io::GPIO::State stat = io::GPIO::State::LOW;
-    //
-    //    auto& pos = io::getGPIO<vcu::MCuC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT);
-    //    auto& neg = io::getGPIO<vcu::MCuC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT);
-    //
-    //    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "stloop");
-    //    while (1) {
-    //        pos.writePin(io::GPIO::State::HIGH);
-    //        neg.writePin(io::GPIO::State::LOW);
-    //        time::wait(1000);
-    //
-    //        pos.writePin(io::GPIO::State::LOW);
-    //        neg.writePin(io::GPIO::State::HIGH);
-    //        time::wait(1000);
-    //
-    //        gpios.faultLEDGPIO.writePin(stat);
-    //        stat = (stat == io::GPIO::State::LOW ? io::GPIO::State::HIGH : io::GPIO::State::LOW);
-    //        //        pos.writePin(io::GPIO::State::LOW);
-    //        //        neg.writePin(io::GPIO::State::LOW);
-    //        //        time::wait(100);
-    //        //
-    //        //
-    //        //        pos.writePin(io::GPIO::State::LOW);
-    //        //        neg.writePin(io::GPIO::State::HIGH);
-    //        //        time::wait(300);
-    //        log::LOGGER.log(log::Logger::LogLevel::DEBUG, "eol");
-    //    }
-    //
-    //
-    //
-    //
-    //
-    //
 
     io::CAN::CANStatus ptRes = ptCAN.connect(true);
 
