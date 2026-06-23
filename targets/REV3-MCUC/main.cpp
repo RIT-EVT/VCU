@@ -42,7 +42,7 @@ namespace log  = core::log;
 /// The size of the memory pool for the tx application
 #define TX_APP_MEM_POOL_SIZE 65536
 /// How often the model should take 1 step.
-#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(3)
+#define MODEL_THREAD_TRIGGER_RATE MS_TO_TICKS(10)
 
 /// How long until start the model trigger rates (give long enough to start)
 #define MODEL_THREAD_TRIGGER_START MS_TO_TICKS(75)
