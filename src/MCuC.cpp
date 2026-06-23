@@ -220,8 +220,8 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     modelInputs.Interlock         = gpios.interlockGPIO.readPin() == io::GPIO::State::HIGH;
     modelInputs.Ignition_LS_A     = gpios.ignitionAGPIO.readPin() == io::GPIO::State::LOW; // active low
     modelInputs.Ignition_LS_B     = gpios.ignitionBGPIO.readPin() == io::GPIO::State::LOW; // active low
-    modelInputs.ESTOP_LS_A        = gpios.eStopAGPIO.readPin() == io::GPIO::State::LOW;    // active low
-    modelInputs.ESTOP_LS_B        = gpios.eStopBGPIO.readPin() == io::GPIO::State::LOW;    // active low
+    modelInputs.ESTOP_LS_A        = gpios.eStopAGPIO.readPin() == io::GPIO::State::HIGH;
+    modelInputs.ESTOP_LS_B        = gpios.eStopBGPIO.readPin() == io::GPIO::State::HIGH;
 
     // Set CAN inputs (values updated over CAN)
 
