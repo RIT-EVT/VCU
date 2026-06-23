@@ -70,7 +70,7 @@ void Hardmon_Model::Hardmon_Invalid_State_Checking(void) {
         // During 'Invalid_State_Inactive': '<S1>:53'
         if (((!Hardmon_U.Forward_EN) || (!Hardmon_U.Ignition_LS_A)) && (Hardmon_U.uC_State == UC_State::MC_Active)) {
             // Transition: '<S1>:55'
-            Hardmon_DW.temporalCounter_i3 = 0U;
+            Hardmon_DW.temporalCounter_i3        = 0U;
             Hardmon_DW.is_Invalid_State_Checking = Hardmon_IN_count;
 
             // Entry 'count': '<S1>:58'
@@ -82,19 +82,18 @@ void Hardmon_Model::Hardmon_Invalid_State_Checking(void) {
         // During 'count': '<S1>:58'
     } else if (Hardmon_DW.temporalCounter_i3 >= 5000U) {
         // Transition: '<S1>:57'
-        Hardmon_DW.temporalCounter_i3 = 0U;
+        Hardmon_DW.temporalCounter_i3        = 0U;
         Hardmon_DW.is_Invalid_State_Checking = Hardmon_IN_count;
 
         // Entry 'count': '<S1>:58'
         Hardmon_DW.Invalid_State_Counter++;
     } else if ((Hardmon_U.Forward_EN && Hardmon_U.Ignition_LS_A) || (Hardmon_U.uC_State != UC_State::MC_Active)) {
         // Transition: '<S1>:56'
-        Hardmon_DW.is_Invalid_State_Checking =
-            Hardm_IN_Invalid_State_Inactive;
+        Hardmon_DW.is_Invalid_State_Checking = Hardm_IN_Invalid_State_Inactive;
 
         // Outport: '<Root>/HM_Fault'
         // Entry 'Invalid_State_Inactive': '<S1>:53'
-        Hardmon_Y.HM_Fault = false;
+        Hardmon_Y.HM_Fault               = false;
         Hardmon_DW.Invalid_State_Counter = 0.0;
 
         // Outport: '<Root>/nMC_Switch_EN'
@@ -158,7 +157,9 @@ void Hardmon_Model::Hardmon_Normal_Operation(void) {
 
         // Outport: '<Root>/nLVSS_Switch_EN'
         Hardmon_Y.nLVSS_Switch_EN = true;
-    } else if ((Hardmon_DW.Invalid_State_Counter >= 4.0) || (Hardmon_DW.Ignition_State_Counter >= 4.0) || (Hardmon_DW.LVSS_Counter >= 4.0) || (Hardmon_DW.ESTOP_Counter >= 4.0) || (Hardmon_DW.ESTOP_State_Counter >= 4.0)) {
+    } else if ((Hardmon_DW.Invalid_State_Counter >= 4.0) || (Hardmon_DW.Ignition_State_Counter >= 4.0)
+               || (Hardmon_DW.LVSS_Counter >= 4.0) || (Hardmon_DW.ESTOP_Counter >= 4.0)
+               || (Hardmon_DW.ESTOP_State_Counter >= 4.0)) {
         // Transition: '<S1>:118'
         exit_internal_Normal_Operation();
         Hardmon_DW.is_c3_Hardmon = Hardmon_IN_MC_FAULT_INIT;
@@ -174,10 +175,11 @@ void Hardmon_Model::Hardmon_Normal_Operation(void) {
         if (static_cast<uint16_t>(Hardmon_DW.is_ESTOP_Checking) == Hardmon_IN_ESTOP_Inactive) {
             // Inport: '<Root>/ESTOP_LS_A'
             // During 'ESTOP_Inactive': '<S1>:1'
-            if (Hardmon_U.ESTOP_LS_A && (Hardmon_U.uC_State != UC_State::Fault) && (Hardmon_U.uC_State != UC_State::Estop)) {
+            if (Hardmon_U.ESTOP_LS_A && (Hardmon_U.uC_State != UC_State::Fault)
+                && (Hardmon_U.uC_State != UC_State::Estop)) {
                 // Transition: '<S1>:5'
                 Hardmon_DW.temporalCounter_i1 = 0U;
-                Hardmon_DW.is_ESTOP_Checking = Hardmon_IN_count;
+                Hardmon_DW.is_ESTOP_Checking  = Hardmon_IN_count;
 
                 // Entry 'count': '<S1>:6'
                 Hardmon_DW.ESTOP_Counter++;
@@ -187,17 +189,18 @@ void Hardmon_Model::Hardmon_Normal_Operation(void) {
         } else if (Hardmon_DW.temporalCounter_i1 >= 1000U) {
             // Transition: '<S1>:7'
             Hardmon_DW.temporalCounter_i1 = 0U;
-            Hardmon_DW.is_ESTOP_Checking = Hardmon_IN_count;
+            Hardmon_DW.is_ESTOP_Checking  = Hardmon_IN_count;
 
             // Entry 'count': '<S1>:6'
             Hardmon_DW.ESTOP_Counter++;
-        } else if (Hardmon_U.ESTOP_LS_A || (Hardmon_U.uC_State == UC_State::Fault) || (Hardmon_U.uC_State == UC_State::Estop)) {
+        } else if (Hardmon_U.ESTOP_LS_A || (Hardmon_U.uC_State == UC_State::Fault)
+                   || (Hardmon_U.uC_State == UC_State::Estop)) {
             // Transition: '<S1>:14'
             Hardmon_DW.is_ESTOP_Checking = Hardmon_IN_ESTOP_Inactive;
 
             // Outport: '<Root>/HM_Fault'
             // Entry 'ESTOP_Inactive': '<S1>:1'
-            Hardmon_Y.HM_Fault = false;
+            Hardmon_Y.HM_Fault       = false;
             Hardmon_DW.ESTOP_Counter = 0.0;
 
             // Outport: '<Root>/nMC_Switch_EN'
@@ -272,7 +275,7 @@ void Hardmon_Model::Hardmon_Normal_Operation(void) {
             // During 'Ignition_State_Inactive': '<S1>:65'
             if ((Hardmon_U.Ignition_LS_A != Hardmon_U.Ignition_LS_B) && (Hardmon_U.uC_State != UC_State::Fault)) {
                 // Transition: '<S1>:62'
-                Hardmon_DW.temporalCounter_i4 = 0U;
+                Hardmon_DW.temporalCounter_i4         = 0U;
                 Hardmon_DW.is_Ignition_Level_Checking = Hardmon_IN_count;
 
                 // Entry 'count': '<S1>:66'
@@ -282,19 +285,18 @@ void Hardmon_Model::Hardmon_Normal_Operation(void) {
             // During 'count': '<S1>:66'
         } else if (Hardmon_DW.temporalCounter_i4 >= 5000U) {
             // Transition: '<S1>:64'
-            Hardmon_DW.temporalCounter_i4 = 0U;
+            Hardmon_DW.temporalCounter_i4         = 0U;
             Hardmon_DW.is_Ignition_Level_Checking = Hardmon_IN_count;
 
             // Entry 'count': '<S1>:66'
             Hardmon_DW.Ignition_State_Counter++;
         } else if ((Hardmon_U.Ignition_LS_A == Hardmon_U.Ignition_LS_B) || (Hardmon_U.uC_State == UC_State::Fault)) {
             // Transition: '<S1>:63'
-            Hardmon_DW.is_Ignition_Level_Checking =
-                Hard_IN_Ignition_State_Inactive;
+            Hardmon_DW.is_Ignition_Level_Checking = Hard_IN_Ignition_State_Inactive;
 
             // Outport: '<Root>/HM_Fault'
             // Entry 'Ignition_State_Inactive': '<S1>:65'
-            Hardmon_Y.HM_Fault = false;
+            Hardmon_Y.HM_Fault                = false;
             Hardmon_DW.Ignition_State_Counter = 0.0;
 
             // Outport: '<Root>/nMC_Switch_EN'
@@ -319,7 +321,7 @@ void Hardmon_Model::Hardmon_Normal_Operation(void) {
             // During 'ESTOP_State_Inactive': '<S1>:73'
             if ((Hardmon_U.ESTOP_LS_A != Hardmon_U.ESTOP_LS_B) && (Hardmon_U.uC_State != UC_State::Fault)) {
                 // Transition: '<S1>:70'
-                Hardmon_DW.temporalCounter_i5 = 0U;
+                Hardmon_DW.temporalCounter_i5      = 0U;
                 Hardmon_DW.is_ESTOP_Level_Checking = Hardmon_IN_count;
 
                 // Entry 'count': '<S1>:75'
@@ -329,19 +331,18 @@ void Hardmon_Model::Hardmon_Normal_Operation(void) {
             // During 'count': '<S1>:75'
         } else if (Hardmon_DW.temporalCounter_i5 >= 5000U) {
             // Transition: '<S1>:72'
-            Hardmon_DW.temporalCounter_i5 = 0U;
+            Hardmon_DW.temporalCounter_i5      = 0U;
             Hardmon_DW.is_ESTOP_Level_Checking = Hardmon_IN_count;
 
             // Entry 'count': '<S1>:75'
             Hardmon_DW.ESTOP_State_Counter++;
         } else if ((Hardmon_U.ESTOP_LS_A == Hardmon_U.ESTOP_LS_B) || (Hardmon_U.uC_State == UC_State::Fault)) {
             // Transition: '<S1>:71'
-            Hardmon_DW.is_ESTOP_Level_Checking =
-                Hardmon_IN_ESTOP_State_Inactive;
+            Hardmon_DW.is_ESTOP_Level_Checking = Hardmon_IN_ESTOP_State_Inactive;
 
             // Outport: '<Root>/HM_Fault'
             // Entry 'ESTOP_State_Inactive': '<S1>:73'
-            Hardmon_Y.HM_Fault = false;
+            Hardmon_Y.HM_Fault             = false;
             Hardmon_DW.ESTOP_State_Counter = 0.0;
 
             // Outport: '<Root>/nMC_Switch_EN'
@@ -367,7 +368,7 @@ void Hardmon_Model::Hardmon_Normal_Operation(void) {
             if ((Hardmon_U.LVSS_ON != Hardmon_U.LVSS_EN_uC) && (Hardmon_U.uC_State != UC_State::Fault)) {
                 // Transition: '<S1>:79'
                 Hardmon_DW.temporalCounter_i6 = 0U;
-                Hardmon_DW.is_LVSS_Checking = Hardmon_IN_count;
+                Hardmon_DW.is_LVSS_Checking   = Hardmon_IN_count;
 
                 // Entry 'count': '<S1>:84'
                 Hardmon_DW.LVSS_Counter++;
@@ -377,7 +378,7 @@ void Hardmon_Model::Hardmon_Normal_Operation(void) {
         } else if (Hardmon_DW.temporalCounter_i6 >= 5000U) {
             // Transition: '<S1>:81'
             Hardmon_DW.temporalCounter_i6 = 0U;
-            Hardmon_DW.is_LVSS_Checking = Hardmon_IN_count;
+            Hardmon_DW.is_LVSS_Checking   = Hardmon_IN_count;
 
             // Entry 'count': '<S1>:84'
             Hardmon_DW.LVSS_Counter++;
@@ -387,7 +388,7 @@ void Hardmon_Model::Hardmon_Normal_Operation(void) {
 
             // Outport: '<Root>/HM_Fault'
             // Entry 'Invalid_State_Inactive': '<S1>:82'
-            Hardmon_Y.HM_Fault = false;
+            Hardmon_Y.HM_Fault      = false;
             Hardmon_DW.LVSS_Counter = 0.0;
 
             // Outport: '<Root>/nMC_Switch_EN'
@@ -456,7 +457,7 @@ void Hardmon_Model::enter_internal_Normal_Operation(void) {
 
     // Outport: '<Root>/HM_Fault'
     // Entry 'Invalid_State_Inactive': '<S1>:82'
-    Hardmon_Y.HM_Fault = false;
+    Hardmon_Y.HM_Fault      = false;
     Hardmon_DW.LVSS_Counter = 0.0;
 
     // Outport: '<Root>/nMC_Switch_EN'
@@ -470,7 +471,7 @@ void Hardmon_Model::enter_internal_Normal_Operation(void) {
 
     Hardmon_Y.LVSS_EN_HM = Hardmon_U.LVSS_EN_uC;
 }
-}// namespace vcu
+} // namespace vcu
 
 namespace vcu {
 // Model step function
@@ -483,28 +484,33 @@ void Hardmon_Model::step() {
 
     // Gateway: Hardmon_Chart
     if (Hardmon_DW.temporalCounter_i1 < 1023U) {
-        Hardmon_DW.temporalCounter_i1 = static_cast<uint16_t>(static_cast<
-                                                              int16_t>(static_cast<int16_t>(Hardmon_DW.temporalCounter_i1) + 1));
+        Hardmon_DW.temporalCounter_i1 =
+            static_cast<uint16_t>(static_cast<int16_t>(static_cast<int16_t>(Hardmon_DW.temporalCounter_i1) + 1));
     }
 
     if (Hardmon_DW.temporalCounter_i2 < 8191U) {
-        Hardmon_DW.temporalCounter_i2 = static_cast<uint16_t>(static_cast<int16_t>(static_cast<int16_t>(Hardmon_DW.temporalCounter_i2) + 1));
+        Hardmon_DW.temporalCounter_i2 =
+            static_cast<uint16_t>(static_cast<int16_t>(static_cast<int16_t>(Hardmon_DW.temporalCounter_i2) + 1));
     }
 
     if (Hardmon_DW.temporalCounter_i3 < 8191U) {
-        Hardmon_DW.temporalCounter_i3 = static_cast<uint16_t>(static_cast<int16_t>(static_cast<int16_t>(Hardmon_DW.temporalCounter_i3) + 1));
+        Hardmon_DW.temporalCounter_i3 =
+            static_cast<uint16_t>(static_cast<int16_t>(static_cast<int16_t>(Hardmon_DW.temporalCounter_i3) + 1));
     }
 
     if (Hardmon_DW.temporalCounter_i4 < 8191U) {
-        Hardmon_DW.temporalCounter_i4 = static_cast<uint16_t>(static_cast<int16_t>(static_cast<int16_t>(Hardmon_DW.temporalCounter_i4) + 1));
+        Hardmon_DW.temporalCounter_i4 =
+            static_cast<uint16_t>(static_cast<int16_t>(static_cast<int16_t>(Hardmon_DW.temporalCounter_i4) + 1));
     }
 
     if (Hardmon_DW.temporalCounter_i5 < 8191U) {
-        Hardmon_DW.temporalCounter_i5 = static_cast<uint16_t>(static_cast<int16_t>(static_cast<int16_t>(Hardmon_DW.temporalCounter_i5) + 1));
+        Hardmon_DW.temporalCounter_i5 =
+            static_cast<uint16_t>(static_cast<int16_t>(static_cast<int16_t>(Hardmon_DW.temporalCounter_i5) + 1));
     }
 
     if (Hardmon_DW.temporalCounter_i6 < 8191U) {
-        Hardmon_DW.temporalCounter_i6 = static_cast<uint16_t>(static_cast<int16_t>(static_cast<int16_t>(Hardmon_DW.temporalCounter_i6) + 1));
+        Hardmon_DW.temporalCounter_i6 =
+            static_cast<uint16_t>(static_cast<int16_t>(static_cast<int16_t>(Hardmon_DW.temporalCounter_i6) + 1));
     }
 
     // During: Hardmon_Chart
@@ -534,7 +540,7 @@ void Hardmon_Model::step() {
                 // Outport: '<Root>/nReset'
                 // Transition: '<S1>:32'
                 // Exit 'Enter_Fault': '<S1>:23'
-                Hardmon_Y.nReset = false;
+                Hardmon_Y.nReset         = false;
                 Hardmon_DW.is_c3_Hardmon = Hardmon_IN_Normal_Operation;
                 enter_internal_Normal_Operation();
             }
@@ -731,10 +737,7 @@ void Hardmon_Model::terminate() {
 }
 
 // Constructor
-Hardmon_Model::Hardmon_Model() : Hardmon_U(),
-                                 Hardmon_Y(),
-                                 Hardmon_DW(),
-                                 Hardmon_M() {
+Hardmon_Model::Hardmon_Model() : Hardmon_U(), Hardmon_Y(), Hardmon_DW(), Hardmon_M() {
     // Currently there is no constructor body generated.
 }
 
@@ -746,7 +749,7 @@ Hardmon_Model::~Hardmon_Model() = default;
 Hardmon_Model::RT_MODEL_Hardmon_T* Hardmon_Model::getRTM() {
     return (&Hardmon_M);
 }
-}// namespace vcu
+} // namespace vcu
 
 //
 // File trailer for generated code.

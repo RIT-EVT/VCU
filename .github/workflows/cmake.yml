@@ -16,7 +16,7 @@ env:
 jobs:
   build:
     # Select the server's operating system
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       # Checkout the repository, including all submodules
@@ -30,18 +30,13 @@ jobs:
       - name: Install Compiler and Linter
         run: |
           sudo apt-get install gcc-arm-none-eabi
-          sudo apt-get install clang-format-12
-          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-12 10000
+          sudo apt-get install clang-format-15
+          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-15 10000
 
       # Build the code for all supported chips
-      - name: F302 Build
+      - name: Project Build
         run: |
-          cmake -DTARGET_DEV=STM32F302x8 -B ${{github.workspace}}/build
-          cmake --build ${{github.workspace}}/build
-
-      - name: F334 Build
-        run: |
-          cmake -DTARGET_DEV=STM32F334x8 -B ${{github.workspace}}/build
+          cmake -B ${{github.workspace}}/build
           cmake --build ${{github.workspace}}/build
 
       # Apply clang-format formatting to the branch and create a new commit if any files are changed

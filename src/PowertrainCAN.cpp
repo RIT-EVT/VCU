@@ -2,38 +2,9 @@
 
 namespace vcu::dev {
 
-PowertrainCAN::PowertrainCAN(IO::CAN& can) : can(can) {
-    queue = core::types::FixedQueue<POWERTRAIN_QUEUE_SIZE, IO::CANMessage>();
-}
-
-uint8_t PowertrainCAN::parseMCState(IO::CANMessage& message) {
-    return (message.getPayload()[0]);
-}
-
-uint8_t PowertrainCAN::parseMCDischarge(IO::CANMessage& message) {
-    return ((message.getPayload()[4] >> 5));
-}
-
-int16_t PowertrainCAN::parseHIBThrottle(IO::CANMessage& message) {
-    //TODO: HIB example implementation, update when HIB is completed
-    uint8_t* message_payload = message.getPayload();
-    uint16_t throttle = (message_payload[0]);
-    throttle <<= 8;
-    throttle += (message_payload[1]);
-    return throttle;
-}
-
-bool PowertrainCAN::parseHIBForwardEnable(IO::CANMessage& message) {
-    //TODO: HIB example implementation, update when HIB is completed
-    bool forwardEnable = (message.getPayload()[2] & 0b10000000) != 0;
-    return forwardEnable;
-}
-
-bool PowertrainCAN::parseHIBStartPressed(IO::CANMessage& message) {
-    //TODO: HIB example implementation, update when HIB is completed
-    bool startPressed = (message.getPayload()[2] & 0b01000000) != 0;
-    return startPressed;
-}
+PowertrainCAN::PowertrainCAN(io::CAN& can)
+    : Initializable("Powertrain CAN"), can(can),
+      queue("Powertrain Queue", sizeof(io::CANMessage), POWERTRAIN_QUEUE_SIZE) {}
 
 void PowertrainCAN::setMCInverterEnable(bool inverterEnable) {
     mcCommandPayload.inverterEnable = inverterEnable;
@@ -47,22 +18,60 @@ void PowertrainCAN::setMCTorque(int16_t torqueRequest) {
     mcCommandPayload.torque = torqueRequest;
 }
 
-void PowertrainCAN::sendMCMessage() {
-    //gotta be a uint8_t array, so we memcpy into it.
+void PowertrainCAN::setMCAll(int16_t torque, int16_t speed, int16_t direction, bool inverterEn, bool inverterDC,
+                             int16_t speedModeEn, int16_t rollingCounter, int16_t torqueLimit) {
+    mcCommandPayload.torque               = torque;
+    mcCommandPayload.speed                = speed;
+    mcCommandPayload.direction            = direction;
+    mcCommandPayload.inverterEnable       = inverterEn;
+    mcCommandPayload.inverterDischarge    = inverterDC;
+    mcCommandPayload.speedModeEnable      = speedModeEn;
+    mcCommandPayload.rollingCounter       = rollingCounter;
+    mcCommandPayload.CommandedTorqueLimit = torqueLimit;
+}
+
+io::CAN::CANStatus PowertrainCAN::sendMCMessage() {
+    // gotta be a uint8_t array, so we memcpy into it.
     uint8_t payload[8];
-    std::memcpy(payload, &mcCommandPayload, 8u);
-    //make the message
-    IO::CANMessage message = IO::CANMessage(MC_COMMAND_MESSAGE_ID, 8u, payload, false);
-    //send the message
-    can.transmit(message);
+    memcpy(payload, &mcCommandPayload, 8u);
+    // make the message
+    io::CANMessage message = io::CANMessage(PowertrainCAN::MessageIDs::MC_COMMAND_ID, 8u, payload, false);
+    // send the message
+    return can.transmit(message);
 }
 
-void PowertrainCAN::sendUCSelfTestMessage() {
+void PowertrainCAN::setBMSContactor(int16_t contactorCommand) {
+    bmsPayload.contactorCommand = contactorCommand;
+}
+
+io::CAN::CANStatus PowertrainCAN::sendBMSMessage() {
+    // gotta be a uint8_t array, so we memcpy into it.
+    uint8_t payload[8];
+    memcpy(payload, &bmsPayload, 8u);
+    // make the message
+    io::CANMessage message = io::CANMessage(PowertrainCAN::MessageIDs::BMS_MESSAGE_ID, 8u, payload, false);
+    // send the message
+    return can.transmit(message);
+}
+
+io::CAN::CANStatus PowertrainCAN::sendGFDBStateRequest() {
+    return can.transmit(GFDBStateRequestMessage);
+}
+
+io::CAN::CANStatus PowertrainCAN::sendShutdownWarningMessage() {
+    return can.transmit(GUBShutdownWarningMessage);
+}
+
+io::CAN::CANStatus PowertrainCAN::sendUCSelfTestMessage() {
     can.transmit(UCSelfTestMessage);
 }
 
-void PowertrainCAN::sendHardmonSelfTestResponse() {
+io::CAN::CANStatus PowertrainCAN::sendHardmonSelfTestResponse() {
     can.transmit(UCSelfTestMessage);
 }
 
-}// namespace vcu::dev
+core::rtos::TXError PowertrainCAN::init(rtos::BytePoolBase& pool) {
+    return queue.init(pool);
+}
+
+} // namespace vcu::dev
