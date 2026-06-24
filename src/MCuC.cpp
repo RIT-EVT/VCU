@@ -206,12 +206,7 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     static bool interlock         = true;
     static int16_t throttleStatic = 0;
 
-#ifdef EVT_CORE_LOG_ENABLE
-    uint32_t halstart, halstep, halstepEnd, halpowerTrainCAN = 0, halmotorControllerCan, halend;
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "state %s", stateToString(lastState));
-
-    halstart = core::time::millis();
-#endif
 
     bufferMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
 
@@ -353,19 +348,10 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     }
     hbMutex.put();
 
-#ifdef EVT_CORE_LOG_ENABLE
-//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "%d : %d       %d : %d", modelInputs.Ignition_LS_A, modelInputs.Ignition_LS_B, modelInputs.ESTOP_LS_A, modelInputs.ESTOP_LS_B);
-//    halstep = core::time::millis();
-#endif
-
     // Set inputs, run model, and receive outputs
     model.setExternalInputs(&modelInputs);
     model.step();
     modelOutputs = model.getExternalOutputs();
-
-#ifdef EVT_CORE_LOG_ENABLE
-//    halstepEnd = core::time::millis();
-#endif
 
     bufferMutex.get(rtos::TXW_WAIT_FOREVER);
 
@@ -453,20 +439,16 @@ void MCuC::process(core::rtos::EventFlags* flags) {
 //
 //    io::CAN::CANStatus mcMessageStatus = powertrainCAN.sendMCMessage();
 
-#ifdef EVT_CORE_LOG_ENABLE
 //    if (mcMessageStatus != io::CAN::CANStatus::OK) {
 //        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "MC Message Failed with error %d", mcMessageStatus);
 //    }
-#endif
 
 //    powertrainCAN.setBMSContactor(static_cast<int16_t>(modelOutputs.BMS_Contactor_Command_uC_CAN));
 //    io::CAN::CANStatus bmsMessageStatus = powertrainCAN.sendBMSMessage();
 //
-//#ifdef EVT_CORE_LOG_ENABLE
 //    if (bmsMessageStatus != io::CAN::CANStatus::OK) {
 //        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "BMS Message Failed with error %d", bmsMessageStatus);
 //    }
-//#endif
 
 //    io::CAN::CANStatus gfdbMessageStatus = io::CAN::CANStatus::OK;
 
@@ -476,20 +458,14 @@ void MCuC::process(core::rtos::EventFlags* flags) {
 //        groundFaultRequestFlag = false;
 //    }
 //
-//#ifdef EVT_CORE_LOG_ENABLE
 //    if (gfdbMessageStatus != io::CAN::CANStatus::OK) {
 //        log::LOGGER.log(core::log::Logger::LogLevel::WARNING,
 //                        "GFDB Isolation State Message Failed with error %d",
 //                        gfdbMessageStatus);
 //    }
-//#endif
 
     sendOutputDataToUnsafeBuffer();
     bufferMutex.put();
-
-#ifdef EVT_CORE_LOG_ENABLE
-    halend = core::time::millis();
-#endif
 }
 
 } // namespace vcu
