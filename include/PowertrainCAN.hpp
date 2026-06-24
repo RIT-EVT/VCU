@@ -42,7 +42,7 @@ public:
         // BMS message
         BMS_MESSAGE_ID = 0x202,
 
-        // Ground Fault recieve message
+        // Ground Fault receive message
         GFDB_INCOMING_ID = 0xA100100,
 
         // Ground Fault outgoing message

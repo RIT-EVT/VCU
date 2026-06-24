@@ -86,9 +86,9 @@ public:
     static constexpr io::Pin SYNC_OUT_PIN = io::Pin::PB_6;
 
     /** LED Pins */
-    static constexpr io::Pin LED_THREE_PIN = io::Pin::PC_7;
-    static constexpr io::Pin LED_TWO_PIN   = io::Pin::PC_8;
-    static constexpr io::Pin LED_ONE_PIN   = io::Pin::PC_9;
+    static constexpr io::Pin LED_ONE_PIN   = io::Pin::PB_7;
+    static constexpr io::Pin LED_TWO_PIN   = io::Pin::PB_8;
+    static constexpr io::Pin LED_THREE_PIN = io::Pin::PB_9;
 
     /** Powertrain CAN RX Pin */
     static constexpr io::Pin POWERTRAIN_CAN_RX_PIN = io::Pin::PB_12;
