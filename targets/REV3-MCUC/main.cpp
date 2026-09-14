@@ -495,26 +495,6 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 
         args->mcuc->process(args->triggerFlag);
 
-        // If state has changed, alert canOpen to send the flags when it gets the chance
-        uint32_t current;
-        args->triggerFlag->getCurrentFlags(&current);
-
-        if (current & vcu::MCuC::SHUTDOWN_ALERT_MASK) {
-            io::alertTPDO(args->accessoryCanNode, vcu::MCuC::SHUTDOWN_ALERT_TPDO_NUM);
-            args->triggerFlag->clear(vcu::MCuC::SHUTDOWN_ALERT_MASK);
-        }
-
-        if (current & vcu::MCuC::VCU_STATE_CHANGE_MASK) {
-            io::alertTPDO(args->accessoryCanNode, vcu::MCuC::SIM_STATE_TPDO_NUM);
-            args->triggerFlag->clear(vcu::MCuC::VCU_STATE_CHANGE_MASK);
-        }
-
-        // If LVSS enable signal has been changed, alert canOpen
-        if (current & vcu::MCuC::LVSS_OUT_CHANGED_MASK) {
-            io::alertTPDO(args->accessoryCanNode, 0);
-            args->triggerFlag->clear(vcu::MCuC::LVSS_OUT_CHANGED_MASK);
-        }
-
         args->triggerFlag->set(MODEL_THREAD_MASK); // Mark as ran
     }
 }
@@ -569,9 +549,7 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 
         // set canOpen data values
         args->mcuc->setHealthFlags(modelTooSlow, modelNotRun, ptcanNotRun, ptcanISRErr, canopenNotRun, gfdbReqNotRun);
-
-        // alert canOpen to send the flags when it gets the chance
-        io::alertTPDO(args->accessoryCanNode, vcu::MCuC::HEALTH_FLAG_TPDO_NUM);
+        args->eventFlags->set(vcu::MCuC::HEALTH_ALERT_MASK);
 
 #endif
         // clear flags for fresh data next loop
@@ -591,6 +569,31 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
     rtos::TXError error;
     while (true) {
         io::processCANopenNode(args->accessoryCanNode);
+
+        // Handle alert-triggered TPDOs
+        uint32_t current;
+        args->eventFlags->getCurrentFlags(&current);
+
+        if (current & vcu::MCuC::SHUTDOWN_ALERT_MASK) {
+            io::alertTPDO(args->accessoryCanNode, vcu::MCuC::SHUTDOWN_ALERT_TPDO_NUM);
+            args->eventFlags->clear(vcu::MCuC::SHUTDOWN_ALERT_MASK);
+        }
+
+        if (current & vcu::MCuC::VCU_STATE_CHANGE_MASK) {
+            io::alertTPDO(args->accessoryCanNode, vcu::MCuC::SIM_STATE_TPDO_NUM);
+            args->eventFlags->clear(vcu::MCuC::VCU_STATE_CHANGE_MASK);
+        }
+
+        if (current & vcu::MCuC::LVSS_OUT_CHANGED_MASK) {
+            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "Alerting TPDO");
+            io::alertTPDO(args->accessoryCanNode, vcu::MCuC::LVSS_POWER_CMD_TPDO_NUM);
+            args->eventFlags->clear(vcu::MCuC::LVSS_OUT_CHANGED_MASK);
+        }
+
+        if (current & vcu::MCuC::HEALTH_ALERT_MASK) {
+            io::alertTPDO(args->accessoryCanNode, vcu::MCuC::HEALTH_FLAG_TPDO_NUM);
+            args->eventFlags->clear(vcu::MCuC::HEALTH_ALERT_MASK);
+        }
 
         args->eventFlags->set(CANOPEN_THREAD_MASK); // Mark as ran
 

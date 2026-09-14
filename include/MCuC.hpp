@@ -152,6 +152,7 @@ public:
     static constexpr uint32_t BATT_FR_IDX = 1; // flowrate index of Battery FR from TMS on Accessory CAN
 
 
+    static constexpr uint32_t HEALTH_ALERT_MASK     = 1 << 12;
     static constexpr uint32_t SHUTDOWN_ALERT_MASK = 1 << 13;
     static constexpr uint32_t LVSS_OUT_CHANGED_MASK = 1 << 14;
     static constexpr uint32_t VCU_STATE_CHANGE_MASK = 1 << 15;
@@ -485,7 +486,7 @@ private:
     /**
      * The node ID used to identify the device on the CAN network.
      */
-    static constexpr uint8_t NODE_ID      = 0;
+    static constexpr uint8_t NODE_ID      = 100;
     static constexpr uint8_t LVSS_NODE_ID = 1;
     static constexpr uint8_t TMS_NODE_ID  = 2;
     static constexpr uint8_t IMU_NODE_ID  = 5;

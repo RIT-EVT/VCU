@@ -185,7 +185,7 @@ private:
     uint8_t GFDBStateRequestPayload = 0xE0;
     /// Message for the GFDB to request isolation state; According to SIM200 CAN Spreadsheet, all requests need to have
     /// datalength of 3
-    io::CANMessage GFDBStateRequestMessage = io::CANMessage(GFDB_OUTGOING_ID, 3, &GFDBStateRequestPayload, false);
+     io::CANMessage GFDBStateRequestMessage = io::CANMessage(GFDB_OUTGOING_ID, 3, &GFDBStateRequestPayload, true);
 
     /// Example payload for the Hardmon selfTest Response Message.
     /// In the future, could be replaced by a more meaningful payload
