@@ -206,7 +206,7 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     static bool interlock         = true;
     static int16_t throttleStatic = 0;
 
-    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "state %s", stateToString(lastState));
+//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "state %s", stateToString(lastState));
 
     bufferMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
 
@@ -275,7 +275,8 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     modelInputs.LVSS_ON_CAN              = false;
     modelInputs.MC_ON                    = false;
     modelInputs.BMS_Contactor_Closed_CAN = false;
-    modelInputs.GFDB_Isolation_State_CAN = 0;
+
+//    modelInputs.GFDB_Isolation_State_CAN = 0;
     modelInputs.MC_VSM_State_CAN         = MC_VSM_State::Start;
     modelInputs.HIB_Comparison_Fault_CAN = false;
 
@@ -414,12 +415,14 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     }
 
     // todo: probs clean this up somehow... Dont send enable signals from model if there was a switch fault (current or temp) on that switch
-    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.batt = modelOutputs.Batt_12V_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.battCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch0TempFault);
-    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hib = modelOutputs.HIB_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.hibCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch0TempFault);
-    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.tms = modelOutputs.TMS_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.tmsCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch1TempFault);
-    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hudl = modelOutputs.HUDL_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.hudlCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch1TempFault);
-    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.acc = modelOutputs.Acc_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.accCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
-    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.gub = modelOutputs.GUB_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.gubCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
+//    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.gub = modelOutputs.GUB_EN_uC_CAN && (!accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.gubCurrentFault && !accessoryCanDataSafeBuffer.LVSS_in_SwitchFaults.switch2TempFault);
+
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.batt = modelOutputs.Batt_12V_EN_uC_CAN;
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hib = modelOutputs.HIB_EN_uC_CAN;
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.tms = modelOutputs.TMS_EN_uC_CAN;
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.hudl = modelOutputs.HUDL_EN_uC_CAN;
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.acc = modelOutputs.Acc_EN_uC_CAN;
+    accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.gub = modelOutputs.GUB_EN_uC_CAN;
 
     if (accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.val != lvssPowerStateLast.val) {
         lvssPowerStateLast.val = accessoryCanDataSafeBuffer.LVSS_out_EnableBoardSignal.val;
@@ -450,19 +453,19 @@ void MCuC::process(core::rtos::EventFlags* flags) {
 //        log::LOGGER.log(core::log::Logger::LogLevel::WARNING, "BMS Message Failed with error %d", bmsMessageStatus);
 //    }
 
-//    io::CAN::CANStatus gfdbMessageStatus = io::CAN::CANStatus::OK;
+    io::CAN::CANStatus gfdbMessageStatus = io::CAN::CANStatus::OK;
 
     // Flag is set by RTOS gfdbTimer
-//    if (groundFaultRequestFlag) {
-//        gfdbMessageStatus      = powertrainCAN.sendGFDBStateRequest();
-//        groundFaultRequestFlag = false;
-//    }
-//
-//    if (gfdbMessageStatus != io::CAN::CANStatus::OK) {
-//        log::LOGGER.log(core::log::Logger::LogLevel::WARNING,
-//                        "GFDB Isolation State Message Failed with error %d",
-//                        gfdbMessageStatus);
-//    }
+    if (groundFaultRequestFlag) {
+        gfdbMessageStatus      = powertrainCAN.sendGFDBStateRequest();
+        groundFaultRequestFlag = false;
+    }
+
+    if (gfdbMessageStatus != io::CAN::CANStatus::OK) {
+        log::LOGGER.log(core::log::Logger::LogLevel::WARNING,
+                        "GFDB Isolation State Message Failed with error %d",
+                        gfdbMessageStatus);
+    }
 
     sendOutputDataToUnsafeBuffer();
     bufferMutex.put();

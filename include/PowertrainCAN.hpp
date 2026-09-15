@@ -181,11 +181,11 @@ private:
     /// the uc self test message
     io::CANMessage UCSelfTestMessage = io::CANMessage(UC_SELF_TEST_MESSAGE_ID, 1, &UCSelfTestPayload, false);
 
-    /// Payload for GFDB to tell it to send the current isolation state
-    uint8_t GFDBStateRequestPayload = 0xE0;
+    /// Payload for GFDB to tell it to send the current isolation state; last 2 bytes are trash bytes
+    uint8_t GFDBStateRequestPayload[3] = {0xE0, 0x0, 0x0};
     /// Message for the GFDB to request isolation state; According to SIM200 CAN Spreadsheet, all requests need to have
     /// datalength of 3
-     io::CANMessage GFDBStateRequestMessage = io::CANMessage(GFDB_OUTGOING_ID, 3, &GFDBStateRequestPayload, true);
+     io::CANMessage GFDBStateRequestMessage = io::CANMessage(GFDB_OUTGOING_ID, 3, GFDBStateRequestPayload, true);
 
     /// Example payload for the Hardmon selfTest Response Message.
     /// In the future, could be replaced by a more meaningful payload

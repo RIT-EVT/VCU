@@ -585,7 +585,6 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
         }
 
         if (current & vcu::MCuC::LVSS_OUT_CHANGED_MASK) {
-            log::LOGGER.log(log::Logger::LogLevel::DEBUG, "Alerting TPDO");
             io::alertTPDO(args->accessoryCanNode, vcu::MCuC::LVSS_POWER_CMD_TPDO_NUM);
             args->eventFlags->clear(vcu::MCuC::LVSS_OUT_CHANGED_MASK);
         }
