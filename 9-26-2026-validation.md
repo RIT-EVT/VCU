@@ -11,8 +11,8 @@
 | 1 | HardMon both CAN TX line Quiet   | Pass   |
 | 2 | MCUC both CAN TX line Sending    | Pass   |
 | 3 | Combined CAN H/L Output is Clean | Pass   |
-| 4 | Local Bench CAN-A w/ just LVSS   |        |
-| 5 | On bike VCU+LVSS CAN-A test      |        |
+| 4 | Local Bench CAN-A w/ just LVSS   | Pass   |
+| 5 | On bike VCU+LVSS CAN-A test      | N/A    |
 
 ---
 
