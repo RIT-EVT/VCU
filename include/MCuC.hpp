@@ -213,18 +213,20 @@ public:
     typedef union {
         uint16_t val;
         struct {
+            uint16_t rsvd : 10;
+
             // Power Switch 0
-            uint8_t batt : 1;
-            uint8_t hib  : 1;
+            uint16_t batt : 1;
+            uint16_t hib  : 1;
 
             // Power Switch 1
-            uint8_t tms  : 1;
-            uint8_t hudl : 1;
+            uint16_t tms  : 1;
+            uint16_t hudl : 1;
 
             // Power Switch 2
-            uint8_t gub : 1;
-            uint8_t acc : 1;
-        };
+            uint16_t gub : 1;
+            uint16_t acc : 1;
+        } __attribute__((packed));
     } LVSSPowerState_t;
 
     /**
@@ -465,7 +467,7 @@ private:
     volatile uint32_t heartbeatMessages[HB_SIZE] = {0};
 
     // Model input data (struct)
-    vcu::MCuC_Model::ExtU_MCuC_T modelInputs;
+    vcu::MCuC_Model::ExtU_MCuC_T modelInputs{};
 
     // Model output data (only the ones that need a var) some outputs are used directly; like writing to pin
     UCState ucState; ///< GPIO: Current State of the MCUC;
@@ -481,7 +483,7 @@ private:
     static constexpr uint32_t LVSS_MESSAGE_LIFESPAN = 500; // how long after receiving a CanOpen msg from LVSS to consider it "enabled"
 
     // Model output data (struct)
-    vcu::MCuC_Model::ExtY_MCuC_T modelOutputs;
+    vcu::MCuC_Model::ExtY_MCuC_T modelOutputs{};
 
     /**
      * The node ID used to identify the device on the CAN network.

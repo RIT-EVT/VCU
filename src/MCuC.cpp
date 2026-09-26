@@ -206,7 +206,7 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     static bool interlock         = true;
     static int16_t throttleStatic = 0;
 
-//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "state %s", stateToString(lastState));
+//    log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "state %s\r\n", stateToString(lastState));
 
     bufferMutex.get(rtos::TXWait::TXW_WAIT_FOREVER);
 
@@ -331,9 +331,11 @@ void MCuC::process(core::rtos::EventFlags* flags) {
         }
     }
 
-    // Increment GFDB & HIB heartbeats
+    // Increment TMS, BMS, GFDB & HIB heartbeats
+    modelInputs.Heartbeats_CAN[1]++;
     modelInputs.Heartbeats_CAN[2]++;
     modelInputs.Heartbeats_CAN[3]++;
+    modelInputs.Heartbeats_CAN[4]++;
 
     if (modelOutputs.LVSS_EN_uC) { // if we say lvss should be on, increment LVSS heartbeat
         modelInputs.Heartbeats_CAN[0]++;
