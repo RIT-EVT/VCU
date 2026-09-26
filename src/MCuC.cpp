@@ -346,6 +346,7 @@ void MCuC::process(core::rtos::EventFlags* flags) {
         if (modelOutputs.uC_State == UC_State::MC_Active) {
             modelInputs.Heartbeats_CAN[i]++;
         }
+//        modelInputs.Heartbeats_CAN[i] = heartbeatMessages[i];
     }
     hbMutex.put();
 
