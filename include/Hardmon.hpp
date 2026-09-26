@@ -39,15 +39,16 @@ public:
     //////////////////////////////////////////////
 
     /** Interlock 3v3 Pin */
-    static constexpr io::Pin INTERLOCK_PIN = io::Pin::PA_7;
+    static constexpr io::Pin INTERLOCK_A_PIN = io::Pin::PA_7;
+    static constexpr io::Pin INTERLOCK_B_PIN = io::Pin::PB_0;
 
     /** nRST (MCuC reset) Pin */
-    static constexpr io::Pin N_RST_PIN = io::Pin::PA_10;
+    static constexpr io::Pin N_RST_PIN = io::Pin::PA_8;
 
     /** UART TX pin */
-    static constexpr io::Pin UART_TX_PIN = io::Pin::PA_8;
+    static constexpr io::Pin UART_TX_PIN = io::Pin::PA_9;
     /** UART RX pin */
-    static constexpr io::Pin UART_RX_PIN = io::Pin::PA_9;
+    static constexpr io::Pin UART_RX_PIN = io::Pin::PA_10;
 
     /** LVSS Enable Pin */
     static constexpr io::Pin LVSS_EN_PIN = io::Pin::PC_4;
@@ -122,7 +123,8 @@ public:
             io::GPIO& ucStateThreeGPIO;
 
             io::GPIO& mcStatusGPIO;
-            io::GPIO& interlockGPIO;
+            io::GPIO& interlockAGPIO;
+            io::GPIO& interlockBGPIO;
 
             io::GPIO& watchdogGPIO;
 

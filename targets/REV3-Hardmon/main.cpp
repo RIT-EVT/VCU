@@ -187,7 +187,8 @@ int main() {
         io::getGPIO<vcu::Hardmon::UC_STATE_THREE_PIN>(io::GPIO::Direction::INPUT),
 
         io::getGPIO<vcu::Hardmon::MOTOR_CONTROLLER_STATUS_PIN>(io::GPIO::Direction::INPUT),
-        io::getGPIO<vcu::Hardmon::INTERLOCK_PIN>(io::GPIO::Direction::INPUT),
+        io::getGPIO<vcu::Hardmon::INTERLOCK_A_PIN>(io::GPIO::Direction::INPUT),
+        io::getGPIO<vcu::Hardmon::INTERLOCK_B_PIN>(io::GPIO::Direction::INPUT),
 
         io::getGPIO<vcu::Hardmon::WATCHDOG_PIN>(io::GPIO::Direction::INPUT),
 
@@ -204,7 +205,7 @@ int main() {
         io::getGPIO<vcu::Hardmon::LVSS_EN_OVERRIDE_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::Hardmon::LVSS_EN_PIN>(io::GPIO::Direction::OUTPUT),
 
-        io::getGPIO<vcu::Hardmon::N_RST_PIN>(io::GPIO::Direction::OUTPUT, io::GPIO::Pull::PULL_UP),
+        io::getGPIO<vcu::Hardmon::N_RST_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::Hardmon::CAN_OVERRIDE_PIN>(io::GPIO::Direction::OUTPUT),
     }};
 
@@ -241,8 +242,12 @@ int main() {
 
     CO_NODE canNode;
 
+    log::LOGGER.log(log::Logger::LogLevel::DEBUG, "hello!\n");
+
+    while (1) {}
     // Attempt to join the CAN network
     io::CAN::CANStatus result = can.connect();
+
 
     // test that the board is connected to the can network
     if (result != io::CAN::CANStatus::OK) {
