@@ -566,10 +566,8 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
 [[noreturn]] void accessoryCanReceiveThreadEntry(accessoryCanReceiveThreadArgs_t* args) {
     log::LOGGER.log(core::log::Logger::LogLevel::DEBUG, "Accessory CAN Thread Started");
     args->mcuc->sendOutputDataToUnsafeBuffer();
-    rtos::TXError error;
-    while (true) {
-        io::processCANopenNode(args->accessoryCanNode);
 
+    while (true) {
         // Handle alert-triggered TPDOs
         uint32_t current;
         args->eventFlags->getCurrentFlags(&current);
@@ -593,6 +591,8 @@ void modelTimerExpiration(rtos::EventFlags* modelTriggerFlag) {
             io::alertTPDO(args->accessoryCanNode, vcu::MCuC::HEALTH_FLAG_TPDO_NUM);
             args->eventFlags->clear(vcu::MCuC::HEALTH_ALERT_MASK);
         }
+
+        io::processCANopenNode(args->accessoryCanNode);
 
         args->eventFlags->set(CANOPEN_THREAD_MASK); // Mark as ran
 
