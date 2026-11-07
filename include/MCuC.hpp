@@ -183,7 +183,7 @@ public:
             io::GPIO& faultLEDGPIO;
             io::GPIO& superFaultLEDGPIO;
 
-            io::GPIO& canSelfTestGPIO;
+            io::GPIO& handshakeTestGPIO;
 
             io::GPIO& mcToggleNegativeGPIO;
             io::GPIO& mcTogglePositiveGPIO;

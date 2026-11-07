@@ -254,7 +254,7 @@ int main() {
         io::getGPIO<vcu::MCuC::FAULT_LED_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::SUPER_FAULT_LED_PIN>(io::GPIO::Direction::OUTPUT),
 
-        io::getGPIO<vcu::MCuC::CAN_SELF_TEST_PIN>(io::GPIO::Direction::OUTPUT),
+        io::getGPIO<vcu::MCuC::HANDSHAKE_PIN>(io::GPIO::Direction::OUTPUT),
 
         io::getGPIO<vcu::MCuC::MC_TOGGLE_NEGATIVE_PIN>(io::GPIO::Direction::OUTPUT),
         io::getGPIO<vcu::MCuC::MC_TOGGLE_POSITIVE_PIN>(io::GPIO::Direction::OUTPUT),
