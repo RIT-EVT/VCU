@@ -95,8 +95,8 @@ public:
     /** Powertrain CAN TX Pin */
     static constexpr io::Pin POWERTRAIN_CAN_TX_PIN = io::Pin::PB_13;
 
-    /** CAN Self Test Pin */
-    static constexpr io::Pin CAN_SELF_TEST_PIN = io::Pin::PB_14;
+    /** CAN Self Test Pin but acts as Handshake between the two chips models */
+    static constexpr io::Pin HANDSHAKE_PIN = io::Pin::PB_14;
 
     /** INS EN Pin */
     static constexpr io::Pin INS_EN_PIN = io::Pin::PB_15;

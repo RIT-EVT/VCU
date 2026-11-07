@@ -218,8 +218,8 @@ void MCuC::process(core::rtos::EventFlags* flags) {
     modelInputs.LS_Self_Test_In_A = gpios.lsSelfTestInAGPIO.readPin() == io::GPIO::State::HIGH;
     modelInputs.LS_Self_Test_In_B = gpios.lsSelfTestInBGPIO.readPin() == io::GPIO::State::HIGH;
     modelInputs.MC_ON             = gpios.mcStatusGPIO.readPin() == io::GPIO::State::HIGH;
-    modelInputs.Interlock        = gpios.interlockAGPIO.readPin() == io::GPIO::State::HIGH;
-//    modelInputs.InterlockB       = gpios.interlockBGPIO.readPin() == io::GPIO::State::HIGH;
+    modelInputs.Interlock         = gpios.interlockAGPIO.readPin() == io::GPIO::State::HIGH;
+//    modelInputs.InterlockB        = gpios.interlockBGPIO.readPin() == io::GPIO::State::HIGH;
     modelInputs.Ignition_LS_A     = gpios.ignitionAGPIO.readPin() == io::GPIO::State::LOW; // active low
     modelInputs.Ignition_LS_B     = gpios.ignitionBGPIO.readPin() == io::GPIO::State::LOW; // active low
     modelInputs.ESTOP_LS_A        = gpios.eStopAGPIO.readPin() == io::GPIO::State::HIGH;
